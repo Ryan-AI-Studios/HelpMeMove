@@ -1,0 +1,29 @@
+# Agent / tool local state — never commit (see AGENTS.md)
+.env
+.ledgerful/
+.project-ledger/
+.changeguard/
+.agents/
+
+# Rust
+/target
+**/target/
+*.rs.bk
+
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Native
+*.iml
+.gradle/
+Pods/
+*.xcuserstate
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
