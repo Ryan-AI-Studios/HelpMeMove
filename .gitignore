@@ -27,3 +27,11 @@ Pods/
 .DS_Store
 Thumbs.db
 *.swp
+
+# Signing and SDK-local files
+*.jks
+*.keystore
+**/key.properties
+android/local.properties
+**/GoogleService-Info.plist
+**/google-services.json
