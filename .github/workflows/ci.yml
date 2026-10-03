@@ -52,6 +52,14 @@ jobs:
           flutter-version: 3.47.6
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze --fatal-infos --fatal-warnings
+      # flutter_rust_bridge 2.13 opens lib<stem>.so from rust_root/target/release
+      # relative to the Flutter package. Cargo workspaces write that library to
+      # the workspace target directory, and Flutter 3.47 puts native-asset
+      # libraries on PATH only for Windows tests. Build the release cdylib into
+      # the generated path so the Linux test process can open it by file path.
+      - name: Build the Linux bridge library for Flutter tests
+        working-directory: ${{ github.workspace }}
+        run: cargo build -p helpmemove_bridge --locked --release --target-dir crates/bridge/target
       - run: flutter test
 
   android:
@@ -96,6 +104,9 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.47.6
+      # libc 0.2.190 hides _dyld_image_count and the three related image
+      # functions behind target_os = macos. backtrace 0.3.76 calls them for
+      # every Apple target, so the lock stays on libc 0.2.189.
       - name: Build the iOS Rust library
         run: cargo build -p helpmemove_bridge --locked --release --target aarch64-apple-ios
       - working-directory: apps/mobile
