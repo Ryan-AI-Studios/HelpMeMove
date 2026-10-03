@@ -2,9 +2,9 @@
 
 An adaptive movement coach: assessment → movement → measurement → adaptation → fitness.
 
-> **Status: pre-scaffold.** This repository intentionally has no application code yet.
-> The initial project scaffold is track 0002 (`ApplicationScaffoldAndCi`). Planning,
-> scope, and track governance live in the workspace directories described below, not here.
+> **Status: scaffold only.** Flutter and Rust build, test, and CI exist.
+> Product features are not implemented. Planning, scope, and track governance
+> live in the workspace directories described below, not here.
 
 ## Workspace layout
 
@@ -33,8 +33,10 @@ Clinical thresholds are not invented by this project, and safety logic is never 
 
 ## Prerequisites
 
-No toolchain is pinned yet — the scaffold track establishes the build, CI, and manifest layout.
-Expect Rust and Flutter toolchains once that track lands.
+- Rust 1.99.0, selected by `rust-toolchain.toml` in this repository (edition 2024).
+- Flutter 3.47.6 and Dart 3.13.5.
+
+Product features are still absent. The smoke screen only shows `HelpMeMove` and a `Scaffold check` button.
 
 ## Local tool state
 

@@ -1,0 +1,6 @@
+[workspace]
+members = ["crates/scaffold"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.99.0"
