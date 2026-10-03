@@ -21,6 +21,15 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+      - run: cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
+      - working-directory: apps/mobile
+        run: flutter_rust_bridge_codegen generate
+      - run: cargo fmt --all
+      - run: git diff --exit-code
       - run: cargo install cargo-deny --version 0.20.2 --locked
       - run: cargo install cargo-audit --version 0.22.2 --locked
       - run: cargo deny check
@@ -33,18 +42,34 @@ jobs:
         working-directory: apps/mobile
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
+        with:
+          toolchain: 1.99.0
+          components: rustfmt, clippy
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
           flutter-version: 3.47.6
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze --fatal-infos --fatal-warnings
+      # flutter_rust_bridge 2.13 opens lib<stem>.so from rust_root/target/release
+      # relative to the Flutter package. Cargo workspaces write that library to
+      # the workspace target directory, and Flutter 3.47 puts native-asset
+      # libraries on PATH only for Windows tests. Build the release cdylib into
+      # the generated path so the Linux test process can open it by file path.
+      - name: Build the Linux bridge library for Flutter tests
+        working-directory: ${{ github.workspace }}
+        run: cargo build -p helpmemove_bridge --locked --release --target-dir crates/bridge/target
       - run: flutter test
 
   android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
+        with:
+          toolchain: 1.99.0
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
@@ -53,11 +78,17 @@ jobs:
       # The pinned setup-android revision fails the job when that name is requested.
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
         with:
-          packages: platform-tools platforms;android-36 build-tools;36.0.0
+          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
           flutter-version: 3.47.6
+      - name: Export Android NDK home
+        shell: bash
+        run: |
+          if [ -z "${ANDROID_NDK_HOME:-}" ]; then
+            echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/28.2.13676358" >> "$GITHUB_ENV"
+          fi
       - working-directory: apps/mobile
         run: flutter build apk --debug
 
@@ -65,10 +96,19 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
+        with:
+          toolchain: 1.99.0
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
           flutter-version: 3.47.6
+      # libc 0.2.190 hides _dyld_image_count and the three related image
+      # functions behind target_os = macos. backtrace 0.3.76 calls them for
+      # every Apple target, so the lock stays on libc 0.2.189.
+      - name: Build the iOS Rust library
+        run: cargo build -p helpmemove_bridge --locked --release --target aarch64-apple-ios
       - working-directory: apps/mobile
         run: xcodebuild -version
       - working-directory: apps/mobile
