@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:helpmemove/src/rust/api/bridge.dart';
+import 'package:helpmemove/src/rust/frb_generated.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
   runApp(const HelpMeMoveApp());
 }
 
@@ -28,10 +32,12 @@ class ScaffoldCheckScreen extends StatefulWidget {
 }
 
 class _ScaffoldCheckScreenState extends State<ScaffoldCheckScreen> {
-  var _completed = false;
+  var _scaffoldCompleted = false;
+  String? _bridgeResult;
 
   @override
   Widget build(BuildContext context) {
+    final bridgeResult = _bridgeResult;
     return RepaintBoundary(
       key: const Key('scaffold-capture'),
       child: Scaffold(
@@ -47,18 +53,39 @@ class _ScaffoldCheckScreenState extends State<ScaffoldCheckScreen> {
                   FilledButton(
                     onPressed: () {
                       setState(() {
-                        _completed = true;
+                        _scaffoldCompleted = true;
                       });
                     },
                     child: const Text('Scaffold check'),
                   ),
-                  if (_completed)
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () {
+                      setState(() {
+                        try {
+                          final subject = acceptSubject(raw: 'subject-smoke-1');
+                          _bridgeResult = subject == 'subject-smoke-1'
+                              ? 'Bridge check completed'
+                              : 'Bridge check failed';
+                        } on BridgeError {
+                          _bridgeResult = 'Bridge check failed';
+                        }
+                      });
+                    },
+                    child: const Text('Bridge check'),
+                  ),
+                  if (_scaffoldCompleted)
                     const Padding(
                       padding: EdgeInsets.only(top: 24),
                       child: Text(
                         'Scaffold check completed',
                         textAlign: TextAlign.center,
                       ),
+                    ),
+                  if (bridgeResult != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: Text(bridgeResult, textAlign: TextAlign.center),
                     ),
                 ],
               ),

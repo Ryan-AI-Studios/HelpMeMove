@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:helpmemove/main.dart';
+import 'package:helpmemove/src/rust/frb_generated.dart';
 
 Future<void> _show(
   WidgetTester tester, {
@@ -48,6 +49,7 @@ void main() {
     await _show(tester, size: size, textScale: 1.3);
     _expectOnScreen(tester, 'HelpMeMove', size);
     _expectOnScreen(tester, 'Scaffold check', size);
+    _expectOnScreen(tester, 'Bridge check', size);
 
     await tester.tap(find.text('Scaffold check'));
     await tester.pump();
@@ -60,6 +62,23 @@ void main() {
     await _show(tester, size: size, textScale: 1);
     _expectOnScreen(tester, 'HelpMeMove', size);
     _expectOnScreen(tester, 'Scaffold check', size);
+    _expectOnScreen(tester, 'Bridge check', size);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('bridge check completes', (tester) async {
+    await RustLib.init();
+    const size = Size(390, 844);
+    await _show(tester, size: size, textScale: 1);
+    final button = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Bridge check'),
+    );
+    expect(button.onPressed, isNotNull);
+    _expectOnScreen(tester, 'Bridge check', size);
+
+    await tester.tap(find.text('Bridge check'));
+    await tester.pump();
+    _expectOnScreen(tester, 'Bridge check completed', size);
     expect(tester.takeException(), isNull);
   });
 }

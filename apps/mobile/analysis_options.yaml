@@ -16,6 +16,7 @@ analyzer:
     strict-raw-types: true
   exclude:
     - build/**
+    - lib/src/rust/**
     - android/**
     - ios/**
     - web/**

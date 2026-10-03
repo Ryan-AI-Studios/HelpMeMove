@@ -21,6 +21,11 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+      - run: cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
+      - working-directory: apps/mobile
+        run: flutter_rust_bridge_codegen generate
+      - run: cargo fmt --all
+      - run: git diff --exit-code
       - run: cargo install cargo-deny --version 0.20.2 --locked
       - run: cargo install cargo-audit --version 0.22.2 --locked
       - run: cargo deny check
@@ -33,6 +38,10 @@ jobs:
         working-directory: apps/mobile
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
+        with:
+          toolchain: 1.99.0
+          components: rustfmt, clippy
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
@@ -45,6 +54,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
+        with:
+          toolchain: 1.99.0
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
@@ -53,11 +66,17 @@ jobs:
       # The pinned setup-android revision fails the job when that name is requested.
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
         with:
-          packages: platform-tools platforms;android-36 build-tools;36.0.0
+          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
           flutter-version: 3.47.6
+      - name: Export Android NDK home
+        shell: bash
+        run: |
+          if [ -z "${ANDROID_NDK_HOME:-}" ]; then
+            echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/28.2.13676358" >> "$GITHUB_ENV"
+          fi
       - working-directory: apps/mobile
         run: flutter build apk --debug
 
@@ -65,6 +84,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
+        with:
+          toolchain: 1.99.0
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
