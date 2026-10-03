@@ -49,9 +49,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      # Google no longer serves the obsolete SDK package `tools`.
+      # The pinned setup-android revision fails the job when that name is requested.
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
         with:
-          packages: tools platform-tools platforms;android-36 build-tools;36.0.0
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
