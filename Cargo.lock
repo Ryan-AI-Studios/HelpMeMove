@@ -389,6 +389,16 @@ name = "helpmemove_domain"
 version = "0.1.0"
 
 [[package]]
+name = "helpmemove_safety"
+version = "0.1.0"
+dependencies = [
+ "helpmemove_content",
+ "helpmemove_domain",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "helpmemove_scaffold"
 version = "0.1.0"
 
