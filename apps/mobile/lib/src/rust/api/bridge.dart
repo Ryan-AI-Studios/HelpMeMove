@@ -7,9 +7,10 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `decision_fields`, `emergency_fields`, `escalation_name`, `instrument_view`, `sorted`, `triage_name`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
-// These functions are ignored (category: IgnoreBecauseExplicitAttribute): `code`
+// These functions are ignored because they are not marked as `pub`: `decision_fields`, `embedded_exercises`, `emergency_fields`, `escalation_name`, `instrument_view`, `program_rule_view`, `ready`, `sorted`, `triage_name`, `withheld_plan`, `withheld`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ProgramSelection`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These functions are ignored (category: IgnoreBecauseExplicitAttribute): `code`, `select_program`
 
 String bridgeVersion() => RustLib.instance.api.crateApiBridgeBridgeVersion();
 
@@ -81,6 +82,27 @@ String acceptRating({required String raw}) =>
 AssessmentInstrumentView loadCommittedInstrument() =>
     RustLib.instance.api.crateApiBridgeLoadCommittedInstrument();
 
+/// Load the committed program fixture id and version. A parse failure is `InvalidProgram`.
+ProgramRuleView loadCommittedProgramRule() =>
+    RustLib.instance.api.crateApiBridgeLoadCommittedProgramRule();
+
+/// Name and written instructions for one embedded fixture. Unknown ids stay out of the error.
+ExerciseDisplay exerciseDisplay({required String exerciseId}) =>
+    RustLib.instance.api.crateApiBridgeExerciseDisplay(exerciseId: exerciseId);
+
+/// Classify the committed rule with `schema_ack=yes` only, then select.
+///
+/// The production answer does not permit ordinary generation.
+StartingPlan composeStartingPlan({
+  required String intakeDocument,
+  required String assessmentDocument,
+  required PlatformInt64 nowUnixMillis,
+}) => RustLib.instance.api.crateApiBridgeComposeStartingPlan(
+  intakeDocument: intakeDocument,
+  assessmentDocument: assessmentDocument,
+  nowUnixMillis: nowUnixMillis,
+);
+
 class AssessmentInstrumentView {
   final String instrumentId;
   final PlatformInt64 instrumentVersion;
@@ -131,6 +153,28 @@ enum BridgeError {
   invalidEquipment,
   invalidRating,
   invalidInstrument,
+  invalidProgram,
+}
+
+class ExerciseDisplay {
+  final String name;
+  final String writtenInstructions;
+
+  const ExerciseDisplay({
+    required this.name,
+    required this.writtenInstructions,
+  });
+
+  @override
+  int get hashCode => name.hashCode ^ writtenInstructions.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ExerciseDisplay &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          writtenInstructions == other.writtenInstructions;
 }
 
 class IntakeVocabulary {
@@ -162,6 +206,24 @@ class IntakeVocabulary {
           goals == other.goals &&
           equipment == other.equipment &&
           lateralities == other.lateralities;
+}
+
+class ProgramRuleView {
+  final String ruleId;
+  final PlatformInt64 ruleVersion;
+
+  const ProgramRuleView({required this.ruleId, required this.ruleVersion});
+
+  @override
+  int get hashCode => ruleId.hashCode ^ ruleVersion.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProgramRuleView &&
+          runtimeType == other.runtimeType &&
+          ruleId == other.ruleId &&
+          ruleVersion == other.ruleVersion;
 }
 
 class SafetyAnswer {
@@ -219,4 +281,29 @@ class SafetyView {
           permitsOrdinaryGeneration == other.permitsOrdinaryGeneration &&
           emergencyDisplay == other.emergencyDisplay &&
           emergencyCode == other.emergencyCode;
+}
+
+class StartingPlan {
+  final String outcome;
+  final String withholdCode;
+  final String documentJson;
+
+  const StartingPlan({
+    required this.outcome,
+    required this.withholdCode,
+    required this.documentJson,
+  });
+
+  @override
+  int get hashCode =>
+      outcome.hashCode ^ withholdCode.hashCode ^ documentJson.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StartingPlan &&
+          runtimeType == other.runtimeType &&
+          outcome == other.outcome &&
+          withholdCode == other.withholdCode &&
+          documentJson == other.documentJson;
 }

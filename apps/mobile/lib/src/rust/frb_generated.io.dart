@@ -37,6 +37,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   BridgeError dco_decode_bridge_error(dynamic raw);
 
   @protected
+  ExerciseDisplay dco_decode_exercise_display(dynamic raw);
+
+  @protected
   double dco_decode_f_64(dynamic raw);
 
   @protected
@@ -58,10 +61,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SafetyAnswer> dco_decode_list_safety_answer(dynamic raw);
 
   @protected
+  ProgramRuleView dco_decode_program_rule_view(dynamic raw);
+
+  @protected
   SafetyAnswer dco_decode_safety_answer(dynamic raw);
 
   @protected
   SafetyView dco_decode_safety_view(dynamic raw);
+
+  @protected
+  StartingPlan dco_decode_starting_plan(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -92,6 +101,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   BridgeError sse_decode_bridge_error(SseDeserializer deserializer);
 
   @protected
+  ExerciseDisplay sse_decode_exercise_display(SseDeserializer deserializer);
+
+  @protected
   double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
@@ -115,10 +127,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ProgramRuleView sse_decode_program_rule_view(SseDeserializer deserializer);
+
+  @protected
   SafetyAnswer sse_decode_safety_answer(SseDeserializer deserializer);
 
   @protected
   SafetyView sse_decode_safety_view(SseDeserializer deserializer);
+
+  @protected
+  StartingPlan sse_decode_starting_plan(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -151,6 +169,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_bridge_error(BridgeError self, SseSerializer serializer);
 
   @protected
+  void sse_encode_exercise_display(
+    ExerciseDisplay self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
@@ -181,10 +205,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_program_rule_view(
+    ProgramRuleView self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_safety_answer(SafetyAnswer self, SseSerializer serializer);
 
   @protected
   void sse_encode_safety_view(SafetyView self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_starting_plan(StartingPlan self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

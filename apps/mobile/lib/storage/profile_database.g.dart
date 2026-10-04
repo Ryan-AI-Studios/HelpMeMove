@@ -1502,6 +1502,285 @@ class AssessmentRecordsCompanion extends UpdateCompanion<AssessmentRecord> {
   }
 }
 
+class $ProgramRecordsTable extends ProgramRecords
+    with TableInfo<$ProgramRecordsTable, ProgramRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProgramRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentJsonMeta = const VerificationMeta(
+    'documentJson',
+  );
+  @override
+  late final GeneratedColumn<String> documentJson = GeneratedColumn<String>(
+    'document_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [subjectId, documentJson, updatedAtMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'program_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProgramRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('document_json')) {
+      context.handle(
+        _documentJsonMeta,
+        documentJson.isAcceptableOrUnknown(
+          data['document_json']!,
+          _documentJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentJsonMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId};
+  @override
+  ProgramRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProgramRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      documentJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_json'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $ProgramRecordsTable createAlias(String alias) {
+    return $ProgramRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class ProgramRecord extends DataClass implements Insertable<ProgramRecord> {
+  final String subjectId;
+  final String documentJson;
+  final int updatedAtMs;
+  const ProgramRecord({
+    required this.subjectId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['document_json'] = Variable<String>(documentJson);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  ProgramRecordsCompanion toCompanion(bool nullToAbsent) {
+    return ProgramRecordsCompanion(
+      subjectId: Value(subjectId),
+      documentJson: Value(documentJson),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory ProgramRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProgramRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      documentJson: serializer.fromJson<String>(json['documentJson']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'documentJson': serializer.toJson<String>(documentJson),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  ProgramRecord copyWith({
+    String? subjectId,
+    String? documentJson,
+    int? updatedAtMs,
+  }) => ProgramRecord(
+    subjectId: subjectId ?? this.subjectId,
+    documentJson: documentJson ?? this.documentJson,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  ProgramRecord copyWithCompanion(ProgramRecordsCompanion data) {
+    return ProgramRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      documentJson: data.documentJson.present
+          ? data.documentJson.value
+          : this.documentJson,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgramRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, documentJson, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProgramRecord &&
+          other.subjectId == this.subjectId &&
+          other.documentJson == this.documentJson &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class ProgramRecordsCompanion extends UpdateCompanion<ProgramRecord> {
+  final Value<String> subjectId;
+  final Value<String> documentJson;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const ProgramRecordsCompanion({
+    this.subjectId = const Value.absent(),
+    this.documentJson = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProgramRecordsCompanion.insert({
+    required String subjectId,
+    required String documentJson,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       documentJson = Value(documentJson),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<ProgramRecord> custom({
+    Expression<String>? subjectId,
+    Expression<String>? documentJson,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (documentJson != null) 'document_json': documentJson,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProgramRecordsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? documentJson,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return ProgramRecordsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      documentJson: documentJson ?? this.documentJson,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (documentJson.present) {
+      map['document_json'] = Variable<String>(documentJson.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProgramRecordsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
@@ -1513,6 +1792,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
   );
   late final $AssessmentRecordsTable assessmentRecords =
       $AssessmentRecordsTable(this);
+  late final $ProgramRecordsTable programRecords = $ProgramRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1523,6 +1803,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
     intakeDrafts,
     assessmentDrafts,
     assessmentRecords,
+    programRecords,
   ];
 }
 
@@ -2470,6 +2751,187 @@ typedef $$AssessmentRecordsTableProcessedTableManager =
       AssessmentRecord,
       PrefetchHooks Function()
     >;
+typedef $$ProgramRecordsTableCreateCompanionBuilder =
+    ProgramRecordsCompanion Function({
+      required String subjectId,
+      required String documentJson,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$ProgramRecordsTableUpdateCompanionBuilder =
+    ProgramRecordsCompanion Function({
+      Value<String> subjectId,
+      Value<String> documentJson,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$ProgramRecordsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $ProgramRecordsTable> {
+  $$ProgramRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProgramRecordsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $ProgramRecordsTable> {
+  $$ProgramRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProgramRecordsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $ProgramRecordsTable> {
+  $$ProgramRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$ProgramRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $ProgramRecordsTable,
+          ProgramRecord,
+          $$ProgramRecordsTableFilterComposer,
+          $$ProgramRecordsTableOrderingComposer,
+          $$ProgramRecordsTableAnnotationComposer,
+          $$ProgramRecordsTableCreateCompanionBuilder,
+          $$ProgramRecordsTableUpdateCompanionBuilder,
+          (
+            ProgramRecord,
+            BaseReferences<
+              _$ProfileDatabase,
+              $ProgramRecordsTable,
+              ProgramRecord
+            >,
+          ),
+          ProgramRecord,
+          PrefetchHooks Function()
+        > {
+  $$ProgramRecordsTableTableManager(
+    _$ProfileDatabase db,
+    $ProgramRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProgramRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProgramRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProgramRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> documentJson = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProgramRecordsCompanion(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String documentJson,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => ProgramRecordsCompanion.insert(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProgramRecordsTable, ProgramRecord>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $ProgramRecordsTable,
+                    ProgramRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProgramRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $ProgramRecordsTable,
+      ProgramRecord,
+      $$ProgramRecordsTableFilterComposer,
+      $$ProgramRecordsTableOrderingComposer,
+      $$ProgramRecordsTableAnnotationComposer,
+      $$ProgramRecordsTableCreateCompanionBuilder,
+      $$ProgramRecordsTableUpdateCompanionBuilder,
+      (
+        ProgramRecord,
+        BaseReferences<_$ProfileDatabase, $ProgramRecordsTable, ProgramRecord>,
+      ),
+      ProgramRecord,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -2484,4 +2946,6 @@ class $ProfileDatabaseManager {
       $$AssessmentDraftsTableTableManager(_db, _db.assessmentDrafts);
   $$AssessmentRecordsTableTableManager get assessmentRecords =>
       $$AssessmentRecordsTableTableManager(_db, _db.assessmentRecords);
+  $$ProgramRecordsTableTableManager get programRecords =>
+      $$ProgramRecordsTableTableManager(_db, _db.programRecords);
 }

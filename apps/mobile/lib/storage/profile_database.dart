@@ -65,6 +65,20 @@ class AssessmentRecords extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
 }
 
+class ProgramRecords extends Table {
+  @override
+  String get tableName => 'program_records';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get documentJson => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -119,6 +133,7 @@ QueryExecutor openEncryptedExecutor({
     IntakeDrafts,
     AssessmentDrafts,
     AssessmentRecords,
+    ProgramRecords,
   ],
 )
 class ProfileDatabase extends _$ProfileDatabase {
@@ -128,7 +143,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -143,6 +158,10 @@ class ProfileDatabase extends _$ProfileDatabase {
       if (from == 2 && to == 3) {
         await migrator.createTable(assessmentDrafts);
         await migrator.createTable(assessmentRecords);
+        return;
+      }
+      if (from == 3 && to == 4) {
+        await migrator.createTable(programRecords);
         return;
       }
       rejectSchemaUpgrade(from, to);
