@@ -1,0 +1,15 @@
+[package]
+name = "helpmemove_content"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+helpmemove_domain = { path = "../domain", version = "0.1.0" }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+
+[[bin]]
+name = "validate-content"
+path = "src/bin/validate_content.rs"

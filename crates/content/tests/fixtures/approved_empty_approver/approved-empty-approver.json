@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "exercise_id": "approved-empty-approver",
+  "exercise_version": 1,
+  "name": "Schema approved shape",
+  "regions": ["leg"],
+  "laterality": "bilateral",
+  "targets": ["synthetic_target"],
+  "goals": ["control"],
+  "difficulty": 1,
+  "equipment": ["chair"],
+  "positions": ["standing"],
+  "progressions": [],
+  "regressions": [],
+  "substitutions": [],
+  "contraindications": ["schema-constraint"],
+  "camera_views": [],
+  "tracked_metrics": [],
+  "default_sets": 1,
+  "default_reps": 1,
+  "tempo": { "eccentric": 2, "pause": 1, "concentric": 2 },
+  "spoken_instructions": ["Schema text."],
+  "written_instructions": "Schema text.",
+  "common_mistakes": ["schema-constraint"],
+  "modifications": ["schema-constraint"],
+  "approval_status": "approved",
+  "author": "schema-author",
+  "reviewer": "schema-reviewer",
+  "clinical_approver": "",
+  "approval_date": "2024-02-29",
+  "last_reviewed": "2024-02-29",
+  "evidence_references": [{
+    "title": "Schema evidence",
+    "citation": "Schema citation",
+    "locator": "https://example.com/schema"
+  }],
+  "populations": ["schema-population"],
+  "license": {
+    "license_type": "cc0",
+    "copyright_holder": "schema-holder",
+    "attribution_notice": "schema-notice",
+    "talent_release_id": "schema-release"
+  },
+  "media": {
+    "video_mp4": "clip.mp4",
+    "start_image_webp": "start.webp",
+    "end_image_webp": "end.webp",
+    "animation_riv": null
+  }
+}
