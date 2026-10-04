@@ -5,9 +5,12 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:helpmemove/intake/intake_draft.dart';
 import 'package:helpmemove/src/rust/frb_generated.dart';
+import 'package:helpmemove/storage/encryption.dart';
 import 'package:helpmemove/storage/profile_database.dart';
 import 'package:helpmemove/storage/profile_key_store.dart';
 import 'package:helpmemove/storage/profile_store.dart';
+import 'package:helpmemove/storage/storage_exception.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   late Directory temp;
@@ -103,36 +106,38 @@ void main() {
     },
   );
 
-  test('schema 1 gains intake_drafts and nothing else is migrated', () async {
+  test('schema 1 opened by schema 3 is rejected', () async {
     final ProfileStore store = openStore();
     final String subjectId = await store.createProfile();
     final File file = store.openDatabaseFile!;
     final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
     await store.close();
 
-    final ProfileDatabase opened = ProfileDatabase.open(
-      file: file,
-      keyHex: keyHex,
-    );
-    await opened.customStatement('DROP TABLE intake_drafts');
-    await opened.customStatement('PRAGMA user_version = 1');
-    await opened.close();
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    raw.execute('DROP TABLE IF EXISTS assessment_drafts');
+    raw.execute('DROP TABLE IF EXISTS assessment_records');
+    raw.execute('DROP TABLE IF EXISTS intake_drafts');
+    raw.execute('PRAGMA user_version = 1');
+    raw.close();
 
-    final ProfileDatabase upgraded = ProfileDatabase.open(
-      file: file,
-      keyHex: keyHex,
+    await expectLater(
+      store.reopenActive(),
+      throwsA(isA<StorageSchemaException>()),
     );
-    final rows = await upgraded
-        .customSelect(
-          'SELECT subject_id, document_json, updated_at_ms FROM intake_drafts',
-        )
-        .get();
-    expect(rows, isEmpty);
-    final events = await upgraded
-        .customSelect('SELECT payload_text FROM local_events')
-        .get();
-    expect(events, isNotEmpty);
-    await upgraded.close();
+
+    final Database again = sqlite3.open(file.path);
+    applyEncryptionSetup(again, keyHex);
+    expect(again.select('PRAGMA user_version').first.columnAt(0), 1);
+    expect(
+      again.select('SELECT payload_text FROM local_events').first.columnAt(0),
+      storageProbePayload,
+    );
+    final ResultSet tables = again.select(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'intake_drafts'",
+    );
+    expect(tables, isEmpty);
+    again.close();
   });
 
   test(

@@ -7,8 +7,8 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `decision_fields`, `emergency_fields`, `escalation_name`, `sorted`, `triage_name`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These functions are ignored because they are not marked as `pub`: `decision_fields`, `emergency_fields`, `escalation_name`, `instrument_view`, `sorted`, `triage_name`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `code`
 
 String bridgeVersion() => RustLib.instance.api.crateApiBridgeBridgeVersion();
@@ -69,6 +69,55 @@ SafetyView classifyCommittedRule({
   emergencyRegion: emergencyRegion,
 );
 
+/// Ratings in fixture order. This list is not sorted.
+AssessmentVocabulary assessmentVocabulary() =>
+    RustLib.instance.api.crateApiBridgeAssessmentVocabulary();
+
+/// Accept a movement-rating token. Invalid input does not echo the raw value.
+String acceptRating({required String raw}) =>
+    RustLib.instance.api.crateApiBridgeAcceptRating(raw: raw);
+
+/// Load the committed fixture id and version. A parse failure is `InvalidInstrument`.
+AssessmentInstrumentView loadCommittedInstrument() =>
+    RustLib.instance.api.crateApiBridgeLoadCommittedInstrument();
+
+class AssessmentInstrumentView {
+  final String instrumentId;
+  final PlatformInt64 instrumentVersion;
+
+  const AssessmentInstrumentView({
+    required this.instrumentId,
+    required this.instrumentVersion,
+  });
+
+  @override
+  int get hashCode => instrumentId.hashCode ^ instrumentVersion.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AssessmentInstrumentView &&
+          runtimeType == other.runtimeType &&
+          instrumentId == other.instrumentId &&
+          instrumentVersion == other.instrumentVersion;
+}
+
+class AssessmentVocabulary {
+  final List<String> ratings;
+
+  const AssessmentVocabulary({required this.ratings});
+
+  @override
+  int get hashCode => ratings.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AssessmentVocabulary &&
+          runtimeType == other.runtimeType &&
+          ratings == other.ratings;
+}
+
 enum BridgeError {
   invalidSubjectId,
   invalidLaterality,
@@ -80,6 +129,8 @@ enum BridgeError {
   invalidRegion,
   invalidGoal,
   invalidEquipment,
+  invalidRating,
+  invalidInstrument,
 }
 
 class IntakeVocabulary {

@@ -138,6 +138,74 @@ class ProfileStore {
     )..where((IntakeDrafts table) => table.subjectId.equals(subjectId))).go();
   }
 
+  Future<void> saveAssessmentDraft(String documentJson) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await database
+        .into(database.assessmentDrafts)
+        .insertOnConflictUpdate(
+          AssessmentDraftsCompanion.insert(
+            subjectId: subjectId,
+            documentJson: documentJson,
+            updatedAtMs: _now(),
+          ),
+        );
+  }
+
+  Future<String?> loadAssessmentDraft() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final AssessmentDraft? row =
+        await (database.select(database.assessmentDrafts)..where(
+              (AssessmentDrafts table) => table.subjectId.equals(subjectId),
+            ))
+            .getSingleOrNull();
+    return row?.documentJson;
+  }
+
+  Future<void> deleteAssessmentDraft() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await (database.delete(
+          database.assessmentDrafts,
+        )..where((AssessmentDrafts table) => table.subjectId.equals(subjectId)))
+        .go();
+  }
+
+  Future<void> saveAssessmentRecord(String documentJson) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await database
+        .into(database.assessmentRecords)
+        .insertOnConflictUpdate(
+          AssessmentRecordsCompanion.insert(
+            subjectId: subjectId,
+            documentJson: documentJson,
+            updatedAtMs: _now(),
+          ),
+        );
+  }
+
+  Future<String?> loadAssessmentRecord() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final AssessmentRecord? row =
+        await (database.select(database.assessmentRecords)..where(
+              (AssessmentRecords table) => table.subjectId.equals(subjectId),
+            ))
+            .getSingleOrNull();
+    return row?.documentJson;
+  }
+
+  Future<void> deleteAssessmentRecord() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await (database.delete(database.assessmentRecords)..where(
+          (AssessmentRecords table) => table.subjectId.equals(subjectId),
+        ))
+        .go();
+  }
+
   Future<void> writeUserVersion(int version) async {
     if (version < 0 || version > 99) {
       throw const StorageIoException('rejected user version');

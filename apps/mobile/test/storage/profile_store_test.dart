@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -190,7 +191,111 @@ void main() {
       () => rejectSchemaUpgrade(2, 1),
       throwsA(isA<StorageSchemaException>()),
     );
+    expect(
+      () => rejectSchemaUpgrade(2, 4),
+      throwsA(isA<StorageSchemaException>()),
+    );
   });
+
+  test('schema 2 gains assessment tables and keeps the intake row', () async {
+    const String document =
+        '{"draft_version":1,"intent":"fitness","notice_id":null,"schema_ack":null,"goals":[],"equipment":[],"areas":[],"note":"kept","severity":0,"step":"intent"}';
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    final File file = store.openDatabaseFile!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    await store.close();
+
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    raw.execute('DROP TABLE IF EXISTS assessment_drafts');
+    raw.execute('DROP TABLE IF EXISTS assessment_records');
+    raw.execute('DELETE FROM intake_drafts');
+    raw.execute(
+      'INSERT INTO intake_drafts (subject_id, document_json, updated_at_ms) VALUES (?, ?, ?)',
+      <Object>[subjectId, document, 5],
+    );
+    raw.execute('PRAGMA user_version = 2');
+    raw.close();
+
+    await store.reopenActive();
+    expect(await store.loadDraft(), document);
+    await store.close();
+
+    final Database upgraded = sqlite3.open(file.path);
+    applyEncryptionSetup(upgraded, keyHex);
+    expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 3);
+    expect(
+      upgraded
+          .select('SELECT document_json FROM intake_drafts')
+          .first
+          .columnAt(0),
+      document,
+    );
+    expect(
+      upgraded
+          .select('SELECT payload_text FROM local_events')
+          .first
+          .columnAt(0),
+      storageProbePayload,
+    );
+    final ResultSet tables = upgraded.select(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('assessment_drafts', 'assessment_records')",
+    );
+    expect(tables, hasLength(2));
+    upgraded.close();
+  });
+
+  test('assessment record round-trips and uses the store clock', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    const String record =
+        '{"record_version":1,"instrument_id":"syn-assessment-core"}';
+    const String draft = '{"record_version":1}';
+    await store.saveAssessmentRecord(record);
+    await store.saveAssessmentDraft(draft);
+    expect(await store.loadAssessmentRecord(), record);
+    expect(await store.loadAssessmentDraft(), draft);
+    final File file = store.openDatabaseFile!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    await store.close();
+
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    final ResultSet rows = raw.select(
+      'SELECT document_json, updated_at_ms FROM assessment_records',
+    );
+    expect(rows, hasLength(1));
+    expect(rows.first.columnAt(0), record);
+    expect(
+      rows.first.columnAt(1),
+      DateTime.utc(2026, 1, 2, 3, 4, 5).millisecondsSinceEpoch,
+    );
+    raw.close();
+
+    await store.reopenActive();
+    await store.deleteAssessmentDraft();
+    expect(await store.loadAssessmentDraft(), isNull);
+    expect(await store.loadAssessmentRecord(), record);
+    await store.deleteAssessmentRecord();
+    expect(await store.loadAssessmentRecord(), isNull);
+  });
+
+  test(
+    'checkpoint removes the instrument id bytes from the profile directory',
+    () async {
+      final ProfileStore store = openStore();
+      await store.createProfile();
+      await store.saveAssessmentRecord(
+        '{"instrument_id":"syn-assessment-core","record_version":1}',
+      );
+      await store.checkpoint();
+      _expectMarkerAbsent(
+        store.openDatabaseFile!.parent,
+        'syn-assessment-core',
+      );
+    },
+  );
 
   test('an invalid subject never becomes a path', () async {
     final ProfileStore store = openStore();
@@ -231,6 +336,17 @@ bool _startsWithSqliteHeader(File file) {
     }
   }
   return true;
+}
+
+void _expectMarkerAbsent(Directory directory, String marker) {
+  final List<int> needle = utf8.encode(marker);
+  for (final FileSystemEntity entity in directory.listSync(recursive: true)) {
+    if (entity is! File) {
+      continue;
+    }
+    final List<int> bytes = entity.readAsBytesSync();
+    expect(_containsBytes(bytes, needle), isFalse, reason: entity.path);
+  }
 }
 
 void _expectNoProbeMarker(Directory directory) {

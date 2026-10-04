@@ -1,4 +1,4 @@
-use helpmemove_content::{Equipment, Goal, Region};
+use helpmemove_content::{Equipment, Goal, MovementRating, Region, parse_assessment_instrument};
 use helpmemove_domain::{
     BRIDGE_VERSION, Confidence, DomainError, DomainInstant, Laterality, SubjectId,
     elapsed_millis as domain_elapsed_millis, length_mm_to_inch_thousandths,
@@ -10,6 +10,8 @@ use helpmemove_safety::{
 };
 
 const COMMITTED_RULE: &str = include_str!("../../../../content/rules/syn-safety-core.json");
+const COMMITTED_INSTRUMENT: &str =
+    include_str!("../../../../content/assessments/syn-assessment-core.json");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeError {
@@ -23,6 +25,8 @@ pub enum BridgeError {
     InvalidRegion,
     InvalidGoal,
     InvalidEquipment,
+    InvalidRating,
+    InvalidInstrument,
 }
 
 impl BridgeError {
@@ -39,6 +43,8 @@ impl BridgeError {
             Self::InvalidRegion => "invalid-region",
             Self::InvalidGoal => "invalid-goal",
             Self::InvalidEquipment => "invalid-equipment",
+            Self::InvalidRating => "invalid-rating",
+            Self::InvalidInstrument => "invalid-instrument",
         }
     }
 }
@@ -87,6 +93,17 @@ pub struct SafetyView {
     pub permits_ordinary_generation: bool,
     pub emergency_display: String,
     pub emergency_code: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AssessmentVocabulary {
+    pub ratings: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AssessmentInstrumentView {
+    pub instrument_id: String,
+    pub instrument_version: i64,
 }
 
 #[flutter_rust_bridge::frb(sync)]
@@ -241,6 +258,48 @@ pub fn classify_committed_rule(
     }
 }
 
+/// Ratings in fixture order. This list is not sorted.
+#[flutter_rust_bridge::frb(sync)]
+pub fn assessment_vocabulary() -> AssessmentVocabulary {
+    AssessmentVocabulary {
+        ratings: [
+            MovementRating::Normal,
+            MovementRating::Limited,
+            MovementRating::Painful,
+            MovementRating::VeryPainful,
+            MovementRating::Unable,
+        ]
+        .into_iter()
+        .map(|rating| rating.as_str().to_owned())
+        .collect(),
+    }
+}
+
+/// Accept a movement-rating token. Invalid input does not echo the raw value.
+#[flutter_rust_bridge::frb(sync)]
+pub fn accept_rating(raw: String) -> Result<String, BridgeError> {
+    match MovementRating::parse(&raw) {
+        Some(rating) => Ok(rating.as_str().to_owned()),
+        None => Err(BridgeError::InvalidRating),
+    }
+}
+
+/// Load the committed fixture id and version. A parse failure is `InvalidInstrument`.
+#[flutter_rust_bridge::frb(sync)]
+pub fn load_committed_instrument() -> Result<AssessmentInstrumentView, BridgeError> {
+    instrument_view(COMMITTED_INSTRUMENT)
+}
+
+fn instrument_view(text: &str) -> Result<AssessmentInstrumentView, BridgeError> {
+    match parse_assessment_instrument(text) {
+        Ok(instrument) => Ok(AssessmentInstrumentView {
+            instrument_id: instrument.instrument_id.to_owned(),
+            instrument_version: i64::from(instrument.instrument_version),
+        }),
+        Err(_) => Err(BridgeError::InvalidInstrument),
+    }
+}
+
 fn sorted<const N: usize>(values: [&'static str; N]) -> Vec<String> {
     let mut values = values;
     values.sort_unstable();
@@ -304,7 +363,17 @@ fn escalation_name(escalation: Escalation) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::probe_contained_panic;
+    use super::{BridgeError, instrument_view, probe_contained_panic};
+
+    #[test]
+    fn a_bad_instrument_document_is_invalid_instrument() {
+        let text =
+            r#"{"instrument_id":"clinical-shoulder","instrument_version":1,"ratings":["normal"]}"#;
+        let error = instrument_view(text).expect_err("bad instrument");
+        assert_eq!(error, BridgeError::InvalidInstrument);
+        assert_eq!(error.code(), "invalid-instrument");
+        assert!(!error.to_string().contains("clinical-shoulder"));
+    }
 
     #[test]
     fn probe_panic_is_caught() {

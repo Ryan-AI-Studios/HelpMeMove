@@ -8,8 +8,10 @@ import 'package:helpmemove/design/screens/home_screen.dart';
 import 'package:helpmemove/design/screens/key_loss_screen.dart';
 import 'package:helpmemove/design/screens/not_found_screen.dart';
 import 'package:helpmemove/design/screens/storage_failure_screen.dart';
+import 'package:helpmemove/assessment/assessment_flow.dart';
 import 'package:helpmemove/design/shell/app_shell.dart';
 import 'package:helpmemove/intake/intake_flow.dart';
+import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 
 class StorageRecovery {
@@ -20,6 +22,15 @@ class StorageRecovery {
 }
 
 /// Recovery can clear this after the app has already started on a failure route.
+/// Starts false for each router. A query parameter cannot open it.
+class _MovementGate {
+  bool open = false;
+
+  void allow() {
+    open = true;
+  }
+}
+
 class _IntakeAccess extends ChangeNotifier {
   _IntakeAccess({required this._blocked});
 
@@ -42,10 +53,12 @@ GoRouter buildHelpMeMoveRouter({
   ProfileStore? store,
   ProfileStore? Function()? readStore,
   bool storageBlocked = false,
+  SafetyView? previewSafetyView,
 }) {
   final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
   final _IntakeAccess access = _IntakeAccess(blocked: storageBlocked);
+  final _MovementGate movement = _MovementGate();
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: false,
@@ -88,7 +101,31 @@ GoRouter buildHelpMeMoveRouter({
                       if (profile == null || access.blocked) {
                         return const IntakeUnavailable();
                       }
-                      return IntakeFlow(store: profile, initialStep: step);
+                      return IntakeFlow(
+                        store: profile,
+                        initialStep: step,
+                        onContinue: () {
+                          movement.allow();
+                          context.go('/focus/assessment?step=intro');
+                        },
+                        previewSafetyView: previewSafetyView,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'assessment',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (!movement.open) {
+                        return const AssessmentBlocked();
+                      }
+                      if (profile == null || access.blocked) {
+                        return const AssessmentUnavailable();
+                      }
+                      final String step =
+                          state.uri.queryParameters['step'] ?? 'intro';
+                      return AssessmentFlow(store: profile, initialStep: step);
                     },
                   ),
                 ],
