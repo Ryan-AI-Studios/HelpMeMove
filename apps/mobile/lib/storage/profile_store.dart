@@ -105,6 +105,39 @@ class ProfileStore {
 
   Future<void> close() => _closeCurrent();
 
+  Future<void> saveDraft(String documentJson) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await database
+        .into(database.intakeDrafts)
+        .insertOnConflictUpdate(
+          IntakeDraftsCompanion.insert(
+            subjectId: subjectId,
+            documentJson: documentJson,
+            updatedAtMs: _now(),
+          ),
+        );
+  }
+
+  Future<String?> loadDraft() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final IntakeDraft? row =
+        await (database.select(
+              database.intakeDrafts,
+            )..where((IntakeDrafts table) => table.subjectId.equals(subjectId)))
+            .getSingleOrNull();
+    return row?.documentJson;
+  }
+
+  Future<void> deleteDraft() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await (database.delete(
+      database.intakeDrafts,
+    )..where((IntakeDrafts table) => table.subjectId.equals(subjectId))).go();
+  }
+
   Future<void> writeUserVersion(int version) async {
     if (version < 0 || version > 99) {
       throw const StorageIoException('rejected user version');

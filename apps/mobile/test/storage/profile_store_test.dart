@@ -183,7 +183,11 @@ void main() {
 
   test('schema upgrade is rejected', () {
     expect(
-      () => rejectSchemaUpgrade(1, 2),
+      () => rejectSchemaUpgrade(1, 3),
+      throwsA(isA<StorageSchemaException>()),
+    );
+    expect(
+      () => rejectSchemaUpgrade(2, 1),
       throwsA(isA<StorageSchemaException>()),
     );
   });

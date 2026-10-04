@@ -14,6 +14,8 @@ class StorageController {
   final Future<ProfileStore> Function() buildStore;
   ProfileStore? _store;
 
+  ProfileStore? get store => _store;
+
   factory StorageController.production() {
     return StorageController(
       buildStore: () async {

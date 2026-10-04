@@ -70,6 +70,84 @@ pub enum Equipment {
     Mat,
 }
 
+impl Region {
+    /// Closed content token. Unknown strings, including joint names, are `None`.
+    pub fn parse(raw: &str) -> Option<Self> {
+        Some(match raw {
+            "head_neck" => Self::HeadNeck,
+            "shoulder" => Self::Shoulder,
+            "arm" => Self::Arm,
+            "torso" => Self::Torso,
+            "pelvis" => Self::Pelvis,
+            "leg" => Self::Leg,
+            "foot" => Self::Foot,
+            _ => return None,
+        })
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::HeadNeck => "head_neck",
+            Self::Shoulder => "shoulder",
+            Self::Arm => "arm",
+            Self::Torso => "torso",
+            Self::Pelvis => "pelvis",
+            Self::Leg => "leg",
+            Self::Foot => "foot",
+        }
+    }
+}
+
+impl Goal {
+    pub fn parse(raw: &str) -> Option<Self> {
+        Some(match raw {
+            "strength" => Self::Strength,
+            "mobility" => Self::Mobility,
+            "stability" => Self::Stability,
+            "conditioning" => Self::Conditioning,
+            "control" => Self::Control,
+            _ => return None,
+        })
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Strength => "strength",
+            Self::Mobility => "mobility",
+            Self::Stability => "stability",
+            Self::Conditioning => "conditioning",
+            Self::Control => "control",
+        }
+    }
+}
+
+impl Equipment {
+    pub fn parse(raw: &str) -> Option<Self> {
+        Some(match raw {
+            "bodyweight" => Self::Bodyweight,
+            "resistance_band" => Self::ResistanceBand,
+            "dumbbell" => Self::Dumbbell,
+            "chair" => Self::Chair,
+            "wall" => Self::Wall,
+            "towel" => Self::Towel,
+            "mat" => Self::Mat,
+            _ => return None,
+        })
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Bodyweight => "bodyweight",
+            Self::ResistanceBand => "resistance_band",
+            Self::Dumbbell => "dumbbell",
+            Self::Chair => "chair",
+            Self::Wall => "wall",
+            Self::Towel => "towel",
+            Self::Mat => "mat",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Position {
     Standing,

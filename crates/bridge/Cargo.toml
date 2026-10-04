@@ -10,7 +10,9 @@ crate-type = ["lib", "staticlib", "cdylib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.13.0"
+helpmemove_content = { path = "../content", version = "0.1.0" }
 helpmemove_domain = { path = "../domain", version = "0.1.0" }
+helpmemove_safety = { path = "../safety", version = "0.1.0" }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

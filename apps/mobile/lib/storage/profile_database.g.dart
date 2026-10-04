@@ -664,11 +664,291 @@ class LocalEventsCompanion extends UpdateCompanion<LocalEvent> {
   }
 }
 
+class $IntakeDraftsTable extends IntakeDrafts
+    with TableInfo<$IntakeDraftsTable, IntakeDraft> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IntakeDraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentJsonMeta = const VerificationMeta(
+    'documentJson',
+  );
+  @override
+  late final GeneratedColumn<String> documentJson = GeneratedColumn<String>(
+    'document_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [subjectId, documentJson, updatedAtMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'intake_drafts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IntakeDraft> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('document_json')) {
+      context.handle(
+        _documentJsonMeta,
+        documentJson.isAcceptableOrUnknown(
+          data['document_json']!,
+          _documentJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentJsonMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId};
+  @override
+  IntakeDraft map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IntakeDraft(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      documentJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_json'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $IntakeDraftsTable createAlias(String alias) {
+    return $IntakeDraftsTable(attachedDatabase, alias);
+  }
+}
+
+class IntakeDraft extends DataClass implements Insertable<IntakeDraft> {
+  final String subjectId;
+  final String documentJson;
+  final int updatedAtMs;
+  const IntakeDraft({
+    required this.subjectId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['document_json'] = Variable<String>(documentJson);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  IntakeDraftsCompanion toCompanion(bool nullToAbsent) {
+    return IntakeDraftsCompanion(
+      subjectId: Value(subjectId),
+      documentJson: Value(documentJson),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory IntakeDraft.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IntakeDraft(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      documentJson: serializer.fromJson<String>(json['documentJson']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'documentJson': serializer.toJson<String>(documentJson),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  IntakeDraft copyWith({
+    String? subjectId,
+    String? documentJson,
+    int? updatedAtMs,
+  }) => IntakeDraft(
+    subjectId: subjectId ?? this.subjectId,
+    documentJson: documentJson ?? this.documentJson,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  IntakeDraft copyWithCompanion(IntakeDraftsCompanion data) {
+    return IntakeDraft(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      documentJson: data.documentJson.present
+          ? data.documentJson.value
+          : this.documentJson,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntakeDraft(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, documentJson, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IntakeDraft &&
+          other.subjectId == this.subjectId &&
+          other.documentJson == this.documentJson &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class IntakeDraftsCompanion extends UpdateCompanion<IntakeDraft> {
+  final Value<String> subjectId;
+  final Value<String> documentJson;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const IntakeDraftsCompanion({
+    this.subjectId = const Value.absent(),
+    this.documentJson = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IntakeDraftsCompanion.insert({
+    required String subjectId,
+    required String documentJson,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       documentJson = Value(documentJson),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<IntakeDraft> custom({
+    Expression<String>? subjectId,
+    Expression<String>? documentJson,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (documentJson != null) 'document_json': documentJson,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IntakeDraftsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? documentJson,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return IntakeDraftsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      documentJson: documentJson ?? this.documentJson,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (documentJson.present) {
+      map['document_json'] = Variable<String>(documentJson.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntakeDraftsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
   late final $LocalProfilesTable localProfiles = $LocalProfilesTable(this);
   late final $LocalEventsTable localEvents = $LocalEventsTable(this);
+  late final $IntakeDraftsTable intakeDrafts = $IntakeDraftsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -676,6 +956,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     localProfiles,
     localEvents,
+    intakeDrafts,
   ];
 }
 
@@ -1073,6 +1354,183 @@ typedef $$LocalEventsTableProcessedTableManager =
       LocalEvent,
       PrefetchHooks Function()
     >;
+typedef $$IntakeDraftsTableCreateCompanionBuilder =
+    IntakeDraftsCompanion Function({
+      required String subjectId,
+      required String documentJson,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$IntakeDraftsTableUpdateCompanionBuilder =
+    IntakeDraftsCompanion Function({
+      Value<String> subjectId,
+      Value<String> documentJson,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$IntakeDraftsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $IntakeDraftsTable> {
+  $$IntakeDraftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$IntakeDraftsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $IntakeDraftsTable> {
+  $$IntakeDraftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$IntakeDraftsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $IntakeDraftsTable> {
+  $$IntakeDraftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$IntakeDraftsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $IntakeDraftsTable,
+          IntakeDraft,
+          $$IntakeDraftsTableFilterComposer,
+          $$IntakeDraftsTableOrderingComposer,
+          $$IntakeDraftsTableAnnotationComposer,
+          $$IntakeDraftsTableCreateCompanionBuilder,
+          $$IntakeDraftsTableUpdateCompanionBuilder,
+          (
+            IntakeDraft,
+            BaseReferences<_$ProfileDatabase, $IntakeDraftsTable, IntakeDraft>,
+          ),
+          IntakeDraft,
+          PrefetchHooks Function()
+        > {
+  $$IntakeDraftsTableTableManager(
+    _$ProfileDatabase db,
+    $IntakeDraftsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IntakeDraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IntakeDraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IntakeDraftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> documentJson = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IntakeDraftsCompanion(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String documentJson,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => IntakeDraftsCompanion.insert(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$IntakeDraftsTable, IntakeDraft>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $IntakeDraftsTable,
+                    IntakeDraft
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$IntakeDraftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $IntakeDraftsTable,
+      IntakeDraft,
+      $$IntakeDraftsTableFilterComposer,
+      $$IntakeDraftsTableOrderingComposer,
+      $$IntakeDraftsTableAnnotationComposer,
+      $$IntakeDraftsTableCreateCompanionBuilder,
+      $$IntakeDraftsTableUpdateCompanionBuilder,
+      (
+        IntakeDraft,
+        BaseReferences<_$ProfileDatabase, $IntakeDraftsTable, IntakeDraft>,
+      ),
+      IntakeDraft,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -1081,4 +1539,6 @@ class $ProfileDatabaseManager {
       $$LocalProfilesTableTableManager(_db, _db.localProfiles);
   $$LocalEventsTableTableManager get localEvents =>
       $$LocalEventsTableTableManager(_db, _db.localEvents);
+  $$IntakeDraftsTableTableManager get intakeDrafts =>
+      $$IntakeDraftsTableTableManager(_db, _db.intakeDrafts);
 }
