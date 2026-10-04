@@ -1,0 +1,19 @@
+[package]
+name = "helpmemove_safety"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+helpmemove_domain = { path = "../domain", version = "0.1.0" }
+helpmemove_content = { path = "../content", version = "0.1.0" }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+
+[dev-dependencies]
+helpmemove_content = { path = "../content", version = "0.1.0" }
+
+[[bin]]
+name = "validate-rules"
+path = "src/bin/validate_rules.rs"

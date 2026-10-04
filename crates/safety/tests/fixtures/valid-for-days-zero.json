@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "rule_set_id": "syn-zero",
+  "rule_set_version": 1,
+  "approval_status": "synthetic",
+  "author": "",
+  "reviewer": "",
+  "clinical_approver": "",
+  "approval_date": "",
+  "last_reviewed": "",
+  "evidence_references": [],
+  "populations": ["unreviewed_synthetic"],
+  "valid_for_days": 0,
+  "rescreen_tokens": [],
+  "eligibility": [{ "token": "schema_ack", "equals": "yes" }],
+  "triage": [
+    { "token": "schema_green", "equals": "present", "level": "green", "restrictions": [] }
+  ],
+  "interrupts": [{ "token": "schema_continue", "action": "continue" }],
+  "emergency_rows": []
+}
