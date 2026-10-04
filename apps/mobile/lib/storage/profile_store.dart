@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -31,6 +33,27 @@ class ProfileStore {
   final Future<void> Function(String path) excludeFromBackup;
 
   ProfileDatabase? _database;
+  Completer<void>? _workoutTurn;
+
+  /// Tests override this to occupy the workout write queue.
+  Future<void> onWorkoutQueueEntered() async {}
+
+  Future<T> _queuedWorkout<T>(Future<T> Function() action) async {
+    final Completer<void> turn = Completer<void>();
+    final Future<void>? earlier = _workoutTurn?.future;
+    _workoutTurn = turn;
+    if (earlier != null) {
+      await earlier;
+    }
+    try {
+      return await action();
+    } finally {
+      if (identical(_workoutTurn, turn)) {
+        _workoutTurn = null;
+      }
+      turn.complete();
+    }
+  }
 
   Future<String> openActive() async {
     try {
@@ -237,6 +260,182 @@ class ProfileStore {
     await (database.delete(
       database.programRecords,
     )..where((ProgramRecords table) => table.subjectId.equals(subjectId))).go();
+  }
+
+  /// Store-generated session id. The client does not supply it.
+  String newSessionId() => _newEventId();
+
+  Future<void> saveWorkoutDraft(String documentJson) {
+    return _queuedWorkout(() => _saveWorkoutDraftNow(documentJson));
+  }
+
+  Future<void> _saveWorkoutDraftNow(String documentJson) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final String? sessionId = _sessionIdIn(documentJson);
+    if (sessionId != null && await _workoutRecordExists(subjectId, sessionId)) {
+      return;
+    }
+    await database
+        .into(database.workoutDrafts)
+        .insertOnConflictUpdate(
+          WorkoutDraftsCompanion.insert(
+            subjectId: subjectId,
+            documentJson: documentJson,
+            updatedAtMs: _now(),
+          ),
+        );
+  }
+
+  Future<String?> loadWorkoutDraft() {
+    return _queuedWorkout(_loadWorkoutDraftNow);
+  }
+
+  Future<String?> _loadWorkoutDraftNow() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final WorkoutDraft? row =
+        await (database.select(database.workoutDrafts)..where(
+              (WorkoutDrafts table) => table.subjectId.equals(subjectId),
+            ))
+            .getSingleOrNull();
+    final String? documentJson = row?.documentJson;
+    if (documentJson == null) {
+      return null;
+    }
+    final String? sessionId = _sessionIdIn(documentJson);
+    if (sessionId != null && await _workoutRecordExists(subjectId, sessionId)) {
+      await _deleteWorkoutDraftNow(subjectId);
+      return null;
+    }
+    return documentJson;
+  }
+
+  Future<void> deleteWorkoutDraft() {
+    return _queuedWorkout(() => _deleteWorkoutDraftNow(_requireActive()));
+  }
+
+  Future<void> _deleteWorkoutDraftNow(String subjectId) async {
+    final ProfileDatabase database = _requireDatabase();
+    await (database.delete(
+      database.workoutDrafts,
+    )..where((WorkoutDrafts table) => table.subjectId.equals(subjectId))).go();
+  }
+
+  Future<void> saveWorkoutTerminal({
+    required String sessionId,
+    required String documentJson,
+  }) {
+    return _queuedWorkout(() async {
+      await onWorkoutQueueEntered();
+      final ProfileDatabase database = _requireDatabase();
+      final String subjectId = _requireActive();
+      await database.transaction(() async {
+        await database
+            .into(database.workoutRecords)
+            .insert(
+              WorkoutRecordsCompanion.insert(
+                subjectId: subjectId,
+                sessionId: sessionId,
+                documentJson: documentJson,
+                updatedAtMs: _now(),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+        await _deleteWorkoutDraftNow(subjectId);
+      });
+    });
+  }
+
+  Future<bool> _workoutRecordExists(String subjectId, String sessionId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final WorkoutRecord? row =
+        await (database.select(database.workoutRecords)..where(
+              (WorkoutRecords table) =>
+                  table.subjectId.equals(subjectId) &
+                  table.sessionId.equals(sessionId),
+            ))
+            .getSingleOrNull();
+    return row != null;
+  }
+
+  String? _sessionIdIn(String documentJson) {
+    try {
+      final Object? decoded = jsonDecode(documentJson);
+      if (decoded is! Map) {
+        return null;
+      }
+      final Object? sessionId = decoded['session_id'];
+      if (sessionId is String && sessionId.isNotEmpty) {
+        return sessionId;
+      }
+    } on FormatException {
+      return null;
+    }
+    return null;
+  }
+
+  Future<List<String>> workoutRecordDocuments() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final List<WorkoutRecord> rows =
+        await (database.select(database.workoutRecords)..where(
+              (WorkoutRecords table) => table.subjectId.equals(subjectId),
+            ))
+            .get();
+    return <String>[for (final WorkoutRecord row in rows) row.documentJson];
+  }
+
+  Future<int> workoutRecordCount() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final List<WorkoutRecord> rows =
+        await (database.select(database.workoutRecords)..where(
+              (WorkoutRecords table) => table.subjectId.equals(subjectId),
+            ))
+            .get();
+    return rows.length;
+  }
+
+  Future<int?> workoutRecordUpdatedAtMs(String sessionId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final WorkoutRecord? row =
+        await (database.select(database.workoutRecords)..where(
+              (WorkoutRecords table) =>
+                  table.subjectId.equals(subjectId) &
+                  table.sessionId.equals(sessionId),
+            ))
+            .getSingleOrNull();
+    return row?.updatedAtMs;
+  }
+
+  /// Insert then throw. The transaction rolls back, so the draft stays.
+  Future<void> interruptWorkoutSave({
+    required String sessionId,
+    required String documentJson,
+  }) {
+    return _queuedWorkout(() async {
+      final ProfileDatabase database = _requireDatabase();
+      final String subjectId = _requireActive();
+      try {
+        await database.transaction(() async {
+          await database
+              .into(database.workoutRecords)
+              .insert(
+                WorkoutRecordsCompanion.insert(
+                  subjectId: subjectId,
+                  sessionId: sessionId,
+                  documentJson: documentJson,
+                  updatedAtMs: _now(),
+                ),
+              );
+          throw const StorageIoException('interrupted write');
+        });
+      } on StorageIoException {
+        return;
+      }
+    });
   }
 
   Future<void> writeUserVersion(int version) async {

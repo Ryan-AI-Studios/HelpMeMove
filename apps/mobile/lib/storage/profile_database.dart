@@ -79,6 +79,36 @@ class ProgramRecords extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
 }
 
+class WorkoutDrafts extends Table {
+  @override
+  String get tableName => 'workout_drafts';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get documentJson => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
+}
+
+class WorkoutRecords extends Table {
+  @override
+  String get tableName => 'workout_records';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get sessionId => text()();
+
+  TextColumn get documentJson => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId, sessionId};
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -134,6 +164,8 @@ QueryExecutor openEncryptedExecutor({
     AssessmentDrafts,
     AssessmentRecords,
     ProgramRecords,
+    WorkoutDrafts,
+    WorkoutRecords,
   ],
 )
 class ProfileDatabase extends _$ProfileDatabase {
@@ -143,7 +175,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -162,6 +194,11 @@ class ProfileDatabase extends _$ProfileDatabase {
       }
       if (from == 3 && to == 4) {
         await migrator.createTable(programRecords);
+        return;
+      }
+      if (from == 4 && to == 5) {
+        await migrator.createTable(workoutDrafts);
+        await migrator.createTable(workoutRecords);
         return;
       }
       rejectSchemaUpgrade(from, to);

@@ -82,6 +82,9 @@ pub enum ContentError {
     Date,
     Io,
     InvalidDocument,
+    InvalidSession,
+    SessionClosed,
+    ClockWentBackwards,
 }
 
 impl ContentError {
@@ -124,6 +127,9 @@ impl ContentError {
             Self::Date => "date".to_owned(),
             Self::Io => "io".to_owned(),
             Self::InvalidDocument => "invalid-document".to_owned(),
+            Self::InvalidSession => "invalid-session".to_owned(),
+            Self::SessionClosed => "session-closed".to_owned(),
+            Self::ClockWentBackwards => "clock-went-backwards".to_owned(),
         }
     }
 }

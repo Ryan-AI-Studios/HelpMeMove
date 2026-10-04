@@ -6,6 +6,7 @@ mod assessment;
 mod error;
 mod model;
 mod program;
+mod session;
 mod validate;
 
 pub use assessment::{AssessmentInstrument, MovementRating, parse_assessment_instrument};
@@ -18,5 +19,9 @@ pub use model::{
 pub use program::{
     AssessedArea, ProgramIntake, ProgramRule, StartingExercise, parse_program_rule,
     read_program_assessment, read_program_intake, render_starting_program,
+};
+pub use session::{
+    Session, SessionEvent, SessionExercise, SessionState, Symptom, apply_session_event,
+    open_session, parse_session, read_session_event, render_session,
 };
 pub use validate::{check_media, link_library, load_exercise_dir, parse_exercise};

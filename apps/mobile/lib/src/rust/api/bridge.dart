@@ -7,9 +7,9 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `decision_fields`, `embedded_exercises`, `emergency_fields`, `escalation_name`, `instrument_view`, `program_rule_view`, `ready`, `sorted`, `triage_name`, `withheld_plan`, `withheld`
+// These functions are ignored because they are not marked as `pub`: `decision_fields`, `eligible_substitutions`, `embedded_exercises`, `emergency_fields`, `escalation_name`, `instrument_view`, `program_rule_view`, `ready`, `sorted`, `triage_name`, `withheld_plan`, `withheld`, `workout_from_content`, `workout_ready`, `workout_unavailable`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ProgramSelection`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `code`, `select_program`
 
 String bridgeVersion() => RustLib.instance.api.crateApiBridgeBridgeVersion();
@@ -101,6 +101,32 @@ StartingPlan composeStartingPlan({
   intakeDocument: intakeDocument,
   assessmentDocument: assessmentDocument,
   nowUnixMillis: nowUnixMillis,
+);
+
+/// Open a synthetic session from a stored program row.
+///
+/// Counts come from the embedded fixtures. This does not classify or screen.
+WorkoutView openWorkout({
+  required String programJson,
+  required PlatformInt64 monotonicMillis,
+  required String sessionId,
+}) => RustLib.instance.api.crateApiBridgeOpenWorkout(
+  programJson: programJson,
+  monotonicMillis: monotonicMillis,
+  sessionId: sessionId,
+);
+
+/// Apply one manual event. A substitute is screened here; content does not call safety.
+///
+/// The production classification is `schema_ack=yes` only, so the eligible list is empty.
+WorkoutView applyWorkoutEvent({
+  required String documentJson,
+  required String eventJson,
+  required PlatformInt64 monotonicMillis,
+}) => RustLib.instance.api.crateApiBridgeApplyWorkoutEvent(
+  documentJson: documentJson,
+  eventJson: eventJson,
+  monotonicMillis: monotonicMillis,
 );
 
 class AssessmentInstrumentView {
@@ -305,5 +331,30 @@ class StartingPlan {
           runtimeType == other.runtimeType &&
           outcome == other.outcome &&
           withholdCode == other.withholdCode &&
+          documentJson == other.documentJson;
+}
+
+class WorkoutView {
+  final String outcome;
+  final String errorCode;
+  final String documentJson;
+
+  const WorkoutView({
+    required this.outcome,
+    required this.errorCode,
+    required this.documentJson,
+  });
+
+  @override
+  int get hashCode =>
+      outcome.hashCode ^ errorCode.hashCode ^ documentJson.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WorkoutView &&
+          runtimeType == other.runtimeType &&
+          outcome == other.outcome &&
+          errorCode == other.errorCode &&
           documentJson == other.documentJson;
 }

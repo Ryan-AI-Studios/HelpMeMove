@@ -7,8 +7,10 @@ import 'package:helpmemove/design/app_spacing.dart';
 import 'package:helpmemove/design/components/primary_button.dart';
 import 'package:helpmemove/design/components/tertiary_button.dart';
 import 'package:helpmemove/intake/intake_draft.dart';
+import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
+import 'package:helpmemove/workout/session_document.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -40,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _entryReady = false;
   bool _hasDraft = false;
   String _resumeStep = 'intent';
+  String _workout = '';
+  bool _clearedDraft = false;
   GoRouter? _router;
   Listenable? _access;
   String? _lastPath;
@@ -153,6 +157,34 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {
       hasDraft = false;
     }
+    var workout = '';
+    var cleared = false;
+    try {
+      final String? raw = await store.loadWorkoutDraft();
+      if (raw != null) {
+        try {
+          LocalSession.decode(raw);
+          workout = 'resume';
+        } on LocalSessionException {
+          await store.deleteWorkoutDraft();
+          cleared = true;
+        }
+      }
+    } catch (_) {
+      workout = '';
+      cleared = false;
+    }
+    if (workout.isEmpty) {
+      try {
+        final String? raw = await store.loadProgramRecord();
+        if (raw != null) {
+          LocalProgram.decode(raw);
+          workout = 'start';
+        }
+      } catch (_) {
+        workout = '';
+      }
+    }
     if (!mounted || generation != _loadGeneration) {
       return;
     }
@@ -160,7 +192,21 @@ class _HomeScreenState extends State<HomeScreen> {
       _entryReady = true;
       _hasDraft = hasDraft;
       _resumeStep = step;
+      _workout = workout;
+      _clearedDraft = cleared;
     });
+  }
+
+  bool get _showCleared {
+    if (_clearedDraft) {
+      return true;
+    }
+    try {
+      return GoRouterState.of(context).uri.queryParameters['workout'] ==
+          'cleared';
+    } catch (_) {
+      return false;
+    }
   }
 
   void _runBridgeCheck() {
@@ -226,6 +272,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          if (widget.liveStore != null &&
+                              !widget.blockedNow &&
+                              _entryReady &&
+                              _workout.isNotEmpty) ...[
+                            PrimaryButton(
+                              label: _workout == 'resume'
+                                  ? 'Resume workout'
+                                  : 'Start workout',
+                              onPressed: () => context.go('/focus/workout'),
+                            ),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
+                          if (_showCleared) ...[
+                            const Text(
+                              'The saved workout could not be read. It was cleared.',
+                            ),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
                           if (widget.liveStore != null &&
                               !widget.blockedNow &&
                               _entryReady) ...[
