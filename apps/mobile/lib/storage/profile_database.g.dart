@@ -1781,6 +1781,616 @@ class ProgramRecordsCompanion extends UpdateCompanion<ProgramRecord> {
   }
 }
 
+class $WorkoutDraftsTable extends WorkoutDrafts
+    with TableInfo<$WorkoutDraftsTable, WorkoutDraft> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorkoutDraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentJsonMeta = const VerificationMeta(
+    'documentJson',
+  );
+  @override
+  late final GeneratedColumn<String> documentJson = GeneratedColumn<String>(
+    'document_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [subjectId, documentJson, updatedAtMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'workout_drafts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WorkoutDraft> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('document_json')) {
+      context.handle(
+        _documentJsonMeta,
+        documentJson.isAcceptableOrUnknown(
+          data['document_json']!,
+          _documentJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentJsonMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId};
+  @override
+  WorkoutDraft map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WorkoutDraft(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      documentJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_json'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $WorkoutDraftsTable createAlias(String alias) {
+    return $WorkoutDraftsTable(attachedDatabase, alias);
+  }
+}
+
+class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
+  final String subjectId;
+  final String documentJson;
+  final int updatedAtMs;
+  const WorkoutDraft({
+    required this.subjectId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['document_json'] = Variable<String>(documentJson);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  WorkoutDraftsCompanion toCompanion(bool nullToAbsent) {
+    return WorkoutDraftsCompanion(
+      subjectId: Value(subjectId),
+      documentJson: Value(documentJson),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory WorkoutDraft.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WorkoutDraft(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      documentJson: serializer.fromJson<String>(json['documentJson']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'documentJson': serializer.toJson<String>(documentJson),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  WorkoutDraft copyWith({
+    String? subjectId,
+    String? documentJson,
+    int? updatedAtMs,
+  }) => WorkoutDraft(
+    subjectId: subjectId ?? this.subjectId,
+    documentJson: documentJson ?? this.documentJson,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  WorkoutDraft copyWithCompanion(WorkoutDraftsCompanion data) {
+    return WorkoutDraft(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      documentJson: data.documentJson.present
+          ? data.documentJson.value
+          : this.documentJson,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutDraft(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, documentJson, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkoutDraft &&
+          other.subjectId == this.subjectId &&
+          other.documentJson == this.documentJson &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class WorkoutDraftsCompanion extends UpdateCompanion<WorkoutDraft> {
+  final Value<String> subjectId;
+  final Value<String> documentJson;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const WorkoutDraftsCompanion({
+    this.subjectId = const Value.absent(),
+    this.documentJson = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorkoutDraftsCompanion.insert({
+    required String subjectId,
+    required String documentJson,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       documentJson = Value(documentJson),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<WorkoutDraft> custom({
+    Expression<String>? subjectId,
+    Expression<String>? documentJson,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (documentJson != null) 'document_json': documentJson,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorkoutDraftsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? documentJson,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return WorkoutDraftsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      documentJson: documentJson ?? this.documentJson,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (documentJson.present) {
+      map['document_json'] = Variable<String>(documentJson.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutDraftsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WorkoutRecordsTable extends WorkoutRecords
+    with TableInfo<$WorkoutRecordsTable, WorkoutRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorkoutRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentJsonMeta = const VerificationMeta(
+    'documentJson',
+  );
+  @override
+  late final GeneratedColumn<String> documentJson = GeneratedColumn<String>(
+    'document_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    subjectId,
+    sessionId,
+    documentJson,
+    updatedAtMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'workout_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WorkoutRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('document_json')) {
+      context.handle(
+        _documentJsonMeta,
+        documentJson.isAcceptableOrUnknown(
+          data['document_json']!,
+          _documentJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentJsonMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId, sessionId};
+  @override
+  WorkoutRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WorkoutRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      documentJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_json'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $WorkoutRecordsTable createAlias(String alias) {
+    return $WorkoutRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class WorkoutRecord extends DataClass implements Insertable<WorkoutRecord> {
+  final String subjectId;
+  final String sessionId;
+  final String documentJson;
+  final int updatedAtMs;
+  const WorkoutRecord({
+    required this.subjectId,
+    required this.sessionId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['session_id'] = Variable<String>(sessionId);
+    map['document_json'] = Variable<String>(documentJson);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  WorkoutRecordsCompanion toCompanion(bool nullToAbsent) {
+    return WorkoutRecordsCompanion(
+      subjectId: Value(subjectId),
+      sessionId: Value(sessionId),
+      documentJson: Value(documentJson),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory WorkoutRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WorkoutRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      documentJson: serializer.fromJson<String>(json['documentJson']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'documentJson': serializer.toJson<String>(documentJson),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  WorkoutRecord copyWith({
+    String? subjectId,
+    String? sessionId,
+    String? documentJson,
+    int? updatedAtMs,
+  }) => WorkoutRecord(
+    subjectId: subjectId ?? this.subjectId,
+    sessionId: sessionId ?? this.sessionId,
+    documentJson: documentJson ?? this.documentJson,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  WorkoutRecord copyWithCompanion(WorkoutRecordsCompanion data) {
+    return WorkoutRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      documentJson: data.documentJson.present
+          ? data.documentJson.value
+          : this.documentJson,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(subjectId, sessionId, documentJson, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkoutRecord &&
+          other.subjectId == this.subjectId &&
+          other.sessionId == this.sessionId &&
+          other.documentJson == this.documentJson &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class WorkoutRecordsCompanion extends UpdateCompanion<WorkoutRecord> {
+  final Value<String> subjectId;
+  final Value<String> sessionId;
+  final Value<String> documentJson;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const WorkoutRecordsCompanion({
+    this.subjectId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.documentJson = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorkoutRecordsCompanion.insert({
+    required String subjectId,
+    required String sessionId,
+    required String documentJson,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       sessionId = Value(sessionId),
+       documentJson = Value(documentJson),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<WorkoutRecord> custom({
+    Expression<String>? subjectId,
+    Expression<String>? sessionId,
+    Expression<String>? documentJson,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (sessionId != null) 'session_id': sessionId,
+      if (documentJson != null) 'document_json': documentJson,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorkoutRecordsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? sessionId,
+    Value<String>? documentJson,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return WorkoutRecordsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      sessionId: sessionId ?? this.sessionId,
+      documentJson: documentJson ?? this.documentJson,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (documentJson.present) {
+      map['document_json'] = Variable<String>(documentJson.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutRecordsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
@@ -1793,6 +2403,8 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
   late final $AssessmentRecordsTable assessmentRecords =
       $AssessmentRecordsTable(this);
   late final $ProgramRecordsTable programRecords = $ProgramRecordsTable(this);
+  late final $WorkoutDraftsTable workoutDrafts = $WorkoutDraftsTable(this);
+  late final $WorkoutRecordsTable workoutRecords = $WorkoutRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1804,6 +2416,8 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
     assessmentDrafts,
     assessmentRecords,
     programRecords,
+    workoutDrafts,
+    workoutRecords,
   ];
 }
 
@@ -2932,6 +3546,387 @@ typedef $$ProgramRecordsTableProcessedTableManager =
       ProgramRecord,
       PrefetchHooks Function()
     >;
+typedef $$WorkoutDraftsTableCreateCompanionBuilder =
+    WorkoutDraftsCompanion Function({
+      required String subjectId,
+      required String documentJson,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$WorkoutDraftsTableUpdateCompanionBuilder =
+    WorkoutDraftsCompanion Function({
+      Value<String> subjectId,
+      Value<String> documentJson,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$WorkoutDraftsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $WorkoutDraftsTable> {
+  $$WorkoutDraftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WorkoutDraftsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $WorkoutDraftsTable> {
+  $$WorkoutDraftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WorkoutDraftsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $WorkoutDraftsTable> {
+  $$WorkoutDraftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$WorkoutDraftsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $WorkoutDraftsTable,
+          WorkoutDraft,
+          $$WorkoutDraftsTableFilterComposer,
+          $$WorkoutDraftsTableOrderingComposer,
+          $$WorkoutDraftsTableAnnotationComposer,
+          $$WorkoutDraftsTableCreateCompanionBuilder,
+          $$WorkoutDraftsTableUpdateCompanionBuilder,
+          (
+            WorkoutDraft,
+            BaseReferences<
+              _$ProfileDatabase,
+              $WorkoutDraftsTable,
+              WorkoutDraft
+            >,
+          ),
+          WorkoutDraft,
+          PrefetchHooks Function()
+        > {
+  $$WorkoutDraftsTableTableManager(
+    _$ProfileDatabase db,
+    $WorkoutDraftsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WorkoutDraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WorkoutDraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WorkoutDraftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> documentJson = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutDraftsCompanion(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String documentJson,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutDraftsCompanion.insert(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$WorkoutDraftsTable, WorkoutDraft>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $WorkoutDraftsTable,
+                    WorkoutDraft
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WorkoutDraftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $WorkoutDraftsTable,
+      WorkoutDraft,
+      $$WorkoutDraftsTableFilterComposer,
+      $$WorkoutDraftsTableOrderingComposer,
+      $$WorkoutDraftsTableAnnotationComposer,
+      $$WorkoutDraftsTableCreateCompanionBuilder,
+      $$WorkoutDraftsTableUpdateCompanionBuilder,
+      (
+        WorkoutDraft,
+        BaseReferences<_$ProfileDatabase, $WorkoutDraftsTable, WorkoutDraft>,
+      ),
+      WorkoutDraft,
+      PrefetchHooks Function()
+    >;
+typedef $$WorkoutRecordsTableCreateCompanionBuilder =
+    WorkoutRecordsCompanion Function({
+      required String subjectId,
+      required String sessionId,
+      required String documentJson,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$WorkoutRecordsTableUpdateCompanionBuilder =
+    WorkoutRecordsCompanion Function({
+      Value<String> subjectId,
+      Value<String> sessionId,
+      Value<String> documentJson,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$WorkoutRecordsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $WorkoutRecordsTable> {
+  $$WorkoutRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WorkoutRecordsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $WorkoutRecordsTable> {
+  $$WorkoutRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WorkoutRecordsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $WorkoutRecordsTable> {
+  $$WorkoutRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$WorkoutRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $WorkoutRecordsTable,
+          WorkoutRecord,
+          $$WorkoutRecordsTableFilterComposer,
+          $$WorkoutRecordsTableOrderingComposer,
+          $$WorkoutRecordsTableAnnotationComposer,
+          $$WorkoutRecordsTableCreateCompanionBuilder,
+          $$WorkoutRecordsTableUpdateCompanionBuilder,
+          (
+            WorkoutRecord,
+            BaseReferences<
+              _$ProfileDatabase,
+              $WorkoutRecordsTable,
+              WorkoutRecord
+            >,
+          ),
+          WorkoutRecord,
+          PrefetchHooks Function()
+        > {
+  $$WorkoutRecordsTableTableManager(
+    _$ProfileDatabase db,
+    $WorkoutRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WorkoutRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WorkoutRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WorkoutRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> documentJson = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutRecordsCompanion(
+                subjectId: subjectId,
+                sessionId: sessionId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String sessionId,
+                required String documentJson,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutRecordsCompanion.insert(
+                subjectId: subjectId,
+                sessionId: sessionId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$WorkoutRecordsTable, WorkoutRecord>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $WorkoutRecordsTable,
+                    WorkoutRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WorkoutRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $WorkoutRecordsTable,
+      WorkoutRecord,
+      $$WorkoutRecordsTableFilterComposer,
+      $$WorkoutRecordsTableOrderingComposer,
+      $$WorkoutRecordsTableAnnotationComposer,
+      $$WorkoutRecordsTableCreateCompanionBuilder,
+      $$WorkoutRecordsTableUpdateCompanionBuilder,
+      (
+        WorkoutRecord,
+        BaseReferences<_$ProfileDatabase, $WorkoutRecordsTable, WorkoutRecord>,
+      ),
+      WorkoutRecord,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -2948,4 +3943,8 @@ class $ProfileDatabaseManager {
       $$AssessmentRecordsTableTableManager(_db, _db.assessmentRecords);
   $$ProgramRecordsTableTableManager get programRecords =>
       $$ProgramRecordsTableTableManager(_db, _db.programRecords);
+  $$WorkoutDraftsTableTableManager get workoutDrafts =>
+      $$WorkoutDraftsTableTableManager(_db, _db.workoutDrafts);
+  $$WorkoutRecordsTableTableManager get workoutRecords =>
+      $$WorkoutRecordsTableTableManager(_db, _db.workoutRecords);
 }

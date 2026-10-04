@@ -1,7 +1,9 @@
 use helpmemove_content::{
-    AssessedArea, Equipment, Exercise, Goal, MovementRating, ProgramRule, Region, StartingExercise,
-    parse_assessment_instrument, parse_exercise, parse_program_rule, read_program_assessment,
-    read_program_intake, render_starting_program,
+    AssessedArea, ContentError, Equipment, Exercise, Goal, MovementRating, ProgramRule, Region,
+    Session, SessionEvent, StartingExercise, apply_session_event, open_session,
+    parse_assessment_instrument, parse_exercise, parse_program_rule, parse_session,
+    read_program_assessment, read_program_intake, read_session_event, render_session,
+    render_starting_program,
 };
 use helpmemove_domain::{
     BRIDGE_VERSION, Confidence, DomainError, DomainInstant, Laterality, SubjectId,
@@ -554,6 +556,131 @@ fn withheld_plan(code: &str) -> StartingPlan {
         withhold_code: code.to_owned(),
         document_json: String::new(),
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkoutView {
+    pub outcome: String,
+    pub error_code: String,
+    pub document_json: String,
+}
+
+/// Open a synthetic session from a stored program row.
+///
+/// Counts come from the embedded fixtures. This does not classify or screen.
+#[flutter_rust_bridge::frb(sync)]
+pub fn open_workout(
+    program_json: String,
+    monotonic_millis: i64,
+    session_id: String,
+) -> WorkoutView {
+    let Ok(now) = u64::try_from(monotonic_millis) else {
+        return workout_unavailable("invalid-session");
+    };
+    let Ok(exercises) = embedded_exercises() else {
+        return workout_unavailable("invalid-session");
+    };
+    match open_session(&program_json, &exercises, now, &session_id) {
+        Ok(session) => match render_session(&session) {
+            Ok(document) => workout_ready(document),
+            Err(error) => workout_from_content(error),
+        },
+        Err(error) => workout_from_content(error),
+    }
+}
+
+/// Apply one manual event. A substitute is screened here; content does not call safety.
+///
+/// The production classification is `schema_ack=yes` only, so the eligible list is empty.
+#[flutter_rust_bridge::frb(sync)]
+pub fn apply_workout_event(
+    document_json: String,
+    event_json: String,
+    monotonic_millis: i64,
+) -> WorkoutView {
+    let Ok(now) = u64::try_from(monotonic_millis) else {
+        return workout_unavailable("invalid-session");
+    };
+    let Ok(exercises) = embedded_exercises() else {
+        return workout_unavailable("invalid-session");
+    };
+    let Ok(session) = parse_session(&document_json, &exercises) else {
+        return workout_unavailable("invalid-session");
+    };
+    let Ok(event) = read_session_event(&event_json) else {
+        return workout_unavailable("invalid-session");
+    };
+    let eligible = match &event {
+        SessionEvent::SelectSubstitute { .. } => eligible_substitutions(&session, &exercises),
+        _ => Vec::new(),
+    };
+    match apply_session_event(&session, &event, now, &eligible, &exercises) {
+        Ok(next) => match render_session(&next) {
+            Ok(document) => workout_ready(document),
+            Err(error) => workout_from_content(error),
+        },
+        Err(error) => workout_from_content(error),
+    }
+}
+
+fn eligible_substitutions(session: &Session, exercises: &[Exercise]) -> Vec<String> {
+    let Some(current) = session.exercises.iter().find(|row| {
+        !row.skipped && (row.reps_done < row.reps || row.set_index.saturating_add(1) < row.sets)
+    }) else {
+        return Vec::new();
+    };
+    if current.substitutions.is_empty() {
+        return Vec::new();
+    }
+    let Ok(rule) = parse_rule_set(COMMITTED_RULE.as_bytes()) else {
+        return Vec::new();
+    };
+    let Ok(classification) = classify(
+        &rule,
+        &[("schema_ack", "yes")],
+        DomainInstant::from_unix_millis(0),
+        &[],
+    ) else {
+        return Vec::new();
+    };
+    let mut eligible = Vec::new();
+    for id in &current.substitutions {
+        let Some(exercise) = exercises.iter().find(|item| item.id.as_str() == id) else {
+            continue;
+        };
+        if matches!(
+            screen_exercise(&classification, &[], exercise),
+            Ok(ScreenDecision::Eligible)
+        ) {
+            eligible.push(id.clone());
+        }
+    }
+    eligible
+}
+
+fn workout_ready(document_json: String) -> WorkoutView {
+    WorkoutView {
+        outcome: "ready".to_owned(),
+        error_code: String::new(),
+        document_json,
+    }
+}
+
+fn workout_unavailable(code: &str) -> WorkoutView {
+    WorkoutView {
+        outcome: "unavailable".to_owned(),
+        error_code: code.to_owned(),
+        document_json: String::new(),
+    }
+}
+
+fn workout_from_content(error: ContentError) -> WorkoutView {
+    let code = match error {
+        ContentError::SessionClosed => "session-closed",
+        ContentError::ClockWentBackwards => "clock-went-backwards",
+        _ => "invalid-session",
+    };
+    workout_unavailable(code)
 }
 
 fn sorted<const N: usize>(values: [&'static str; N]) -> Vec<String> {

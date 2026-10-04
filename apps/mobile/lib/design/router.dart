@@ -15,6 +15,7 @@ import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/program/program_flow.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
+import 'package:helpmemove/workout/workout_flow.dart';
 
 class StorageRecovery {
   const StorageRecovery({required this.onRetry, required this.onReset});
@@ -57,6 +58,7 @@ GoRouter buildHelpMeMoveRouter({
   bool storageBlocked = false,
   SafetyView? previewSafetyView,
   LocalProgram? previewProgram,
+  String? previewSession,
   bool movementGateOpen = false,
 }) {
   final GlobalKey<NavigatorState> rootNavigatorKey =
@@ -153,6 +155,20 @@ GoRouter buildHelpMeMoveRouter({
                       return ProgramFlow(
                         store: profile,
                         preview: previewProgram,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'workout',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const WorkoutUnavailable();
+                      }
+                      return WorkoutFlow(
+                        store: profile,
+                        previewDocument: previewSession,
                       );
                     },
                   ),

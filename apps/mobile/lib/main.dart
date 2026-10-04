@@ -31,6 +31,7 @@ class HelpMeMoveApp extends StatefulWidget {
     this.readStore,
     this.previewSafetyView,
     this.previewProgram,
+    this.previewSession,
   });
 
   final String initialLocation;
@@ -43,6 +44,9 @@ class HelpMeMoveApp extends StatefulWidget {
 
   /// Test-only plan. Production leaves this null.
   final LocalProgram? previewProgram;
+
+  /// Test-only session document. Production leaves this null.
+  final String? previewSession;
 
   @override
   State<HelpMeMoveApp> createState() => _HelpMeMoveAppState();
@@ -59,6 +63,7 @@ class _HelpMeMoveAppState extends State<HelpMeMoveApp> {
         widget.initialLocation == '/key-loss',
     previewSafetyView: widget.previewSafetyView,
     previewProgram: widget.previewProgram,
+    previewSession: widget.previewSession,
   );
 
   @override
