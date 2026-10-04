@@ -943,12 +943,576 @@ class IntakeDraftsCompanion extends UpdateCompanion<IntakeDraft> {
   }
 }
 
+class $AssessmentDraftsTable extends AssessmentDrafts
+    with TableInfo<$AssessmentDraftsTable, AssessmentDraft> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssessmentDraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentJsonMeta = const VerificationMeta(
+    'documentJson',
+  );
+  @override
+  late final GeneratedColumn<String> documentJson = GeneratedColumn<String>(
+    'document_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [subjectId, documentJson, updatedAtMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assessment_drafts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AssessmentDraft> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('document_json')) {
+      context.handle(
+        _documentJsonMeta,
+        documentJson.isAcceptableOrUnknown(
+          data['document_json']!,
+          _documentJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentJsonMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId};
+  @override
+  AssessmentDraft map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssessmentDraft(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      documentJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_json'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $AssessmentDraftsTable createAlias(String alias) {
+    return $AssessmentDraftsTable(attachedDatabase, alias);
+  }
+}
+
+class AssessmentDraft extends DataClass implements Insertable<AssessmentDraft> {
+  final String subjectId;
+  final String documentJson;
+  final int updatedAtMs;
+  const AssessmentDraft({
+    required this.subjectId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['document_json'] = Variable<String>(documentJson);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  AssessmentDraftsCompanion toCompanion(bool nullToAbsent) {
+    return AssessmentDraftsCompanion(
+      subjectId: Value(subjectId),
+      documentJson: Value(documentJson),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory AssessmentDraft.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssessmentDraft(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      documentJson: serializer.fromJson<String>(json['documentJson']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'documentJson': serializer.toJson<String>(documentJson),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  AssessmentDraft copyWith({
+    String? subjectId,
+    String? documentJson,
+    int? updatedAtMs,
+  }) => AssessmentDraft(
+    subjectId: subjectId ?? this.subjectId,
+    documentJson: documentJson ?? this.documentJson,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  AssessmentDraft copyWithCompanion(AssessmentDraftsCompanion data) {
+    return AssessmentDraft(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      documentJson: data.documentJson.present
+          ? data.documentJson.value
+          : this.documentJson,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentDraft(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, documentJson, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssessmentDraft &&
+          other.subjectId == this.subjectId &&
+          other.documentJson == this.documentJson &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class AssessmentDraftsCompanion extends UpdateCompanion<AssessmentDraft> {
+  final Value<String> subjectId;
+  final Value<String> documentJson;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const AssessmentDraftsCompanion({
+    this.subjectId = const Value.absent(),
+    this.documentJson = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AssessmentDraftsCompanion.insert({
+    required String subjectId,
+    required String documentJson,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       documentJson = Value(documentJson),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<AssessmentDraft> custom({
+    Expression<String>? subjectId,
+    Expression<String>? documentJson,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (documentJson != null) 'document_json': documentJson,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AssessmentDraftsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? documentJson,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return AssessmentDraftsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      documentJson: documentJson ?? this.documentJson,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (documentJson.present) {
+      map['document_json'] = Variable<String>(documentJson.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentDraftsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AssessmentRecordsTable extends AssessmentRecords
+    with TableInfo<$AssessmentRecordsTable, AssessmentRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssessmentRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentJsonMeta = const VerificationMeta(
+    'documentJson',
+  );
+  @override
+  late final GeneratedColumn<String> documentJson = GeneratedColumn<String>(
+    'document_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [subjectId, documentJson, updatedAtMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assessment_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AssessmentRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('document_json')) {
+      context.handle(
+        _documentJsonMeta,
+        documentJson.isAcceptableOrUnknown(
+          data['document_json']!,
+          _documentJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentJsonMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId};
+  @override
+  AssessmentRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssessmentRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      documentJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_json'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $AssessmentRecordsTable createAlias(String alias) {
+    return $AssessmentRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class AssessmentRecord extends DataClass
+    implements Insertable<AssessmentRecord> {
+  final String subjectId;
+  final String documentJson;
+  final int updatedAtMs;
+  const AssessmentRecord({
+    required this.subjectId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['document_json'] = Variable<String>(documentJson);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  AssessmentRecordsCompanion toCompanion(bool nullToAbsent) {
+    return AssessmentRecordsCompanion(
+      subjectId: Value(subjectId),
+      documentJson: Value(documentJson),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory AssessmentRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssessmentRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      documentJson: serializer.fromJson<String>(json['documentJson']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'documentJson': serializer.toJson<String>(documentJson),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  AssessmentRecord copyWith({
+    String? subjectId,
+    String? documentJson,
+    int? updatedAtMs,
+  }) => AssessmentRecord(
+    subjectId: subjectId ?? this.subjectId,
+    documentJson: documentJson ?? this.documentJson,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  AssessmentRecord copyWithCompanion(AssessmentRecordsCompanion data) {
+    return AssessmentRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      documentJson: data.documentJson.present
+          ? data.documentJson.value
+          : this.documentJson,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, documentJson, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssessmentRecord &&
+          other.subjectId == this.subjectId &&
+          other.documentJson == this.documentJson &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class AssessmentRecordsCompanion extends UpdateCompanion<AssessmentRecord> {
+  final Value<String> subjectId;
+  final Value<String> documentJson;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const AssessmentRecordsCompanion({
+    this.subjectId = const Value.absent(),
+    this.documentJson = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AssessmentRecordsCompanion.insert({
+    required String subjectId,
+    required String documentJson,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       documentJson = Value(documentJson),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<AssessmentRecord> custom({
+    Expression<String>? subjectId,
+    Expression<String>? documentJson,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (documentJson != null) 'document_json': documentJson,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AssessmentRecordsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? documentJson,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return AssessmentRecordsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      documentJson: documentJson ?? this.documentJson,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (documentJson.present) {
+      map['document_json'] = Variable<String>(documentJson.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentRecordsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
   late final $LocalProfilesTable localProfiles = $LocalProfilesTable(this);
   late final $LocalEventsTable localEvents = $LocalEventsTable(this);
   late final $IntakeDraftsTable intakeDrafts = $IntakeDraftsTable(this);
+  late final $AssessmentDraftsTable assessmentDrafts = $AssessmentDraftsTable(
+    this,
+  );
+  late final $AssessmentRecordsTable assessmentRecords =
+      $AssessmentRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -957,6 +1521,8 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
     localProfiles,
     localEvents,
     intakeDrafts,
+    assessmentDrafts,
+    assessmentRecords,
   ];
 }
 
@@ -1531,6 +2097,379 @@ typedef $$IntakeDraftsTableProcessedTableManager =
       IntakeDraft,
       PrefetchHooks Function()
     >;
+typedef $$AssessmentDraftsTableCreateCompanionBuilder =
+    AssessmentDraftsCompanion Function({
+      required String subjectId,
+      required String documentJson,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$AssessmentDraftsTableUpdateCompanionBuilder =
+    AssessmentDraftsCompanion Function({
+      Value<String> subjectId,
+      Value<String> documentJson,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$AssessmentDraftsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $AssessmentDraftsTable> {
+  $$AssessmentDraftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AssessmentDraftsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $AssessmentDraftsTable> {
+  $$AssessmentDraftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AssessmentDraftsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $AssessmentDraftsTable> {
+  $$AssessmentDraftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$AssessmentDraftsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $AssessmentDraftsTable,
+          AssessmentDraft,
+          $$AssessmentDraftsTableFilterComposer,
+          $$AssessmentDraftsTableOrderingComposer,
+          $$AssessmentDraftsTableAnnotationComposer,
+          $$AssessmentDraftsTableCreateCompanionBuilder,
+          $$AssessmentDraftsTableUpdateCompanionBuilder,
+          (
+            AssessmentDraft,
+            BaseReferences<
+              _$ProfileDatabase,
+              $AssessmentDraftsTable,
+              AssessmentDraft
+            >,
+          ),
+          AssessmentDraft,
+          PrefetchHooks Function()
+        > {
+  $$AssessmentDraftsTableTableManager(
+    _$ProfileDatabase db,
+    $AssessmentDraftsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AssessmentDraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AssessmentDraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AssessmentDraftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> documentJson = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AssessmentDraftsCompanion(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String documentJson,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => AssessmentDraftsCompanion.insert(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AssessmentDraftsTable, AssessmentDraft>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $AssessmentDraftsTable,
+                    AssessmentDraft
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AssessmentDraftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $AssessmentDraftsTable,
+      AssessmentDraft,
+      $$AssessmentDraftsTableFilterComposer,
+      $$AssessmentDraftsTableOrderingComposer,
+      $$AssessmentDraftsTableAnnotationComposer,
+      $$AssessmentDraftsTableCreateCompanionBuilder,
+      $$AssessmentDraftsTableUpdateCompanionBuilder,
+      (
+        AssessmentDraft,
+        BaseReferences<
+          _$ProfileDatabase,
+          $AssessmentDraftsTable,
+          AssessmentDraft
+        >,
+      ),
+      AssessmentDraft,
+      PrefetchHooks Function()
+    >;
+typedef $$AssessmentRecordsTableCreateCompanionBuilder =
+    AssessmentRecordsCompanion Function({
+      required String subjectId,
+      required String documentJson,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$AssessmentRecordsTableUpdateCompanionBuilder =
+    AssessmentRecordsCompanion Function({
+      Value<String> subjectId,
+      Value<String> documentJson,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$AssessmentRecordsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $AssessmentRecordsTable> {
+  $$AssessmentRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AssessmentRecordsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $AssessmentRecordsTable> {
+  $$AssessmentRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AssessmentRecordsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $AssessmentRecordsTable> {
+  $$AssessmentRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$AssessmentRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $AssessmentRecordsTable,
+          AssessmentRecord,
+          $$AssessmentRecordsTableFilterComposer,
+          $$AssessmentRecordsTableOrderingComposer,
+          $$AssessmentRecordsTableAnnotationComposer,
+          $$AssessmentRecordsTableCreateCompanionBuilder,
+          $$AssessmentRecordsTableUpdateCompanionBuilder,
+          (
+            AssessmentRecord,
+            BaseReferences<
+              _$ProfileDatabase,
+              $AssessmentRecordsTable,
+              AssessmentRecord
+            >,
+          ),
+          AssessmentRecord,
+          PrefetchHooks Function()
+        > {
+  $$AssessmentRecordsTableTableManager(
+    _$ProfileDatabase db,
+    $AssessmentRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AssessmentRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AssessmentRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AssessmentRecordsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> documentJson = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AssessmentRecordsCompanion(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String documentJson,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => AssessmentRecordsCompanion.insert(
+                subjectId: subjectId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AssessmentRecordsTable, AssessmentRecord>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $AssessmentRecordsTable,
+                    AssessmentRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AssessmentRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $AssessmentRecordsTable,
+      AssessmentRecord,
+      $$AssessmentRecordsTableFilterComposer,
+      $$AssessmentRecordsTableOrderingComposer,
+      $$AssessmentRecordsTableAnnotationComposer,
+      $$AssessmentRecordsTableCreateCompanionBuilder,
+      $$AssessmentRecordsTableUpdateCompanionBuilder,
+      (
+        AssessmentRecord,
+        BaseReferences<
+          _$ProfileDatabase,
+          $AssessmentRecordsTable,
+          AssessmentRecord
+        >,
+      ),
+      AssessmentRecord,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -1541,4 +2480,8 @@ class $ProfileDatabaseManager {
       $$LocalEventsTableTableManager(_db, _db.localEvents);
   $$IntakeDraftsTableTableManager get intakeDrafts =>
       $$IntakeDraftsTableTableManager(_db, _db.intakeDrafts);
+  $$AssessmentDraftsTableTableManager get assessmentDrafts =>
+      $$AssessmentDraftsTableTableManager(_db, _db.assessmentDrafts);
+  $$AssessmentRecordsTableTableManager get assessmentRecords =>
+      $$AssessmentRecordsTableTableManager(_db, _db.assessmentRecords);
 }

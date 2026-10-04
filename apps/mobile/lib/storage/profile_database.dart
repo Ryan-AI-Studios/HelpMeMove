@@ -37,6 +37,34 @@ class IntakeDrafts extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
 }
 
+class AssessmentDrafts extends Table {
+  @override
+  String get tableName => 'assessment_drafts';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get documentJson => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
+}
+
+class AssessmentRecords extends Table {
+  @override
+  String get tableName => 'assessment_records';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get documentJson => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -84,7 +112,15 @@ QueryExecutor openEncryptedExecutor({
   );
 }
 
-@DriftDatabase(tables: [LocalProfiles, LocalEvents, IntakeDrafts])
+@DriftDatabase(
+  tables: [
+    LocalProfiles,
+    LocalEvents,
+    IntakeDrafts,
+    AssessmentDrafts,
+    AssessmentRecords,
+  ],
+)
 class ProfileDatabase extends _$ProfileDatabase {
   ProfileDatabase(super.executor);
 
@@ -92,7 +128,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -102,6 +138,11 @@ class ProfileDatabase extends _$ProfileDatabase {
     onUpgrade: (Migrator migrator, int from, int to) async {
       if (from == 1 && to == 2) {
         await migrator.createTable(intakeDrafts);
+        return;
+      }
+      if (from == 2 && to == 3) {
+        await migrator.createTable(assessmentDrafts);
+        await migrator.createTable(assessmentRecords);
         return;
       }
       rejectSchemaUpgrade(from, to);

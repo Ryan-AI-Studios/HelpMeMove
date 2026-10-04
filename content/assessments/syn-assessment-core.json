@@ -1,0 +1,5 @@
+{
+  "instrument_id": "syn-assessment-core",
+  "instrument_version": 1,
+  "ratings": ["normal", "limited", "painful", "very_painful", "unable"]
+}

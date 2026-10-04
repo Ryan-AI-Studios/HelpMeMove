@@ -27,6 +27,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  AssessmentInstrumentView dco_decode_assessment_instrument_view(dynamic raw);
+
+  @protected
+  AssessmentVocabulary dco_decode_assessment_vocabulary(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
 
   @protected
@@ -70,6 +76,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String sse_decode_String(SseDeserializer deserializer);
+
+  @protected
+  AssessmentInstrumentView sse_decode_assessment_instrument_view(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  AssessmentVocabulary sse_decode_assessment_vocabulary(
+    SseDeserializer deserializer,
+  );
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
@@ -117,6 +133,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_String(String self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_assessment_instrument_view(
+    AssessmentInstrumentView self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_assessment_vocabulary(
+    AssessmentVocabulary self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);

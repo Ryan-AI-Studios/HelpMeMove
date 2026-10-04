@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1229438603;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2071961503;
 
 // Section: executor
 
@@ -167,6 +167,36 @@ fn wire__crate__api__bridge__accept_laterality_impl(
         },
     )
 }
+fn wire__crate__api__bridge__accept_rating_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "accept_rating",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_raw = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, crate::api::bridge::BridgeError>((move || {
+                let output_ok = crate::api::bridge::accept_rating(api_raw)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__bridge__accept_region_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -222,6 +252,35 @@ fn wire__crate__api__bridge__accept_subject_impl(
             deserializer.end();
             transform_result_sse::<_, crate::api::bridge::BridgeError>((move || {
                 let output_ok = crate::api::bridge::accept_subject(api_raw)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__bridge__assessment_vocabulary_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "assessment_vocabulary",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::bridge::assessment_vocabulary())?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -386,6 +445,35 @@ fn wire__crate__api__bridge__intake_vocabulary_impl(
         },
     )
 }
+fn wire__crate__api__bridge__load_committed_instrument_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "load_committed_instrument",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, crate::api::bridge::BridgeError>((move || {
+                let output_ok = crate::api::bridge::load_committed_instrument()?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__bridge__observe_cancel_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -486,6 +574,28 @@ impl SseDecode for String {
     }
 }
 
+impl SseDecode for crate::api::bridge::AssessmentInstrumentView {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_instrumentId = <String>::sse_decode(deserializer);
+        let mut var_instrumentVersion = <i64>::sse_decode(deserializer);
+        return crate::api::bridge::AssessmentInstrumentView {
+            instrument_id: var_instrumentId,
+            instrument_version: var_instrumentVersion,
+        };
+    }
+}
+
+impl SseDecode for crate::api::bridge::AssessmentVocabulary {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_ratings = <Vec<String>>::sse_decode(deserializer);
+        return crate::api::bridge::AssessmentVocabulary {
+            ratings: var_ratings,
+        };
+    }
+}
+
 impl SseDecode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -508,6 +618,8 @@ impl SseDecode for crate::api::bridge::BridgeError {
             7 => crate::api::bridge::BridgeError::InvalidRegion,
             8 => crate::api::bridge::BridgeError::InvalidGoal,
             9 => crate::api::bridge::BridgeError::InvalidEquipment,
+            10 => crate::api::bridge::BridgeError::InvalidRating,
+            11 => crate::api::bridge::BridgeError::InvalidInstrument,
             _ => unreachable!("Invalid variant for BridgeError: {}", inner),
         };
     }
@@ -662,26 +774,67 @@ fn pde_ffi_dispatcher_sync_impl(
         2 => wire__crate__api__bridge__accept_equipment_impl(ptr, rust_vec_len, data_len),
         3 => wire__crate__api__bridge__accept_goal_impl(ptr, rust_vec_len, data_len),
         4 => wire__crate__api__bridge__accept_laterality_impl(ptr, rust_vec_len, data_len),
-        5 => wire__crate__api__bridge__accept_region_impl(ptr, rust_vec_len, data_len),
-        6 => wire__crate__api__bridge__accept_subject_impl(ptr, rust_vec_len, data_len),
-        7 => wire__crate__api__bridge__bridge_version_impl(ptr, rust_vec_len, data_len),
-        8 => wire__crate__api__bridge__classify_committed_rule_impl(ptr, rust_vec_len, data_len),
-        9 => wire__crate__api__bridge__convert_length_mm_to_inch_thousandths_impl(
+        5 => wire__crate__api__bridge__accept_rating_impl(ptr, rust_vec_len, data_len),
+        6 => wire__crate__api__bridge__accept_region_impl(ptr, rust_vec_len, data_len),
+        7 => wire__crate__api__bridge__accept_subject_impl(ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__bridge__assessment_vocabulary_impl(ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__bridge__bridge_version_impl(ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__bridge__classify_committed_rule_impl(ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__bridge__convert_length_mm_to_inch_thousandths_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__api__bridge__elapsed_millis_impl(ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__bridge__intake_vocabulary_impl(ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__bridge__observe_cancel_impl(ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__bridge__elapsed_millis_impl(ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__bridge__intake_vocabulary_impl(ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__bridge__load_committed_instrument_impl(ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__bridge__observe_cancel_impl(ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
 
 // Section: rust2dart
 
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::bridge::AssessmentInstrumentView {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.instrument_id.into_into_dart().into_dart(),
+            self.instrument_version.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::bridge::AssessmentInstrumentView
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::bridge::AssessmentInstrumentView>
+    for crate::api::bridge::AssessmentInstrumentView
+{
+    fn into_into_dart(self) -> crate::api::bridge::AssessmentInstrumentView {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::bridge::AssessmentVocabulary {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [self.ratings.into_into_dart().into_dart()].into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::bridge::AssessmentVocabulary
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::bridge::AssessmentVocabulary>
+    for crate::api::bridge::AssessmentVocabulary
+{
+    fn into_into_dart(self) -> crate::api::bridge::AssessmentVocabulary {
+        self
+    }
+}
 // Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::bridge::BridgeError {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
@@ -696,6 +849,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::bridge::BridgeError {
             Self::InvalidRegion => 7.into_dart(),
             Self::InvalidGoal => 8.into_dart(),
             Self::InvalidEquipment => 9.into_dart(),
+            Self::InvalidRating => 10.into_dart(),
+            Self::InvalidInstrument => 11.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -790,6 +945,21 @@ impl SseEncode for String {
     }
 }
 
+impl SseEncode for crate::api::bridge::AssessmentInstrumentView {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.instrument_id, serializer);
+        <i64>::sse_encode(self.instrument_version, serializer);
+    }
+}
+
+impl SseEncode for crate::api::bridge::AssessmentVocabulary {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<String>>::sse_encode(self.ratings, serializer);
+    }
+}
+
 impl SseEncode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -812,6 +982,8 @@ impl SseEncode for crate::api::bridge::BridgeError {
                 crate::api::bridge::BridgeError::InvalidRegion => 7,
                 crate::api::bridge::BridgeError::InvalidGoal => 8,
                 crate::api::bridge::BridgeError::InvalidEquipment => 9,
+                crate::api::bridge::BridgeError::InvalidRating => 10,
+                crate::api::bridge::BridgeError::InvalidInstrument => 11,
                 _ => {
                     unimplemented!("");
                 }

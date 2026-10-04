@@ -35,10 +35,20 @@ class IntakeUnavailable extends StatelessWidget {
 }
 
 class IntakeFlow extends StatefulWidget {
-  const IntakeFlow({super.key, required this.store, required this.initialStep});
+  const IntakeFlow({
+    super.key,
+    required this.store,
+    required this.initialStep,
+    this.onContinue,
+    this.previewSafetyView,
+  });
 
   final ProfileStore store;
   final String initialStep;
+  final VoidCallback? onContinue;
+
+  /// Test-only constructed view. Production leaves this null and classifies.
+  final SafetyView? previewSafetyView;
 
   @override
   State<IntakeFlow> createState() => _IntakeFlowState();
@@ -57,6 +67,7 @@ class _IntakeFlowState extends State<IntakeFlow> {
   bool _ready = false;
   bool _loadFailed = false;
   bool _busy = false;
+  bool _hasAssessmentDraft = false;
   String? _error;
 
   String get _step {
@@ -96,7 +107,13 @@ class _IntakeFlowState extends State<IntakeFlow> {
       _noteController.text = _controller.draft.note;
       _loadFailed = false;
       if (_step == 'check') {
-        _view = await _classifyOrBridge();
+        _hasAssessmentDraft = await _assessmentDraftExists();
+        final SafetyView? preview = widget.previewSafetyView;
+        if (preview != null) {
+          _view = preview;
+        } else {
+          _view = await _classifyOrBridge();
+        }
       }
     } catch (_) {
       _loadFailed = true;
@@ -107,6 +124,14 @@ class _IntakeFlowState extends State<IntakeFlow> {
     setState(() {
       _ready = true;
     });
+  }
+
+  Future<bool> _assessmentDraftExists() async {
+    try {
+      return await widget.store.loadAssessmentDraft() != null;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _continue() async {
@@ -142,6 +167,7 @@ class _IntakeFlowState extends State<IntakeFlow> {
       return;
     }
     if (step == 'check') {
+      _hasAssessmentDraft = await _assessmentDraftExists();
       final SafetyView view = await _classifyOrBridge();
       if (!mounted) {
         return;
@@ -316,6 +342,8 @@ class _IntakeFlowState extends State<IntakeFlow> {
                     : IntakeOutcome(
                         view: view,
                         onStartOver: () => unawaited(_startOver()),
+                        onContinue: widget.onContinue,
+                        hasAssessmentDraft: _hasAssessmentDraft,
                       ),
               ),
               if (view == null)

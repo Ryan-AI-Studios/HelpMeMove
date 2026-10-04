@@ -219,6 +219,7 @@ void main() {
     await tester.tap(find.text('Continue intake'));
     await _until(tester, find.text('Goals'));
     expect(find.text('Goals'), findsOneWidget);
+    await _until(tester, find.text('Mobility'));
     expect(find.text('Mobility'), findsOneWidget);
   });
 
@@ -257,6 +258,8 @@ void main() {
       find.text('The clinician question list is not available.'),
       findsNothing,
     );
+    expect(find.text('Check movement'), findsNothing);
+    expect(find.text('Continue movement check'), findsNothing);
     final String? raw = await tester.runAsync<String?>(() => store.loadDraft());
     expect(raw, isNotNull);
     expect(raw!, contains('quiet note'));
@@ -315,6 +318,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('No emergency number is configured.'), findsOneWidget);
+    expect(find.text('Check movement'), findsNothing);
+    expect(find.text('Continue movement check'), findsNothing);
     expect(find.textContaining('quiet note'), findsNothing);
     expect(find.textContaining('tel:'), findsNothing);
     final String? raw = await tester.runAsync<String?>(() => store.loadDraft());
@@ -641,6 +646,7 @@ void main() {
     await _until(tester, find.text('Describe a limit'));
     await tester.tap(find.text('Describe a limit'));
     await _until(tester, find.text('What brings you here'));
+    await _until(tester, find.text('I want general movement'));
     await tester.tap(find.text('I want general movement'));
     await tester.pump();
     await _continue(tester);
@@ -799,6 +805,8 @@ Future<void> _expectOutcome(
   expect(find.text(emergency), findsOneWidget);
   expect(find.byType(Icon), findsOneWidget);
   expect(find.textContaining('tel:'), findsNothing);
+  expect(find.text('Check movement'), findsNothing);
+  expect(find.text('Continue movement check'), findsNothing);
 }
 
 void _ignore(int value) {}

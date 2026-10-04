@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:helpmemove/design/app_colors.dart';
 import 'package:helpmemove/design/app_spacing.dart';
+import 'package:helpmemove/design/components/primary_button.dart';
 import 'package:helpmemove/design/components/secondary_button.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 
 /// Icon plus sentence for one synthetic rule view. Color is not the signal.
 class IntakeOutcome extends StatelessWidget {
-  const IntakeOutcome({super.key, required this.view, this.onStartOver});
+  const IntakeOutcome({
+    super.key,
+    required this.view,
+    this.onStartOver,
+    this.onContinue,
+    this.hasAssessmentDraft = false,
+  });
 
   final SafetyView view;
   final VoidCallback? onStartOver;
+  final VoidCallback? onContinue;
+  final bool hasAssessmentDraft;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +43,15 @@ class IntakeOutcome extends StatelessWidget {
         const SizedBox(height: AppSpacing.space12),
         Text(emergency),
         const SizedBox(height: AppSpacing.space24),
+        if (view.permitsOrdinaryGeneration && onContinue != null) ...[
+          PrimaryButton(
+            label: hasAssessmentDraft
+                ? 'Continue movement check'
+                : 'Check movement',
+            onPressed: onContinue,
+          ),
+          const SizedBox(height: AppSpacing.space12),
+        ],
         SecondaryButton(label: 'Start over', onPressed: onStartOver),
       ],
     );

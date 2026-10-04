@@ -1,0 +1,5 @@
+# flutter_rust_bridge_codegen formats frb_generated.rs with
+# `rustfmt --edition 2018`, which selects the 2018 style and reorders
+# imports differently from `cargo fmt` (edition 2024). Pin the style so
+# a second generate matches `cargo fmt --check`.
+style_edition = "2024"
