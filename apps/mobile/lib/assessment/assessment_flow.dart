@@ -66,10 +66,14 @@ class AssessmentFlow extends StatefulWidget {
     super.key,
     required this.store,
     required this.initialStep,
+    this.planAllowed = false,
   });
 
   final ProfileStore store;
   final String initialStep;
+
+  /// True only when the in-memory movement gate is open. Not a query parameter.
+  final bool planAllowed;
 
   @override
   State<AssessmentFlow> createState() => _AssessmentFlowState();
@@ -437,6 +441,38 @@ class _AssessmentFlowState extends State<AssessmentFlow> {
     context.go('/');
   }
 
+  Future<void> _openPlan() async {
+    final LocalAssessment? document = _draft;
+    if (_busy ||
+        document == null ||
+        !widget.planAllowed ||
+        document.stopped ||
+        !_completeFor(document)) {
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    document.complete = true;
+    try {
+      await widget.store.saveAssessmentRecord(document.encode());
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _busy = false;
+        _error = 'The draft could not be saved.';
+      });
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    context.go('/focus/program');
+  }
+
   Future<void> _startOver() async {
     if (_busy) {
       return;
@@ -728,6 +764,15 @@ class _AssessmentFlowState extends State<AssessmentFlow> {
               ? 'Saved on this device. No exercise program is created.'
               : 'This check is incomplete. No exercise program is created.',
         ),
+        if (widget.planAllowed &&
+            !draft.stopped &&
+            _completeFor(draft)) ...<Widget>[
+          const SizedBox(height: AppSpacing.space24),
+          SecondaryButton(
+            label: 'Check starting plan',
+            onPressed: _busy ? null : () => unawaited(_openPlan()),
+          ),
+        ],
         const SizedBox(height: AppSpacing.space24),
         PrimaryButton(
           label: 'Done',

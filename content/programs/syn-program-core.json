@@ -1,0 +1,6 @@
+{
+  "rule_id": "syn-program-core",
+  "rule_version": 1,
+  "session_minutes": 15,
+  "max_exercises": 4
+}

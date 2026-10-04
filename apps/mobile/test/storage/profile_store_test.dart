@@ -195,9 +195,17 @@ void main() {
       () => rejectSchemaUpgrade(2, 4),
       throwsA(isA<StorageSchemaException>()),
     );
+    expect(
+      () => rejectSchemaUpgrade(1, 4),
+      throwsA(isA<StorageSchemaException>()),
+    );
+    expect(
+      () => rejectSchemaUpgrade(3, 5),
+      throwsA(isA<StorageSchemaException>()),
+    );
   });
 
-  test('schema 2 gains assessment tables and keeps the intake row', () async {
+  test('schema 2 opened by schema 4 is rejected', () async {
     const String document =
         '{"draft_version":1,"intent":"fitness","notice_id":null,"schema_ack":null,"goals":[],"equipment":[],"areas":[],"note":"kept","severity":0,"step":"intent"}';
     final ProfileStore store = openStore();
@@ -210,6 +218,7 @@ void main() {
     applyEncryptionSetup(raw, keyHex);
     raw.execute('DROP TABLE IF EXISTS assessment_drafts');
     raw.execute('DROP TABLE IF EXISTS assessment_records');
+    raw.execute('DROP TABLE IF EXISTS program_records');
     raw.execute('DELETE FROM intake_drafts');
     raw.execute(
       'INSERT INTO intake_drafts (subject_id, document_json, updated_at_ms) VALUES (?, ?, ?)',
@@ -218,33 +227,93 @@ void main() {
     raw.execute('PRAGMA user_version = 2');
     raw.close();
 
-    await store.reopenActive();
-    expect(await store.loadDraft(), document);
-    await store.close();
+    await expectLater(
+      store.reopenActive(),
+      throwsA(isA<StorageSchemaException>()),
+    );
 
-    final Database upgraded = sqlite3.open(file.path);
-    applyEncryptionSetup(upgraded, keyHex);
-    expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 3);
+    final Database unchanged = sqlite3.open(file.path);
+    applyEncryptionSetup(unchanged, keyHex);
+    expect(unchanged.select('PRAGMA user_version').first.columnAt(0), 2);
     expect(
-      upgraded
+      unchanged
           .select('SELECT document_json FROM intake_drafts')
           .first
           .columnAt(0),
       document,
     );
     expect(
-      upgraded
+      unchanged
           .select('SELECT payload_text FROM local_events')
           .first
           .columnAt(0),
       storageProbePayload,
     );
-    final ResultSet tables = upgraded.select(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('assessment_drafts', 'assessment_records')",
+    final ResultSet tables = unchanged.select(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('assessment_drafts', 'assessment_records', 'program_records')",
     );
-    expect(tables, hasLength(2));
-    upgraded.close();
+    expect(tables, isEmpty);
+    unchanged.close();
   });
+
+  test(
+    'schema 3 gains program records and keeps intake and assessment',
+    () async {
+      const String intake = '{"draft_version":1,"goals":["control"]}';
+      const String assessment =
+          '{"record_version":1,"instrument_id":"syn-assessment-core"}';
+      final ProfileStore store = openStore();
+      final String subjectId = await store.createProfile();
+      final File file = store.openDatabaseFile!;
+      final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+      await store.close();
+
+      final Database raw = sqlite3.open(file.path);
+      applyEncryptionSetup(raw, keyHex);
+      raw.execute('DROP TABLE IF EXISTS program_records');
+      raw.execute('DELETE FROM intake_drafts');
+      raw.execute(
+        'INSERT INTO intake_drafts (subject_id, document_json, updated_at_ms) VALUES (?, ?, ?)',
+        <Object>[subjectId, intake, 5],
+      );
+      raw.execute('DELETE FROM assessment_records');
+      raw.execute(
+        'INSERT INTO assessment_records (subject_id, document_json, updated_at_ms) VALUES (?, ?, ?)',
+        <Object>[subjectId, assessment, 6],
+      );
+      raw.execute('PRAGMA user_version = 3');
+      raw.close();
+
+      await store.reopenActive();
+      expect(await store.loadDraft(), intake);
+      expect(await store.loadAssessmentRecord(), assessment);
+      expect(await store.loadProgramRecord(), isNull);
+      await store.close();
+
+      final Database upgraded = sqlite3.open(file.path);
+      applyEncryptionSetup(upgraded, keyHex);
+      expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 4);
+      expect(
+        upgraded
+            .select('SELECT document_json FROM intake_drafts')
+            .first
+            .columnAt(0),
+        intake,
+      );
+      expect(
+        upgraded
+            .select('SELECT document_json FROM assessment_records')
+            .first
+            .columnAt(0),
+        assessment,
+      );
+      final ResultSet tables = upgraded.select(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'program_records'",
+      );
+      expect(tables, hasLength(1));
+      upgraded.close();
+    },
+  );
 
   test('assessment record round-trips and uses the store clock', () async {
     final ProfileStore store = openStore();
@@ -279,6 +348,39 @@ void main() {
     expect(await store.loadAssessmentRecord(), record);
     await store.deleteAssessmentRecord();
     expect(await store.loadAssessmentRecord(), isNull);
+  });
+
+  test('program record round-trips and leaves no rule id after checkpoint', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    const String record =
+        '{"record_version":1,"rule_id":"syn-program-core","rule_version":1,"safety_rule_id":"syn-safety-core","safety_rule_version":1,"session_minutes":15,"exercises":[]}';
+    await store.saveProgramRecord(record);
+    expect(await store.loadProgramRecord(), record);
+    final File file = store.openDatabaseFile!;
+    final String subjectId = (await store.keys.read(activeProfileItem))!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    await store.close();
+
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    final ResultSet rows = raw.select(
+      'SELECT document_json, updated_at_ms FROM program_records',
+    );
+    expect(rows, hasLength(1));
+    expect(rows.first.columnAt(0), record);
+    expect(
+      rows.first.columnAt(1),
+      DateTime.utc(2026, 1, 2, 3, 4, 5).millisecondsSinceEpoch,
+    );
+    raw.close();
+
+    await store.reopenActive();
+    expect(await store.loadProgramRecord(), record);
+    await store.checkpoint();
+    _expectMarkerAbsent(store.openDatabaseFile!.parent, 'syn-program-core');
+    await store.deleteProgramRecord();
+    expect(await store.loadProgramRecord(), isNull);
   });
 
   test(

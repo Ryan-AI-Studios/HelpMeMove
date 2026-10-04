@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:helpmemove/design/app_theme.dart';
 import 'package:helpmemove/design/router.dart';
+import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/src/rust/frb_generated.dart';
 import 'package:helpmemove/storage/profile_store.dart';
@@ -29,6 +30,7 @@ class HelpMeMoveApp extends StatefulWidget {
     this.store,
     this.readStore,
     this.previewSafetyView,
+    this.previewProgram,
   });
 
   final String initialLocation;
@@ -38,6 +40,9 @@ class HelpMeMoveApp extends StatefulWidget {
 
   /// Test-only constructed view. Production leaves this null.
   final SafetyView? previewSafetyView;
+
+  /// Test-only plan. Production leaves this null.
+  final LocalProgram? previewProgram;
 
   @override
   State<HelpMeMoveApp> createState() => _HelpMeMoveAppState();
@@ -53,6 +58,7 @@ class _HelpMeMoveAppState extends State<HelpMeMoveApp> {
         widget.initialLocation == '/storage-failure' ||
         widget.initialLocation == '/key-loss',
     previewSafetyView: widget.previewSafetyView,
+    previewProgram: widget.previewProgram,
   );
 
   @override

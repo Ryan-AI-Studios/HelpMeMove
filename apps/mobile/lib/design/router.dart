@@ -11,6 +11,8 @@ import 'package:helpmemove/design/screens/storage_failure_screen.dart';
 import 'package:helpmemove/assessment/assessment_flow.dart';
 import 'package:helpmemove/design/shell/app_shell.dart';
 import 'package:helpmemove/intake/intake_flow.dart';
+import 'package:helpmemove/program/program_document.dart';
+import 'package:helpmemove/program/program_flow.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 
@@ -54,11 +56,16 @@ GoRouter buildHelpMeMoveRouter({
   ProfileStore? Function()? readStore,
   bool storageBlocked = false,
   SafetyView? previewSafetyView,
+  LocalProgram? previewProgram,
+  bool movementGateOpen = false,
 }) {
   final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
   final _IntakeAccess access = _IntakeAccess(blocked: storageBlocked);
   final _MovementGate movement = _MovementGate();
+  if (movementGateOpen) {
+    movement.open = true;
+  }
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: false,
@@ -125,7 +132,28 @@ GoRouter buildHelpMeMoveRouter({
                       }
                       final String step =
                           state.uri.queryParameters['step'] ?? 'intro';
-                      return AssessmentFlow(store: profile, initialStep: step);
+                      return AssessmentFlow(
+                        store: profile,
+                        initialStep: step,
+                        planAllowed: movement.open,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'program',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      if (!movement.open) {
+                        return const ProgramBlocked();
+                      }
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const ProgramUnavailable();
+                      }
+                      return ProgramFlow(
+                        store: profile,
+                        preview: previewProgram,
+                      );
                     },
                   ),
                 ],
