@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/scaffold", "crates/domain", "crates/bridge"]
+members = [
+    "crates/scaffold",
+    "crates/domain",
+    "crates/bridge",
+    "crates/content",
+]
 
 [workspace.package]
 edition = "2024"
