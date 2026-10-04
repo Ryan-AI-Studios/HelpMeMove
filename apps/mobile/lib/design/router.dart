@@ -9,6 +9,8 @@ import 'package:helpmemove/design/screens/key_loss_screen.dart';
 import 'package:helpmemove/design/screens/not_found_screen.dart';
 import 'package:helpmemove/design/screens/storage_failure_screen.dart';
 import 'package:helpmemove/design/shell/app_shell.dart';
+import 'package:helpmemove/intake/intake_flow.dart';
+import 'package:helpmemove/storage/profile_store.dart';
 
 class StorageRecovery {
   const StorageRecovery({required this.onRetry, required this.onReset});
@@ -17,12 +19,33 @@ class StorageRecovery {
   final Future<String> Function() onReset;
 }
 
+/// Recovery can clear this after the app has already started on a failure route.
+class _IntakeAccess extends ChangeNotifier {
+  _IntakeAccess({required this._blocked});
+
+  bool _blocked;
+
+  bool get blocked => _blocked;
+
+  set blocked(bool value) {
+    if (_blocked == value) {
+      return;
+    }
+    _blocked = value;
+    notifyListeners();
+  }
+}
+
 GoRouter buildHelpMeMoveRouter({
   String initialLocation = '/',
   StorageRecovery? recovery,
+  ProfileStore? store,
+  ProfileStore? Function()? readStore,
+  bool storageBlocked = false,
 }) {
   final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
+  final _IntakeAccess access = _IntakeAccess(blocked: storageBlocked);
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: false,
@@ -39,7 +62,13 @@ GoRouter buildHelpMeMoveRouter({
           GoRoute(
             path: '/',
             builder: (BuildContext context, GoRouterState state) {
-              return const HomeScreen();
+              return HomeScreen(
+                store: store,
+                readStore: () => readStore?.call() ?? store,
+                storageBlocked: access.blocked,
+                storageBlockedNow: () => access.blocked,
+                storageAccess: access,
+              );
             },
             routes: [
               GoRoute(
@@ -48,6 +77,21 @@ GoRouter buildHelpMeMoveRouter({
                 builder: (BuildContext context, GoRouterState state) {
                   return const FocusedFlowScreen();
                 },
+                routes: [
+                  GoRoute(
+                    path: 'intake',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      final String step =
+                          state.uri.queryParameters['step'] ?? 'intent';
+                      if (profile == null || access.blocked) {
+                        return const IntakeUnavailable();
+                      }
+                      return IntakeFlow(store: profile, initialStep: step);
+                    },
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'storage-failure',
@@ -57,7 +101,7 @@ GoRouter buildHelpMeMoveRouter({
                     onRetry: recovery == null
                         ? null
                         : () {
-                            _follow(context, recovery.onRetry);
+                            _follow(context, recovery.onRetry, access);
                           },
                   );
                 },
@@ -70,12 +114,12 @@ GoRouter buildHelpMeMoveRouter({
                     onRetry: recovery == null
                         ? null
                         : () {
-                            _follow(context, recovery.onRetry);
+                            _follow(context, recovery.onRetry, access);
                           },
                     onReset: recovery == null
                         ? null
                         : () {
-                            _follow(context, recovery.onReset);
+                            _follow(context, recovery.onReset, access);
                           },
                   );
                 },
@@ -94,9 +138,14 @@ GoRouter buildHelpMeMoveRouter({
   );
 }
 
-void _follow(BuildContext context, Future<String> Function() action) {
+void _follow(
+  BuildContext context,
+  Future<String> Function() action,
+  _IntakeAccess access,
+) {
   unawaited(
     action().then((String next) {
+      access.blocked = next != '/';
       if (!context.mounted) {
         return;
       }

@@ -7,7 +7,8 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `eq`, `fmt`, `fmt`, `from`
+// These functions are ignored because they are not marked as `pub`: `decision_fields`, `emergency_fields`, `escalation_name`, `sorted`, `triage_name`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `code`
 
 String bridgeVersion() => RustLib.instance.api.crateApiBridgeBridgeVersion();
@@ -43,6 +44,31 @@ void observeCancel({required bool cancelled}) =>
 String probeContainedPanic() =>
     RustLib.instance.api.crateApiBridgeProbeContainedPanic();
 
+IntakeVocabulary intakeVocabulary() =>
+    RustLib.instance.api.crateApiBridgeIntakeVocabulary();
+
+String acceptRegion({required String raw}) =>
+    RustLib.instance.api.crateApiBridgeAcceptRegion(raw: raw);
+
+String acceptGoal({required String raw}) =>
+    RustLib.instance.api.crateApiBridgeAcceptGoal(raw: raw);
+
+String acceptEquipment({required String raw}) =>
+    RustLib.instance.api.crateApiBridgeAcceptEquipment(raw: raw);
+
+/// Classify the committed synthetic rule. The note and severity are not parameters.
+SafetyView classifyCommittedRule({
+  required List<SafetyAnswer> answers,
+  required PlatformInt64 nowUnixMillis,
+  required List<String> triggers,
+  required String emergencyRegion,
+}) => RustLib.instance.api.crateApiBridgeClassifyCommittedRule(
+  answers: answers,
+  nowUnixMillis: nowUnixMillis,
+  triggers: triggers,
+  emergencyRegion: emergencyRegion,
+);
+
 enum BridgeError {
   invalidSubjectId,
   invalidLaterality,
@@ -51,4 +77,95 @@ enum BridgeError {
   clockWentBackwards,
   versionMismatch,
   cancelled,
+  invalidRegion,
+  invalidGoal,
+  invalidEquipment,
+}
+
+class IntakeVocabulary {
+  final List<String> regions;
+  final List<String> goals;
+  final List<String> equipment;
+  final List<String> lateralities;
+
+  const IntakeVocabulary({
+    required this.regions,
+    required this.goals,
+    required this.equipment,
+    required this.lateralities,
+  });
+
+  @override
+  int get hashCode =>
+      regions.hashCode ^
+      goals.hashCode ^
+      equipment.hashCode ^
+      lateralities.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IntakeVocabulary &&
+          runtimeType == other.runtimeType &&
+          regions == other.regions &&
+          goals == other.goals &&
+          equipment == other.equipment &&
+          lateralities == other.lateralities;
+}
+
+class SafetyAnswer {
+  final String token;
+  final String value;
+
+  const SafetyAnswer({required this.token, required this.value});
+
+  @override
+  int get hashCode => token.hashCode ^ value.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SafetyAnswer &&
+          runtimeType == other.runtimeType &&
+          token == other.token &&
+          value == other.value;
+}
+
+class SafetyView {
+  final String code;
+  final String level;
+  final String escalation;
+  final bool permitsOrdinaryGeneration;
+  final String emergencyDisplay;
+  final String emergencyCode;
+
+  const SafetyView({
+    required this.code,
+    required this.level,
+    required this.escalation,
+    required this.permitsOrdinaryGeneration,
+    required this.emergencyDisplay,
+    required this.emergencyCode,
+  });
+
+  @override
+  int get hashCode =>
+      code.hashCode ^
+      level.hashCode ^
+      escalation.hashCode ^
+      permitsOrdinaryGeneration.hashCode ^
+      emergencyDisplay.hashCode ^
+      emergencyCode.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SafetyView &&
+          runtimeType == other.runtimeType &&
+          code == other.code &&
+          level == other.level &&
+          escalation == other.escalation &&
+          permitsOrdinaryGeneration == other.permitsOrdinaryGeneration &&
+          emergencyDisplay == other.emergencyDisplay &&
+          emergencyCode == other.emergencyCode;
 }

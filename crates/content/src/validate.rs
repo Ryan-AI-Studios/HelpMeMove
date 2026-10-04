@@ -845,40 +845,15 @@ fn tempo_part(value: u32) -> Result<u8, ContentError> {
 }
 
 fn parse_region(value: &str) -> Option<Region> {
-    Some(match value {
-        "head_neck" => Region::HeadNeck,
-        "shoulder" => Region::Shoulder,
-        "arm" => Region::Arm,
-        "torso" => Region::Torso,
-        "pelvis" => Region::Pelvis,
-        "leg" => Region::Leg,
-        "foot" => Region::Foot,
-        _ => return None,
-    })
+    Region::parse(value)
 }
 
 fn parse_goal(value: &str) -> Option<Goal> {
-    Some(match value {
-        "strength" => Goal::Strength,
-        "mobility" => Goal::Mobility,
-        "stability" => Goal::Stability,
-        "conditioning" => Goal::Conditioning,
-        "control" => Goal::Control,
-        _ => return None,
-    })
+    Goal::parse(value)
 }
 
 fn parse_equipment(value: &str) -> Option<Equipment> {
-    Some(match value {
-        "bodyweight" => Equipment::Bodyweight,
-        "resistance_band" => Equipment::ResistanceBand,
-        "dumbbell" => Equipment::Dumbbell,
-        "chair" => Equipment::Chair,
-        "wall" => Equipment::Wall,
-        "towel" => Equipment::Towel,
-        "mat" => Equipment::Mat,
-        _ => return None,
-    })
+    Equipment::parse(value)
 }
 
 fn parse_position(value: &str) -> Option<Position> {

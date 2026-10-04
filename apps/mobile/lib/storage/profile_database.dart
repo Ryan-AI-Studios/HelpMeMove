@@ -23,6 +23,20 @@ class LocalProfiles extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
 }
 
+class IntakeDrafts extends Table {
+  @override
+  String get tableName => 'intake_drafts';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get documentJson => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -70,7 +84,7 @@ QueryExecutor openEncryptedExecutor({
   );
 }
 
-@DriftDatabase(tables: [LocalProfiles, LocalEvents])
+@DriftDatabase(tables: [LocalProfiles, LocalEvents, IntakeDrafts])
 class ProfileDatabase extends _$ProfileDatabase {
   ProfileDatabase(super.executor);
 
@@ -78,7 +92,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -86,6 +100,10 @@ class ProfileDatabase extends _$ProfileDatabase {
       await migrator.createAll();
     },
     onUpgrade: (Migrator migrator, int from, int to) async {
+      if (from == 1 && to == 2) {
+        await migrator.createTable(intakeDrafts);
+        return;
+      }
       rejectSchemaUpgrade(from, to);
     },
   );

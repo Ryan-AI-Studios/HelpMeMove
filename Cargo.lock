@@ -372,7 +372,9 @@ name = "helpmemove_bridge"
 version = "0.1.0"
 dependencies = [
  "flutter_rust_bridge",
+ "helpmemove_content",
  "helpmemove_domain",
+ "helpmemove_safety",
 ]
 
 [[package]]
