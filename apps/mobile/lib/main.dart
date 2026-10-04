@@ -3,22 +3,36 @@ import 'package:go_router/go_router.dart';
 import 'package:helpmemove/design/app_theme.dart';
 import 'package:helpmemove/design/router.dart';
 import 'package:helpmemove/src/rust/frb_generated.dart';
+import 'package:helpmemove/storage/storage_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
-  runApp(const HelpMeMoveApp());
+  final StorageController storage = StorageController.production();
+  final String initialLocation = await storage.open();
+  runApp(
+    HelpMeMoveApp(
+      initialLocation: initialLocation,
+      recovery: StorageRecovery(onRetry: storage.open, onReset: storage.reset),
+    ),
+  );
 }
 
 class HelpMeMoveApp extends StatefulWidget {
-  const HelpMeMoveApp({super.key});
+  const HelpMeMoveApp({super.key, this.initialLocation = '/', this.recovery});
+
+  final String initialLocation;
+  final StorageRecovery? recovery;
 
   @override
   State<HelpMeMoveApp> createState() => _HelpMeMoveAppState();
 }
 
 class _HelpMeMoveAppState extends State<HelpMeMoveApp> {
-  late final GoRouter _router = buildHelpMeMoveRouter();
+  late final GoRouter _router = buildHelpMeMoveRouter(
+    initialLocation: widget.initialLocation,
+    recovery: widget.recovery,
+  );
 
   @override
   void dispose() {
