@@ -270,6 +270,8 @@ void main() {
     await tester.tap(find.text('Rep 1 of 1'));
     await until(tester, find.text('Session saved'));
     expect(find.text('1 exercise. 1 completed rep.'), findsOneWidget);
+    expect(find.text('Report a problem'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
     expect(find.text('Great'), findsNothing);
     expect(find.textContaining('°'), findsNothing);
     final List<String> saved =
@@ -306,6 +308,8 @@ void main() {
     expect(find.text('Session stopped'), findsNothing);
     await tapText(tester, 'End session');
     await until(tester, find.text('Session stopped'));
+    expect(find.text('Report a problem'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
     expect(
       find.text(
         'You ended this synthetic session. Nothing was marked complete.',
@@ -361,6 +365,8 @@ void main() {
     expect(find.textContaining('remaining'), findsNothing);
     await tapText(tester, 'End session');
     await until(tester, find.text('Session ended'));
+    expect(find.text('Report a problem'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
     expect(
       find.text('This synthetic session was not saved as complete.'),
       findsOneWidget,
@@ -985,6 +991,36 @@ void main() {
     );
     await until(tester, find.text('Set 1 of 1'));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a saved session can open the report screen', (
+    WidgetTester tester,
+  ) async {
+    final ProfileStore store = openStore();
+    final String program = File('test/program/green_shoulder_program.json')
+        .readAsStringSync()
+        .trim();
+    await tester.runAsync(() async {
+      await store.createProfile();
+      await store.saveProgramRecord(program);
+    });
+    await tester.pumpWidget(HelpMeMoveApp(key: UniqueKey(), store: store));
+    await until(tester, find.text('Start workout'));
+    await tester.tap(find.text('Start workout'));
+    await until(tester, find.text('Start'));
+    await tester.tap(find.text('Start'));
+    await until(tester, find.text("I'm ready"));
+    await tester.tap(find.text("I'm ready"));
+    await until(tester, find.text('Rep 1 of 1'));
+    await tester.tap(find.text('Rep 1 of 1'));
+    await until(tester, find.text('Session saved'));
+    expect(find.text('Report a problem'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    await tester.ensureVisible(find.text('Report a problem'));
+    await tester.tap(find.text('Report a problem'));
+    await until(tester, find.text('This report stays on this device.'));
+    expect(find.text('Report a problem'), findsOneWidget);
+    expect(find.text('Session saved'), findsNothing);
   });
 }
 

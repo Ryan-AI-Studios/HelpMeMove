@@ -3660,6 +3660,820 @@ class AppearanceRecordsCompanion extends UpdateCompanion<AppearanceRecord> {
   }
 }
 
+class $ProblemReportRecordsTable extends ProblemReportRecords
+    with TableInfo<$ProblemReportRecordsTable, ProblemReportRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProblemReportRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _reportIdMeta = const VerificationMeta(
+    'reportId',
+  );
+  @override
+  late final GeneratedColumn<String> reportId = GeneratedColumn<String>(
+    'report_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _programRecordVersionMeta =
+      const VerificationMeta('programRecordVersion');
+  @override
+  late final GeneratedColumn<int> programRecordVersion = GeneratedColumn<int>(
+    'program_record_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _programRuleIdMeta = const VerificationMeta(
+    'programRuleId',
+  );
+  @override
+  late final GeneratedColumn<String> programRuleId = GeneratedColumn<String>(
+    'program_rule_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _programRuleVersionMeta =
+      const VerificationMeta('programRuleVersion');
+  @override
+  late final GeneratedColumn<int> programRuleVersion = GeneratedColumn<int>(
+    'program_rule_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _safetyRuleIdMeta = const VerificationMeta(
+    'safetyRuleId',
+  );
+  @override
+  late final GeneratedColumn<String> safetyRuleId = GeneratedColumn<String>(
+    'safety_rule_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _safetyRuleVersionMeta = const VerificationMeta(
+    'safetyRuleVersion',
+  );
+  @override
+  late final GeneratedColumn<int> safetyRuleVersion = GeneratedColumn<int>(
+    'safety_rule_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<String> exerciseId = GeneratedColumn<String>(
+    'exercise_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exerciseVersionMeta = const VerificationMeta(
+    'exerciseVersion',
+  );
+  @override
+  late final GeneratedColumn<int> exerciseVersion = GeneratedColumn<int>(
+    'exercise_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMsMeta = const VerificationMeta(
+    'createdAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> createdAtMs = GeneratedColumn<int>(
+    'created_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    reportId,
+    subjectId,
+    category,
+    note,
+    programRecordVersion,
+    programRuleId,
+    programRuleVersion,
+    safetyRuleId,
+    safetyRuleVersion,
+    exerciseId,
+    exerciseVersion,
+    sessionId,
+    createdAtMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'problem_report_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProblemReportRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('report_id')) {
+      context.handle(
+        _reportIdMeta,
+        reportId.isAcceptableOrUnknown(data['report_id']!, _reportIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reportIdMeta);
+    }
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteMeta);
+    }
+    if (data.containsKey('program_record_version')) {
+      context.handle(
+        _programRecordVersionMeta,
+        programRecordVersion.isAcceptableOrUnknown(
+          data['program_record_version']!,
+          _programRecordVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('program_rule_id')) {
+      context.handle(
+        _programRuleIdMeta,
+        programRuleId.isAcceptableOrUnknown(
+          data['program_rule_id']!,
+          _programRuleIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('program_rule_version')) {
+      context.handle(
+        _programRuleVersionMeta,
+        programRuleVersion.isAcceptableOrUnknown(
+          data['program_rule_version']!,
+          _programRuleVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('safety_rule_id')) {
+      context.handle(
+        _safetyRuleIdMeta,
+        safetyRuleId.isAcceptableOrUnknown(
+          data['safety_rule_id']!,
+          _safetyRuleIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('safety_rule_version')) {
+      context.handle(
+        _safetyRuleVersionMeta,
+        safetyRuleVersion.isAcceptableOrUnknown(
+          data['safety_rule_version']!,
+          _safetyRuleVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    }
+    if (data.containsKey('exercise_version')) {
+      context.handle(
+        _exerciseVersionMeta,
+        exerciseVersion.isAcceptableOrUnknown(
+          data['exercise_version']!,
+          _exerciseVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    }
+    if (data.containsKey('created_at_ms')) {
+      context.handle(
+        _createdAtMsMeta,
+        createdAtMs.isAcceptableOrUnknown(
+          data['created_at_ms']!,
+          _createdAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {reportId};
+  @override
+  ProblemReportRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProblemReportRecord(
+      reportId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}report_id'],
+      )!,
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      )!,
+      programRecordVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}program_record_version'],
+      ),
+      programRuleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}program_rule_id'],
+      ),
+      programRuleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}program_rule_version'],
+      ),
+      safetyRuleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}safety_rule_id'],
+      ),
+      safetyRuleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}safety_rule_version'],
+      ),
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_id'],
+      ),
+      exerciseVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}exercise_version'],
+      ),
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      ),
+      createdAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $ProblemReportRecordsTable createAlias(String alias) {
+    return $ProblemReportRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class ProblemReportRecord extends DataClass
+    implements Insertable<ProblemReportRecord> {
+  final String reportId;
+  final String subjectId;
+  final String category;
+  final String note;
+  final int? programRecordVersion;
+  final String? programRuleId;
+  final int? programRuleVersion;
+  final String? safetyRuleId;
+  final int? safetyRuleVersion;
+  final String? exerciseId;
+  final int? exerciseVersion;
+  final String? sessionId;
+  final int createdAtMs;
+  const ProblemReportRecord({
+    required this.reportId,
+    required this.subjectId,
+    required this.category,
+    required this.note,
+    this.programRecordVersion,
+    this.programRuleId,
+    this.programRuleVersion,
+    this.safetyRuleId,
+    this.safetyRuleVersion,
+    this.exerciseId,
+    this.exerciseVersion,
+    this.sessionId,
+    required this.createdAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['report_id'] = Variable<String>(reportId);
+    map['subject_id'] = Variable<String>(subjectId);
+    map['category'] = Variable<String>(category);
+    map['note'] = Variable<String>(note);
+    if (!nullToAbsent || programRecordVersion != null) {
+      map['program_record_version'] = Variable<int>(programRecordVersion);
+    }
+    if (!nullToAbsent || programRuleId != null) {
+      map['program_rule_id'] = Variable<String>(programRuleId);
+    }
+    if (!nullToAbsent || programRuleVersion != null) {
+      map['program_rule_version'] = Variable<int>(programRuleVersion);
+    }
+    if (!nullToAbsent || safetyRuleId != null) {
+      map['safety_rule_id'] = Variable<String>(safetyRuleId);
+    }
+    if (!nullToAbsent || safetyRuleVersion != null) {
+      map['safety_rule_version'] = Variable<int>(safetyRuleVersion);
+    }
+    if (!nullToAbsent || exerciseId != null) {
+      map['exercise_id'] = Variable<String>(exerciseId);
+    }
+    if (!nullToAbsent || exerciseVersion != null) {
+      map['exercise_version'] = Variable<int>(exerciseVersion);
+    }
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<String>(sessionId);
+    }
+    map['created_at_ms'] = Variable<int>(createdAtMs);
+    return map;
+  }
+
+  ProblemReportRecordsCompanion toCompanion(bool nullToAbsent) {
+    return ProblemReportRecordsCompanion(
+      reportId: Value(reportId),
+      subjectId: Value(subjectId),
+      category: Value(category),
+      note: Value(note),
+      programRecordVersion: programRecordVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(programRecordVersion),
+      programRuleId: programRuleId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(programRuleId),
+      programRuleVersion: programRuleVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(programRuleVersion),
+      safetyRuleId: safetyRuleId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(safetyRuleId),
+      safetyRuleVersion: safetyRuleVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(safetyRuleVersion),
+      exerciseId: exerciseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exerciseId),
+      exerciseVersion: exerciseVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exerciseVersion),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
+      createdAtMs: Value(createdAtMs),
+    );
+  }
+
+  factory ProblemReportRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProblemReportRecord(
+      reportId: serializer.fromJson<String>(json['reportId']),
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      category: serializer.fromJson<String>(json['category']),
+      note: serializer.fromJson<String>(json['note']),
+      programRecordVersion: serializer.fromJson<int?>(
+        json['programRecordVersion'],
+      ),
+      programRuleId: serializer.fromJson<String?>(json['programRuleId']),
+      programRuleVersion: serializer.fromJson<int?>(json['programRuleVersion']),
+      safetyRuleId: serializer.fromJson<String?>(json['safetyRuleId']),
+      safetyRuleVersion: serializer.fromJson<int?>(json['safetyRuleVersion']),
+      exerciseId: serializer.fromJson<String?>(json['exerciseId']),
+      exerciseVersion: serializer.fromJson<int?>(json['exerciseVersion']),
+      sessionId: serializer.fromJson<String?>(json['sessionId']),
+      createdAtMs: serializer.fromJson<int>(json['createdAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'reportId': serializer.toJson<String>(reportId),
+      'subjectId': serializer.toJson<String>(subjectId),
+      'category': serializer.toJson<String>(category),
+      'note': serializer.toJson<String>(note),
+      'programRecordVersion': serializer.toJson<int?>(programRecordVersion),
+      'programRuleId': serializer.toJson<String?>(programRuleId),
+      'programRuleVersion': serializer.toJson<int?>(programRuleVersion),
+      'safetyRuleId': serializer.toJson<String?>(safetyRuleId),
+      'safetyRuleVersion': serializer.toJson<int?>(safetyRuleVersion),
+      'exerciseId': serializer.toJson<String?>(exerciseId),
+      'exerciseVersion': serializer.toJson<int?>(exerciseVersion),
+      'sessionId': serializer.toJson<String?>(sessionId),
+      'createdAtMs': serializer.toJson<int>(createdAtMs),
+    };
+  }
+
+  ProblemReportRecord copyWith({
+    String? reportId,
+    String? subjectId,
+    String? category,
+    String? note,
+    Value<int?> programRecordVersion = const Value.absent(),
+    Value<String?> programRuleId = const Value.absent(),
+    Value<int?> programRuleVersion = const Value.absent(),
+    Value<String?> safetyRuleId = const Value.absent(),
+    Value<int?> safetyRuleVersion = const Value.absent(),
+    Value<String?> exerciseId = const Value.absent(),
+    Value<int?> exerciseVersion = const Value.absent(),
+    Value<String?> sessionId = const Value.absent(),
+    int? createdAtMs,
+  }) => ProblemReportRecord(
+    reportId: reportId ?? this.reportId,
+    subjectId: subjectId ?? this.subjectId,
+    category: category ?? this.category,
+    note: note ?? this.note,
+    programRecordVersion: programRecordVersion.present
+        ? programRecordVersion.value
+        : this.programRecordVersion,
+    programRuleId: programRuleId.present
+        ? programRuleId.value
+        : this.programRuleId,
+    programRuleVersion: programRuleVersion.present
+        ? programRuleVersion.value
+        : this.programRuleVersion,
+    safetyRuleId: safetyRuleId.present ? safetyRuleId.value : this.safetyRuleId,
+    safetyRuleVersion: safetyRuleVersion.present
+        ? safetyRuleVersion.value
+        : this.safetyRuleVersion,
+    exerciseId: exerciseId.present ? exerciseId.value : this.exerciseId,
+    exerciseVersion: exerciseVersion.present
+        ? exerciseVersion.value
+        : this.exerciseVersion,
+    sessionId: sessionId.present ? sessionId.value : this.sessionId,
+    createdAtMs: createdAtMs ?? this.createdAtMs,
+  );
+  ProblemReportRecord copyWithCompanion(ProblemReportRecordsCompanion data) {
+    return ProblemReportRecord(
+      reportId: data.reportId.present ? data.reportId.value : this.reportId,
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      category: data.category.present ? data.category.value : this.category,
+      note: data.note.present ? data.note.value : this.note,
+      programRecordVersion: data.programRecordVersion.present
+          ? data.programRecordVersion.value
+          : this.programRecordVersion,
+      programRuleId: data.programRuleId.present
+          ? data.programRuleId.value
+          : this.programRuleId,
+      programRuleVersion: data.programRuleVersion.present
+          ? data.programRuleVersion.value
+          : this.programRuleVersion,
+      safetyRuleId: data.safetyRuleId.present
+          ? data.safetyRuleId.value
+          : this.safetyRuleId,
+      safetyRuleVersion: data.safetyRuleVersion.present
+          ? data.safetyRuleVersion.value
+          : this.safetyRuleVersion,
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      exerciseVersion: data.exerciseVersion.present
+          ? data.exerciseVersion.value
+          : this.exerciseVersion,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      createdAtMs: data.createdAtMs.present
+          ? data.createdAtMs.value
+          : this.createdAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProblemReportRecord(')
+          ..write('reportId: $reportId, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('category: $category, ')
+          ..write('note: $note, ')
+          ..write('programRecordVersion: $programRecordVersion, ')
+          ..write('programRuleId: $programRuleId, ')
+          ..write('programRuleVersion: $programRuleVersion, ')
+          ..write('safetyRuleId: $safetyRuleId, ')
+          ..write('safetyRuleVersion: $safetyRuleVersion, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('exerciseVersion: $exerciseVersion, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('createdAtMs: $createdAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    reportId,
+    subjectId,
+    category,
+    note,
+    programRecordVersion,
+    programRuleId,
+    programRuleVersion,
+    safetyRuleId,
+    safetyRuleVersion,
+    exerciseId,
+    exerciseVersion,
+    sessionId,
+    createdAtMs,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProblemReportRecord &&
+          other.reportId == this.reportId &&
+          other.subjectId == this.subjectId &&
+          other.category == this.category &&
+          other.note == this.note &&
+          other.programRecordVersion == this.programRecordVersion &&
+          other.programRuleId == this.programRuleId &&
+          other.programRuleVersion == this.programRuleVersion &&
+          other.safetyRuleId == this.safetyRuleId &&
+          other.safetyRuleVersion == this.safetyRuleVersion &&
+          other.exerciseId == this.exerciseId &&
+          other.exerciseVersion == this.exerciseVersion &&
+          other.sessionId == this.sessionId &&
+          other.createdAtMs == this.createdAtMs);
+}
+
+class ProblemReportRecordsCompanion
+    extends UpdateCompanion<ProblemReportRecord> {
+  final Value<String> reportId;
+  final Value<String> subjectId;
+  final Value<String> category;
+  final Value<String> note;
+  final Value<int?> programRecordVersion;
+  final Value<String?> programRuleId;
+  final Value<int?> programRuleVersion;
+  final Value<String?> safetyRuleId;
+  final Value<int?> safetyRuleVersion;
+  final Value<String?> exerciseId;
+  final Value<int?> exerciseVersion;
+  final Value<String?> sessionId;
+  final Value<int> createdAtMs;
+  final Value<int> rowid;
+  const ProblemReportRecordsCompanion({
+    this.reportId = const Value.absent(),
+    this.subjectId = const Value.absent(),
+    this.category = const Value.absent(),
+    this.note = const Value.absent(),
+    this.programRecordVersion = const Value.absent(),
+    this.programRuleId = const Value.absent(),
+    this.programRuleVersion = const Value.absent(),
+    this.safetyRuleId = const Value.absent(),
+    this.safetyRuleVersion = const Value.absent(),
+    this.exerciseId = const Value.absent(),
+    this.exerciseVersion = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.createdAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProblemReportRecordsCompanion.insert({
+    required String reportId,
+    required String subjectId,
+    required String category,
+    required String note,
+    this.programRecordVersion = const Value.absent(),
+    this.programRuleId = const Value.absent(),
+    this.programRuleVersion = const Value.absent(),
+    this.safetyRuleId = const Value.absent(),
+    this.safetyRuleVersion = const Value.absent(),
+    this.exerciseId = const Value.absent(),
+    this.exerciseVersion = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    required int createdAtMs,
+    this.rowid = const Value.absent(),
+  }) : reportId = Value(reportId),
+       subjectId = Value(subjectId),
+       category = Value(category),
+       note = Value(note),
+       createdAtMs = Value(createdAtMs);
+  static Insertable<ProblemReportRecord> custom({
+    Expression<String>? reportId,
+    Expression<String>? subjectId,
+    Expression<String>? category,
+    Expression<String>? note,
+    Expression<int>? programRecordVersion,
+    Expression<String>? programRuleId,
+    Expression<int>? programRuleVersion,
+    Expression<String>? safetyRuleId,
+    Expression<int>? safetyRuleVersion,
+    Expression<String>? exerciseId,
+    Expression<int>? exerciseVersion,
+    Expression<String>? sessionId,
+    Expression<int>? createdAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (reportId != null) 'report_id': reportId,
+      if (subjectId != null) 'subject_id': subjectId,
+      if (category != null) 'category': category,
+      if (note != null) 'note': note,
+      if (programRecordVersion != null)
+        'program_record_version': programRecordVersion,
+      if (programRuleId != null) 'program_rule_id': programRuleId,
+      if (programRuleVersion != null)
+        'program_rule_version': programRuleVersion,
+      if (safetyRuleId != null) 'safety_rule_id': safetyRuleId,
+      if (safetyRuleVersion != null) 'safety_rule_version': safetyRuleVersion,
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (exerciseVersion != null) 'exercise_version': exerciseVersion,
+      if (sessionId != null) 'session_id': sessionId,
+      if (createdAtMs != null) 'created_at_ms': createdAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProblemReportRecordsCompanion copyWith({
+    Value<String>? reportId,
+    Value<String>? subjectId,
+    Value<String>? category,
+    Value<String>? note,
+    Value<int?>? programRecordVersion,
+    Value<String?>? programRuleId,
+    Value<int?>? programRuleVersion,
+    Value<String?>? safetyRuleId,
+    Value<int?>? safetyRuleVersion,
+    Value<String?>? exerciseId,
+    Value<int?>? exerciseVersion,
+    Value<String?>? sessionId,
+    Value<int>? createdAtMs,
+    Value<int>? rowid,
+  }) {
+    return ProblemReportRecordsCompanion(
+      reportId: reportId ?? this.reportId,
+      subjectId: subjectId ?? this.subjectId,
+      category: category ?? this.category,
+      note: note ?? this.note,
+      programRecordVersion: programRecordVersion ?? this.programRecordVersion,
+      programRuleId: programRuleId ?? this.programRuleId,
+      programRuleVersion: programRuleVersion ?? this.programRuleVersion,
+      safetyRuleId: safetyRuleId ?? this.safetyRuleId,
+      safetyRuleVersion: safetyRuleVersion ?? this.safetyRuleVersion,
+      exerciseId: exerciseId ?? this.exerciseId,
+      exerciseVersion: exerciseVersion ?? this.exerciseVersion,
+      sessionId: sessionId ?? this.sessionId,
+      createdAtMs: createdAtMs ?? this.createdAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (reportId.present) {
+      map['report_id'] = Variable<String>(reportId.value);
+    }
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (programRecordVersion.present) {
+      map['program_record_version'] = Variable<int>(programRecordVersion.value);
+    }
+    if (programRuleId.present) {
+      map['program_rule_id'] = Variable<String>(programRuleId.value);
+    }
+    if (programRuleVersion.present) {
+      map['program_rule_version'] = Variable<int>(programRuleVersion.value);
+    }
+    if (safetyRuleId.present) {
+      map['safety_rule_id'] = Variable<String>(safetyRuleId.value);
+    }
+    if (safetyRuleVersion.present) {
+      map['safety_rule_version'] = Variable<int>(safetyRuleVersion.value);
+    }
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<String>(exerciseId.value);
+    }
+    if (exerciseVersion.present) {
+      map['exercise_version'] = Variable<int>(exerciseVersion.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (createdAtMs.present) {
+      map['created_at_ms'] = Variable<int>(createdAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProblemReportRecordsCompanion(')
+          ..write('reportId: $reportId, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('category: $category, ')
+          ..write('note: $note, ')
+          ..write('programRecordVersion: $programRecordVersion, ')
+          ..write('programRuleId: $programRuleId, ')
+          ..write('programRuleVersion: $programRuleVersion, ')
+          ..write('safetyRuleId: $safetyRuleId, ')
+          ..write('safetyRuleVersion: $safetyRuleVersion, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('exerciseVersion: $exerciseVersion, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('createdAtMs: $createdAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
@@ -3683,6 +4497,8 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
       $FlareFollowupRecordsTable(this);
   late final $AppearanceRecordsTable appearanceRecords =
       $AppearanceRecordsTable(this);
+  late final $ProblemReportRecordsTable problemReportRecords =
+      $ProblemReportRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3700,6 +4516,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
     adaptationRecords,
     flareFollowupRecords,
     appearanceRecords,
+    problemReportRecords,
   ];
 }
 
@@ -6018,6 +6835,401 @@ typedef $$AppearanceRecordsTableProcessedTableManager =
       AppearanceRecord,
       PrefetchHooks Function()
     >;
+typedef $$ProblemReportRecordsTableCreateCompanionBuilder =
+    ProblemReportRecordsCompanion Function({
+      required String reportId,
+      required String subjectId,
+      required String category,
+      required String note,
+      Value<int?> programRecordVersion,
+      Value<String?> programRuleId,
+      Value<int?> programRuleVersion,
+      Value<String?> safetyRuleId,
+      Value<int?> safetyRuleVersion,
+      Value<String?> exerciseId,
+      Value<int?> exerciseVersion,
+      Value<String?> sessionId,
+      required int createdAtMs,
+      Value<int> rowid,
+    });
+typedef $$ProblemReportRecordsTableUpdateCompanionBuilder =
+    ProblemReportRecordsCompanion Function({
+      Value<String> reportId,
+      Value<String> subjectId,
+      Value<String> category,
+      Value<String> note,
+      Value<int?> programRecordVersion,
+      Value<String?> programRuleId,
+      Value<int?> programRuleVersion,
+      Value<String?> safetyRuleId,
+      Value<int?> safetyRuleVersion,
+      Value<String?> exerciseId,
+      Value<int?> exerciseVersion,
+      Value<String?> sessionId,
+      Value<int> createdAtMs,
+      Value<int> rowid,
+    });
+
+class $$ProblemReportRecordsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $ProblemReportRecordsTable> {
+  $$ProblemReportRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get reportId => $composableBuilder(
+    column: $table.reportId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get programRecordVersion => $composableBuilder(
+    column: $table.programRecordVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get programRuleId => $composableBuilder(
+    column: $table.programRuleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get programRuleVersion => $composableBuilder(
+    column: $table.programRuleVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get safetyRuleId => $composableBuilder(
+    column: $table.safetyRuleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get safetyRuleVersion => $composableBuilder(
+    column: $table.safetyRuleVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get exerciseVersion => $composableBuilder(
+    column: $table.exerciseVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProblemReportRecordsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $ProblemReportRecordsTable> {
+  $$ProblemReportRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get reportId => $composableBuilder(
+    column: $table.reportId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get programRecordVersion => $composableBuilder(
+    column: $table.programRecordVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get programRuleId => $composableBuilder(
+    column: $table.programRuleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get programRuleVersion => $composableBuilder(
+    column: $table.programRuleVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get safetyRuleId => $composableBuilder(
+    column: $table.safetyRuleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get safetyRuleVersion => $composableBuilder(
+    column: $table.safetyRuleVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get exerciseVersion => $composableBuilder(
+    column: $table.exerciseVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProblemReportRecordsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $ProblemReportRecordsTable> {
+  $$ProblemReportRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get reportId =>
+      $composableBuilder(column: $table.reportId, builder: (column) => column);
+
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<int> get programRecordVersion => $composableBuilder(
+    column: $table.programRecordVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get programRuleId => $composableBuilder(
+    column: $table.programRuleId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get programRuleVersion => $composableBuilder(
+    column: $table.programRuleVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get safetyRuleId => $composableBuilder(
+    column: $table.safetyRuleId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get safetyRuleVersion => $composableBuilder(
+    column: $table.safetyRuleVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get exerciseVersion => $composableBuilder(
+    column: $table.exerciseVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$ProblemReportRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $ProblemReportRecordsTable,
+          ProblemReportRecord,
+          $$ProblemReportRecordsTableFilterComposer,
+          $$ProblemReportRecordsTableOrderingComposer,
+          $$ProblemReportRecordsTableAnnotationComposer,
+          $$ProblemReportRecordsTableCreateCompanionBuilder,
+          $$ProblemReportRecordsTableUpdateCompanionBuilder,
+          (
+            ProblemReportRecord,
+            BaseReferences<
+              _$ProfileDatabase,
+              $ProblemReportRecordsTable,
+              ProblemReportRecord
+            >,
+          ),
+          ProblemReportRecord,
+          PrefetchHooks Function()
+        > {
+  $$ProblemReportRecordsTableTableManager(
+    _$ProfileDatabase db,
+    $ProblemReportRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProblemReportRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProblemReportRecordsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ProblemReportRecordsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> reportId = const Value.absent(),
+                Value<String> subjectId = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String> note = const Value.absent(),
+                Value<int?> programRecordVersion = const Value.absent(),
+                Value<String?> programRuleId = const Value.absent(),
+                Value<int?> programRuleVersion = const Value.absent(),
+                Value<String?> safetyRuleId = const Value.absent(),
+                Value<int?> safetyRuleVersion = const Value.absent(),
+                Value<String?> exerciseId = const Value.absent(),
+                Value<int?> exerciseVersion = const Value.absent(),
+                Value<String?> sessionId = const Value.absent(),
+                Value<int> createdAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProblemReportRecordsCompanion(
+                reportId: reportId,
+                subjectId: subjectId,
+                category: category,
+                note: note,
+                programRecordVersion: programRecordVersion,
+                programRuleId: programRuleId,
+                programRuleVersion: programRuleVersion,
+                safetyRuleId: safetyRuleId,
+                safetyRuleVersion: safetyRuleVersion,
+                exerciseId: exerciseId,
+                exerciseVersion: exerciseVersion,
+                sessionId: sessionId,
+                createdAtMs: createdAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String reportId,
+                required String subjectId,
+                required String category,
+                required String note,
+                Value<int?> programRecordVersion = const Value.absent(),
+                Value<String?> programRuleId = const Value.absent(),
+                Value<int?> programRuleVersion = const Value.absent(),
+                Value<String?> safetyRuleId = const Value.absent(),
+                Value<int?> safetyRuleVersion = const Value.absent(),
+                Value<String?> exerciseId = const Value.absent(),
+                Value<int?> exerciseVersion = const Value.absent(),
+                Value<String?> sessionId = const Value.absent(),
+                required int createdAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => ProblemReportRecordsCompanion.insert(
+                reportId: reportId,
+                subjectId: subjectId,
+                category: category,
+                note: note,
+                programRecordVersion: programRecordVersion,
+                programRuleId: programRuleId,
+                programRuleVersion: programRuleVersion,
+                safetyRuleId: safetyRuleId,
+                safetyRuleVersion: safetyRuleVersion,
+                exerciseId: exerciseId,
+                exerciseVersion: exerciseVersion,
+                sessionId: sessionId,
+                createdAtMs: createdAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ProblemReportRecordsTable, ProblemReportRecord>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $ProblemReportRecordsTable,
+                    ProblemReportRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProblemReportRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $ProblemReportRecordsTable,
+      ProblemReportRecord,
+      $$ProblemReportRecordsTableFilterComposer,
+      $$ProblemReportRecordsTableOrderingComposer,
+      $$ProblemReportRecordsTableAnnotationComposer,
+      $$ProblemReportRecordsTableCreateCompanionBuilder,
+      $$ProblemReportRecordsTableUpdateCompanionBuilder,
+      (
+        ProblemReportRecord,
+        BaseReferences<
+          _$ProfileDatabase,
+          $ProblemReportRecordsTable,
+          ProblemReportRecord
+        >,
+      ),
+      ProblemReportRecord,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -6046,4 +7258,6 @@ class $ProfileDatabaseManager {
       $$FlareFollowupRecordsTableTableManager(_db, _db.flareFollowupRecords);
   $$AppearanceRecordsTableTableManager get appearanceRecords =>
       $$AppearanceRecordsTableTableManager(_db, _db.appearanceRecords);
+  $$ProblemReportRecordsTableTableManager get problemReportRecords =>
+      $$ProblemReportRecordsTableTableManager(_db, _db.problemReportRecords);
 }

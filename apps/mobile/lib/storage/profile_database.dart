@@ -176,6 +176,45 @@ class AppearanceRecords extends Table {
   ];
 }
 
+class ProblemReportRecords extends Table {
+  @override
+  String get tableName => 'problem_report_records';
+
+  TextColumn get reportId => text()();
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get category => text()();
+
+  TextColumn get note => text()();
+
+  IntColumn get programRecordVersion => integer().nullable()();
+
+  TextColumn get programRuleId => text().nullable()();
+
+  IntColumn get programRuleVersion => integer().nullable()();
+
+  TextColumn get safetyRuleId => text().nullable()();
+
+  IntColumn get safetyRuleVersion => integer().nullable()();
+
+  TextColumn get exerciseId => text().nullable()();
+
+  IntColumn get exerciseVersion => integer().nullable()();
+
+  TextColumn get sessionId => text().nullable()();
+
+  IntColumn get createdAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{reportId};
+
+  @override
+  List<String> get customConstraints => const <String>[
+    "CHECK (category IN ('app_issue', 'exercise_instruction', 'program_feels_wrong', 'safety_concern', 'content_issue'))",
+  ];
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -237,6 +276,7 @@ QueryExecutor openEncryptedExecutor({
     AdaptationRecords,
     FlareFollowupRecords,
     AppearanceRecords,
+    ProblemReportRecords,
   ],
 )
 class ProfileDatabase extends _$ProfileDatabase {
@@ -246,7 +286,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -283,6 +323,10 @@ class ProfileDatabase extends _$ProfileDatabase {
       }
       if (from == 7 && to == 8) {
         await migrator.createTable(appearanceRecords);
+        return;
+      }
+      if (from == 8 && to == 9) {
+        await migrator.createTable(problemReportRecords);
         return;
       }
       rejectSchemaUpgrade(from, to);

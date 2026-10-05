@@ -12,6 +12,7 @@ import 'package:helpmemove/assessment/assessment_flow.dart';
 import 'package:helpmemove/design/shell/app_shell.dart';
 import 'package:helpmemove/intake/intake_flow.dart';
 import 'package:helpmemove/privacy/privacy_screen.dart';
+import 'package:helpmemove/report/report_screen.dart';
 import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/program/program_flow.dart';
 import 'package:helpmemove/progress/progress_screen.dart';
@@ -223,6 +224,20 @@ GoRouter buildHelpMeMoveRouter({
                       return PrivacyScreen(
                         store: profile,
                         onAppearanceSaved: onAppearanceSaved,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'report',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const WorkoutUnavailable();
+                      }
+                      return ReportScreen(
+                        store: profile,
+                        sessionId: state.uri.queryParameters['session'],
                       );
                     },
                   ),

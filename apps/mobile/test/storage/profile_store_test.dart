@@ -251,6 +251,9 @@ void main() {
       throwsA(isA<StorageSchemaException>()),
     );
     await database.customStatement('DROP TABLE IF EXISTS appearance_records');
+    await database.customStatement(
+      'DROP TABLE IF EXISTS problem_report_records',
+    );
     await upgrade(migrator, 7, 8);
     final List<drift.QueryRow> appearance = await database
         .customSelect(
@@ -258,8 +261,31 @@ void main() {
         )
         .get();
     expect(appearance, hasLength(1));
+    final List<drift.QueryRow> reportsAfter78 = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'problem_report_records'",
+        )
+        .get();
+    expect(reportsAfter78, isEmpty);
     await expectLater(
-      upgrade(migrator, 8, 9),
+      upgrade(migrator, 7, 9),
+      throwsA(isA<StorageSchemaException>()),
+    );
+    final List<drift.QueryRow> reportsAfter79 = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'problem_report_records'",
+        )
+        .get();
+    expect(reportsAfter79, isEmpty);
+    await upgrade(migrator, 8, 9);
+    final List<drift.QueryRow> reports = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'problem_report_records'",
+        )
+        .get();
+    expect(reports, hasLength(1));
+    await expectLater(
+      upgrade(migrator, 9, 10),
       throwsA(isA<StorageSchemaException>()),
     );
     await database.customStatement('DROP TABLE IF EXISTS readiness_records');
@@ -271,7 +297,7 @@ void main() {
         )
         .get();
     expect(readiness, hasLength(1));
-    expect(database.schemaVersion, 8);
+    expect(database.schemaVersion, 9);
   });
 
   test('schema 2 opened by schema 4 is rejected', () async {
@@ -471,7 +497,7 @@ void main() {
     unchanged.close();
   });
 
-  test('schema 7 gains appearance_records and keeps program workout flare and check rows', () async {
+  test('schema 8 gains problem_report_records and keeps appearance flare and program rows', () async {
     const String program =
         '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
     const String sessionId = '11111111-1111-4111-8111-111111111111';
@@ -498,14 +524,15 @@ void main() {
       documentJson: flare,
       updatedAtMs: 6,
     );
+    await store.saveAppearanceChoice('dark');
     final File file = store.openDatabaseFile!;
     final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
     await store.close();
 
     final Database raw = sqlite3.open(file.path);
     applyEncryptionSetup(raw, keyHex);
-    raw.execute('DROP TABLE IF EXISTS appearance_records');
-    raw.execute('PRAGMA user_version = 7');
+    raw.execute('DROP TABLE IF EXISTS problem_report_records');
+    raw.execute('PRAGMA user_version = 8');
     raw.close();
 
     await store.reopenActive();
@@ -514,18 +541,25 @@ void main() {
     expect(await store.loadReadinessRecord(sessionId), readiness);
     expect(await store.loadAdaptationRecord(sessionId), adaptation);
     expect(await store.loadFlareFollowup(sessionId), flare);
-    expect(await store.loadAppearanceChoice(), isNull);
+    expect(await store.loadAppearanceChoice(), 'dark');
     await store.close();
 
     final Database upgraded = sqlite3.open(file.path);
     applyEncryptionSetup(upgraded, keyHex);
-    expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 8);
+    expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 9);
     expect(
       upgraded
-          .select('SELECT COUNT(*) FROM appearance_records')
+          .select('SELECT COUNT(*) FROM problem_report_records')
           .first
           .columnAt(0),
       0,
+    );
+    expect(
+      upgraded
+          .select('SELECT choice FROM appearance_records')
+          .first
+          .columnAt(0),
+      'dark',
     );
     expect(
       upgraded
@@ -534,7 +568,104 @@ void main() {
           .columnAt(0),
       flare,
     );
+    expect(
+      upgraded
+          .select('SELECT document_json FROM program_records')
+          .first
+          .columnAt(0),
+      program,
+    );
     upgraded.close();
+  });
+
+  test('schema 7 does not jump to schema 9', () async {
+    const String program =
+        '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
+    const String sessionId = '11111111-1111-4111-8111-111111111111';
+    const String workout =
+        '{"session_id":"11111111-1111-4111-8111-111111111111"}';
+    const String readiness = '{"soreness":"low"}';
+    const String adaptation = '{"action":"maintain"}';
+    const String flare = '{"choice":"worse_today","action":"keep_program"}';
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    await store.saveProgramRecord(program);
+    await store.saveWorkoutTerminal(
+      sessionId: sessionId,
+      documentJson: workout,
+    );
+    await store.saveAdaptationPair(
+      sessionId: sessionId,
+      readinessJson: readiness,
+      adaptationJson: adaptation,
+      updatedAtMs: 6,
+    );
+    await store.saveFlareFollowup(
+      sessionId: sessionId,
+      documentJson: flare,
+      updatedAtMs: 6,
+    );
+    await store.saveAppearanceChoice('dark');
+    final File file = store.openDatabaseFile!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    await store.close();
+
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    raw.execute('PRAGMA user_version = 7');
+    raw.close();
+
+    await expectLater(
+      store.reopenActive(),
+      throwsA(isA<StorageSchemaException>()),
+    );
+
+    final Database unchanged = sqlite3.open(file.path);
+    applyEncryptionSetup(unchanged, keyHex);
+    expect(unchanged.select('PRAGMA user_version').first.columnAt(0), 7);
+    expect(
+      unchanged
+          .select('SELECT document_json FROM program_records')
+          .first
+          .columnAt(0),
+      program,
+    );
+    expect(
+      unchanged
+          .select('SELECT document_json FROM workout_records')
+          .first
+          .columnAt(0),
+      workout,
+    );
+    expect(
+      unchanged
+          .select('SELECT document_json FROM readiness_records')
+          .first
+          .columnAt(0),
+      readiness,
+    );
+    expect(
+      unchanged
+          .select('SELECT document_json FROM adaptation_records')
+          .first
+          .columnAt(0),
+      adaptation,
+    );
+    expect(
+      unchanged
+          .select('SELECT document_json FROM flare_followup_records')
+          .first
+          .columnAt(0),
+      flare,
+    );
+    expect(
+      unchanged
+          .select('SELECT choice FROM appearance_records')
+          .first
+          .columnAt(0),
+      'dark',
+    );
+    unchanged.close();
   });
 
   test('schema 6 does not jump to schema 8', () async {
@@ -1017,6 +1148,239 @@ void main() {
     expect(await store.loadAppearanceChoice(), 'dark');
   });
 
+  test('problem report requires an active profile', () async {
+    final ProfileStore store = openStore();
+    await expectLater(
+      store.saveProblemReport(category: 'app_issue', note: ''),
+      throwsA(
+        isA<StorageIoException>().having(
+          (StorageIoException error) => error.message,
+          'message',
+          allOf(equals('no active profile'), isNot('no open database')),
+        ),
+      ),
+    );
+  });
+
+  test('unknown category and a long note insert nothing', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    await expectLater(
+      store.saveProblemReport(category: 'sepia', note: 'ok'),
+      throwsA(
+        isA<StorageSchemaException>().having(
+          (StorageSchemaException error) => error.message,
+          'message',
+          'report category is not supported',
+        ),
+      ),
+    );
+    await expectLater(
+      store.saveProblemReport(category: 'app_issue', note: 'a' * 501),
+      throwsA(
+        isA<StorageSchemaException>().having(
+          (StorageSchemaException error) => error.message,
+          'message',
+          'note is too long',
+        ),
+      ),
+    );
+    expect(await _problemReportCount(store), 0);
+  });
+
+  test('a problem report round-trips category note clock and id', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    final String reportId = await store.saveProblemReport(
+      category: 'app_issue',
+      note: 'shoulder note',
+    );
+    final StoredProblemReport report = (await store.loadProblemReport(
+      reportId,
+    ))!;
+    expect(report.reportId, reportId);
+    expect(report.category, 'app_issue');
+    expect(report.note, 'shoulder note');
+    expect(
+      report.createdAtMs,
+      DateTime.utc(2026, 1, 2, 3, 4, 5).millisecondsSinceEpoch,
+    );
+    expect(
+      report.reportId,
+      matches(
+        RegExp(
+          r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+        ),
+      ),
+    );
+  });
+
+  test(
+    'a stored program copies rule columns and leaves exercise null',
+    () async {
+      final ProfileStore store = openStore();
+      await store.createProfile();
+      await store.saveProgramRecord(_validProgram);
+      final String reportId = await store.saveProblemReport(
+        category: 'app_issue',
+        note: 'shoulder note',
+      );
+      final StoredProblemReport report = (await store.loadProblemReport(
+        reportId,
+      ))!;
+      expect(report.programRecordVersion, 1);
+      expect(report.programRuleId, 'syn-program-core');
+      expect(report.programRuleVersion, 1);
+      expect(report.safetyRuleId, 'syn-safety-core');
+      expect(report.safetyRuleVersion, 1);
+      expect(report.exerciseId, isNull);
+      expect(report.exerciseVersion, isNull);
+    },
+  );
+
+  test('a known exercise id copies that exercise version', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    await store.saveProgramRecord(_validProgram);
+    final String reportId = await store.saveProblemReport(
+      category: 'exercise_instruction',
+      note: '',
+      exerciseId: 'syn-shoulder-isometric',
+    );
+    final StoredProblemReport report = (await store.loadProblemReport(
+      reportId,
+    ))!;
+    expect(report.exerciseId, 'syn-shoulder-isometric');
+    expect(report.exerciseVersion, 1);
+    expect(report.programRuleId, 'syn-program-core');
+    expect(report.programRuleVersion, 1);
+    expect(report.safetyRuleId, 'syn-safety-core');
+    expect(report.safetyRuleVersion, 1);
+  });
+
+  test('an exercise id without a readable program inserts nothing', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    const String bad = '{"not":"a program"}';
+    await store.saveProgramRecord(bad);
+    await expectLater(
+      store.saveProblemReport(
+        category: 'app_issue',
+        note: '',
+        exerciseId: 'syn-shoulder-isometric',
+      ),
+      throwsA(
+        isA<StorageSchemaException>().having(
+          (StorageSchemaException error) => error.message,
+          'message',
+          'stored program could not be read',
+        ),
+      ),
+    );
+    expect(await store.loadProgramRecord(), bad);
+    expect(await _problemReportCount(store), 0);
+  });
+
+  test('an unknown exercise id inserts nothing', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    await store.saveProgramRecord(_validProgram);
+    await expectLater(
+      store.saveProblemReport(
+        category: 'app_issue',
+        note: '',
+        exerciseId: 'nope',
+      ),
+      throwsA(
+        isA<StorageSchemaException>().having(
+          (StorageSchemaException error) => error.message,
+          'message',
+          'exercise is not in the stored program',
+        ),
+      ),
+    );
+    expect(await store.loadProgramRecord(), _validProgram);
+    expect(await _problemReportCount(store), 0);
+  });
+
+  test('a missing session id inserts nothing', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    const String sessionId = '11111111-1111-4111-8111-111111111111';
+    await expectLater(
+      store.saveProblemReport(
+        category: 'app_issue',
+        note: '',
+        sessionId: sessionId,
+      ),
+      throwsA(
+        isA<StorageSchemaException>().having(
+          (StorageSchemaException error) => error.message,
+          'message',
+          'session is not stored',
+        ),
+      ),
+    );
+    expect(await _problemReportCount(store), 0);
+  });
+
+  test('an unreadable program still saves with null version columns', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    const String bad = '{"not":"a program"}';
+    await store.saveProgramRecord(bad);
+    final String reportId = await store.saveProblemReport(
+      category: 'content_issue',
+      note: '',
+    );
+    final StoredProblemReport report = (await store.loadProblemReport(
+      reportId,
+    ))!;
+    expect(report.programRecordVersion, isNull);
+    expect(report.programRuleId, isNull);
+    expect(report.programRuleVersion, isNull);
+    expect(report.safetyRuleId, isNull);
+    expect(report.safetyRuleVersion, isNull);
+    expect(report.exerciseId, isNull);
+    expect(report.exerciseVersion, isNull);
+    expect(await store.loadProgramRecord(), bad);
+  });
+
+  test('a second subject does not load the first report', () async {
+    final ProfileStore store = openStore();
+    final String first = await store.createProfile();
+    final String reportId = await store.saveProblemReport(
+      category: 'app_issue',
+      note: 'kept',
+    );
+    final String second = await store.createProfile();
+    expect(second, isNot(first));
+    expect(await store.loadProblemReport(reportId), isNull);
+    await store.switchTo(first);
+    expect((await store.loadProblemReport(reportId))!.note, 'kept');
+  });
+
+  test('checkpoint hides a problem report note', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    const String marker = 'helpmemove-report-note-marker';
+    await store.saveProblemReport(category: 'app_issue', note: marker);
+    await store.checkpoint();
+    final Directory directory = store.openDatabaseFile!.parent;
+    _expectMarkerAbsent(directory, marker);
+    final String subjectId = (await store.keys.read(activeProfileItem))!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    final File file = store.openDatabaseFile!;
+    await store.close();
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    expect(
+      raw.select('SELECT note FROM problem_report_records').first.columnAt(0),
+      marker,
+    );
+    raw.close();
+  });
+
   test('an invalid subject never becomes a path', () async {
     final ProfileStore store = openStore();
     await expectLater(
@@ -1025,6 +1389,24 @@ void main() {
     );
     expect(temp.listSync(recursive: true), isEmpty);
   });
+}
+
+const String _validProgram =
+    '{"record_version":1,"rule_id":"syn-program-core","rule_version":1,"safety_rule_id":"syn-safety-core","safety_rule_version":1,"session_minutes":15,"exercises":[{"exercise_id":"syn-shoulder-isometric","exercise_version":1,"regions":["shoulder"],"sets":1,"reps":1,"tempo":{"eccentric":2,"pause":1,"concentric":2},"reasons":[{"code":"region_match","region":"shoulder","equipment":null,"goal":null},{"code":"equipment_match","region":null,"equipment":"bodyweight","goal":null},{"code":"goal_match","region":null,"equipment":null,"goal":"control"},{"code":"screen_clear","region":null,"equipment":null,"goal":null},{"code":"fixture_defaults","region":null,"equipment":null,"goal":null}]}]}';
+
+Future<Object?> _problemReportCount(ProfileStore store) async {
+  final String subjectId = (await store.keys.read(activeProfileItem))!;
+  final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+  final File file = store.openDatabaseFile!;
+  await store.close();
+  final Database raw = sqlite3.open(file.path);
+  applyEncryptionSetup(raw, keyHex);
+  final Object? count = raw
+      .select('SELECT COUNT(*) FROM problem_report_records')
+      .first
+      .columnAt(0);
+  raw.close();
+  return count;
 }
 
 bool _startsWithSqliteHeader(File file) {

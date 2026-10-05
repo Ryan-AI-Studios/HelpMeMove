@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/encryption.dart';
 import 'package:helpmemove/storage/profile_database.dart';
@@ -22,6 +23,36 @@ class StoredTerminalWorkout {
   final String sessionId;
   final String documentJson;
   final int updatedAtMs;
+}
+
+class StoredProblemReport {
+  const StoredProblemReport({
+    required this.reportId,
+    required this.category,
+    required this.note,
+    required this.programRecordVersion,
+    required this.programRuleId,
+    required this.programRuleVersion,
+    required this.safetyRuleId,
+    required this.safetyRuleVersion,
+    required this.exerciseId,
+    required this.exerciseVersion,
+    required this.sessionId,
+    required this.createdAtMs,
+  });
+
+  final String reportId;
+  final String category;
+  final String note;
+  final int? programRecordVersion;
+  final String? programRuleId;
+  final int? programRuleVersion;
+  final String? safetyRuleId;
+  final int? safetyRuleVersion;
+  final String? exerciseId;
+  final int? exerciseVersion;
+  final String? sessionId;
+  final int createdAtMs;
 }
 
 const String activeProfileItem = 'active-profile';
@@ -499,6 +530,150 @@ class ProfileStore {
     }
   }
 
+  Future<String> saveProblemReport({
+    required String category,
+    required String note,
+    String? sessionId,
+    String? exerciseId,
+  }) async {
+    try {
+      final String subjectId = _requireActive();
+      final ProfileDatabase database = _requireDatabase();
+      final int createdAtMs = _now();
+      const Set<String> categories = <String>{
+        'app_issue',
+        'exercise_instruction',
+        'program_feels_wrong',
+        'safety_concern',
+        'content_issue',
+      };
+      if (!categories.contains(category)) {
+        throw const StorageSchemaException('report category is not supported');
+      }
+      if (note.length > 500) {
+        throw const StorageSchemaException('note is too long');
+      }
+      if (sessionId != null &&
+          !await _workoutRecordExists(subjectId, sessionId)) {
+        throw const StorageSchemaException('session is not stored');
+      }
+      final String? document = await loadProgramRecord();
+      int? programRecordVersion;
+      String? programRuleId;
+      int? programRuleVersion;
+      String? safetyRuleId;
+      int? safetyRuleVersion;
+      String? storedExerciseId;
+      int? exerciseVersion;
+      final LocalProgram? program = _decodeStoredProgram(document);
+      if (exerciseId != null) {
+        if (program == null) {
+          throw const StorageSchemaException(
+            'stored program could not be read',
+          );
+        }
+        ProgramExercise? match;
+        for (final ProgramExercise exercise in program.exercises) {
+          if (exercise.exerciseId == exerciseId) {
+            match = exercise;
+            break;
+          }
+        }
+        if (match == null) {
+          throw const StorageSchemaException(
+            'exercise is not in the stored program',
+          );
+        }
+        programRecordVersion = program.recordVersion;
+        programRuleId = program.ruleId;
+        programRuleVersion = program.ruleVersion;
+        safetyRuleId = program.safetyRuleId;
+        safetyRuleVersion = program.safetyRuleVersion;
+        storedExerciseId = match.exerciseId;
+        exerciseVersion = match.exerciseVersion;
+      } else if (program != null) {
+        programRecordVersion = program.recordVersion;
+        programRuleId = program.ruleId;
+        programRuleVersion = program.ruleVersion;
+        safetyRuleId = program.safetyRuleId;
+        safetyRuleVersion = program.safetyRuleVersion;
+      }
+      final String reportId = _newEventId();
+      await database
+          .into(database.problemReportRecords)
+          .insert(
+            ProblemReportRecordsCompanion(
+              reportId: Value<String>(reportId),
+              subjectId: Value<String>(subjectId),
+              category: Value<String>(category),
+              note: Value<String>(note),
+              programRecordVersion: Value<int?>(programRecordVersion),
+              programRuleId: Value<String?>(programRuleId),
+              programRuleVersion: Value<int?>(programRuleVersion),
+              safetyRuleId: Value<String?>(safetyRuleId),
+              safetyRuleVersion: Value<int?>(safetyRuleVersion),
+              exerciseId: Value<String?>(storedExerciseId),
+              exerciseVersion: Value<int?>(exerciseVersion),
+              sessionId: Value<String?>(sessionId),
+              createdAtMs: Value<int>(createdAtMs),
+            ),
+          );
+      return reportId;
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(_surfaceStorageError(error), stackTrace);
+    }
+  }
+
+  Future<StoredProblemReport?> loadProblemReport(String reportId) async {
+    try {
+      final String subjectId = _requireActive();
+      final ProfileDatabase database = _requireDatabase();
+      final ProblemReportRecord? row =
+          await (database.select(database.problemReportRecords)..where(
+                (ProblemReportRecords table) =>
+                    table.subjectId.equals(subjectId) &
+                    table.reportId.equals(reportId),
+              ))
+              .getSingleOrNull();
+      if (row == null) {
+        return null;
+      }
+      return StoredProblemReport(
+        reportId: row.reportId,
+        category: row.category,
+        note: row.note,
+        programRecordVersion: row.programRecordVersion,
+        programRuleId: row.programRuleId,
+        programRuleVersion: row.programRuleVersion,
+        safetyRuleId: row.safetyRuleId,
+        safetyRuleVersion: row.safetyRuleVersion,
+        exerciseId: row.exerciseId,
+        exerciseVersion: row.exerciseVersion,
+        sessionId: row.sessionId,
+        createdAtMs: row.createdAtMs,
+      );
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(_surfaceStorageError(error), stackTrace);
+    }
+  }
+
+  Future<bool> hasWorkoutRecord(String sessionId) async {
+    try {
+      final String subjectId = _requireActive();
+      final ProfileDatabase database = _requireDatabase();
+      final WorkoutRecord? row =
+          await (database.select(database.workoutRecords)..where(
+                (WorkoutRecords table) =>
+                    table.subjectId.equals(subjectId) &
+                    table.sessionId.equals(sessionId),
+              ))
+              .getSingleOrNull();
+      return row != null;
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(_surfaceStorageError(error), stackTrace);
+    }
+  }
+
   Future<String?> loadReadinessRecord(String sessionId) async {
     final ProfileDatabase database = _requireDatabase();
     final String subjectId = _requireActive();
@@ -817,6 +992,18 @@ class ProfileStore {
   }
 
   int _now() => clock().toUtc().millisecondsSinceEpoch;
+
+  /// A missing or unreadable program still saves when no exercise id was passed.
+  LocalProgram? _decodeStoredProgram(String? document) {
+    if (document == null) {
+      return null;
+    }
+    try {
+      return LocalProgram.decode(document);
+    } on LocalProgramException {
+      return null;
+    }
+  }
 
   String _newSubjectId() {
     final String subjectId = 'p-${_hex(16)}';
