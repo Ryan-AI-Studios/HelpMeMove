@@ -1,11 +1,11 @@
 use helpmemove_content::{
     AdaptationDecision, AdaptationError, AssessedArea, ContentError, Equipment, Exercise,
-    FlareDecision, FlareError, Goal, MovementRating, ProgramRule, Region, Session, SessionEvent,
-    StartingExercise, apply_session_event, decide_adaptation, decide_flare,
+    FlareDecision, FlareError, Goal, MovementRating, ProgramRule, ProgressError, Region, Session,
+    SessionEvent, StartingExercise, apply_session_event, decide_adaptation, decide_flare,
     flare_followup_envelope, open_session, parse_adaptation_rule, parse_assessment_instrument,
     parse_exercise, parse_flare_rule, parse_followup, parse_program_rule, parse_readiness,
     parse_session, read_intake_safety_answers, read_program_assessment, read_program_intake,
-    read_session_event, render_session, render_starting_program,
+    read_session_event, render_session, render_starting_program, summarize_progress,
 };
 use helpmemove_domain::{
     BRIDGE_VERSION, Confidence, DomainError, DomainInstant, Laterality, SubjectId,
@@ -979,6 +979,44 @@ pub fn prepare_flare_followup(
 
 fn flare_withheld(code: &str) -> FlareView {
     FlareView {
+        outcome: "withheld".to_owned(),
+        withhold_code: code.to_owned(),
+        document_json: String::new(),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProgressView {
+    pub outcome: String,
+    pub withhold_code: String,
+    pub document_json: String,
+}
+
+/// Count stored session rows. Flutter passes the entry list and no library.
+#[flutter_rust_bridge::frb(sync)]
+pub fn prepare_progress_summary(entries_json: String) -> ProgressView {
+    if entries_json.is_empty() {
+        return progress_withheld("workout_unusable");
+    }
+    let Ok(library) = embedded_exercises() else {
+        return progress_withheld("library_unusable");
+    };
+    if library.is_empty() {
+        return progress_withheld("library_unusable");
+    }
+    match summarize_progress(&entries_json, &library) {
+        Ok(document) => ProgressView {
+            outcome: "ready".to_owned(),
+            withhold_code: String::new(),
+            document_json: document,
+        },
+        Err(ProgressError::LibraryRejected) => progress_withheld("library_unusable"),
+        Err(ProgressError::Invalid) => progress_withheld("workout_unusable"),
+    }
+}
+
+fn progress_withheld(code: &str) -> ProgressView {
+    ProgressView {
         outcome: "withheld".to_owned(),
         withhold_code: code.to_owned(),
         document_json: String::new(),

@@ -305,3 +305,75 @@ void decodeReadiness(String raw, {required String sessionId}) {
     throw const AdaptationDocumentException();
   }
 }
+
+class StoredProgressSummary {
+  const StoredProgressSummary({
+    required this.abandonedCount,
+    required this.completedCount,
+    required this.copiedPain,
+    required this.safetyStoppedCount,
+  });
+
+  final int abandonedCount;
+  final int completedCount;
+  final int? copiedPain;
+  final int safetyStoppedCount;
+
+  bool get countsAreZero =>
+      abandonedCount == 0 && completedCount == 0 && safetyStoppedCount == 0;
+
+  static StoredProgressSummary decode(String raw) {
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } on FormatException {
+      throw const AdaptationDocumentException();
+    }
+    if (decoded is! Map) {
+      throw const AdaptationDocumentException();
+    }
+    const Set<String> keys = <String>{
+      'abandoned_count',
+      'completed_count',
+      'copied_pain',
+      'record_version',
+      'rule_id',
+      'rule_version',
+      'safety_stopped_count',
+    };
+    if (decoded.length != keys.length ||
+        decoded.keys.any(
+          (Object? key) => key is! String || !keys.contains(key),
+        )) {
+      throw const AdaptationDocumentException();
+    }
+    if (decoded['record_version'] != 1 ||
+        decoded['rule_version'] != 1 ||
+        decoded['rule_id'] != 'syn-progress-core') {
+      throw const AdaptationDocumentException();
+    }
+    return StoredProgressSummary(
+      abandonedCount: _progressCount(decoded['abandoned_count']),
+      completedCount: _progressCount(decoded['completed_count']),
+      copiedPain: _copiedPain(decoded['copied_pain']),
+      safetyStoppedCount: _progressCount(decoded['safety_stopped_count']),
+    );
+  }
+}
+
+int _progressCount(Object? value) {
+  if (value is! int || value < 0 || value > 2147483647) {
+    throw const AdaptationDocumentException();
+  }
+  return value;
+}
+
+int? _copiedPain(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is! int || value < 0 || value > 10) {
+    throw const AdaptationDocumentException();
+  }
+  return value;
+}

@@ -439,6 +439,28 @@ class ProfileStore {
     );
   }
 
+  Future<List<StoredTerminalWorkout>> loadWorkoutRecords() async {
+    try {
+      final ProfileDatabase database = _requireDatabase();
+      final String subjectId = _requireActive();
+      final List<WorkoutRecord> rows =
+          await (database.select(database.workoutRecords)..where(
+                (WorkoutRecords table) => table.subjectId.equals(subjectId),
+              ))
+              .get();
+      return <StoredTerminalWorkout>[
+        for (final WorkoutRecord row in rows)
+          StoredTerminalWorkout(
+            sessionId: row.sessionId,
+            documentJson: row.documentJson,
+            updatedAtMs: row.updatedAtMs,
+          ),
+      ];
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(_surfaceStorageError(error), stackTrace);
+    }
+  }
+
   Future<String?> loadReadinessRecord(String sessionId) async {
     final ProfileDatabase database = _requireDatabase();
     final String subjectId = _requireActive();

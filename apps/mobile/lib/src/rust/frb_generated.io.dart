@@ -70,6 +70,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ProgramRuleView dco_decode_program_rule_view(dynamic raw);
 
   @protected
+  ProgressView dco_decode_progress_view(dynamic raw);
+
+  @protected
   SafetyAnswer dco_decode_safety_answer(dynamic raw);
 
   @protected
@@ -143,6 +146,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ProgramRuleView sse_decode_program_rule_view(SseDeserializer deserializer);
+
+  @protected
+  ProgressView sse_decode_progress_view(SseDeserializer deserializer);
 
   @protected
   SafetyAnswer sse_decode_safety_answer(SseDeserializer deserializer);
@@ -236,6 +242,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     ProgramRuleView self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_progress_view(ProgressView self, SseSerializer serializer);
 
   @protected
   void sse_encode_safety_answer(SafetyAnswer self, SseSerializer serializer);

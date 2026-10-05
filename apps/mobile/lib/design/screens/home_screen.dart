@@ -479,6 +479,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: AppSpacing.space24),
                           ],
+                          if (widget.liveStore != null &&
+                              !widget.blockedNow &&
+                              _entryReady) ...[
+                            PrimaryButton(
+                              label: 'See local progress',
+                              onPressed: () => context.go('/focus/progress'),
+                            ),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
                           PrimaryButton(
                             label: 'Scaffold check',
                             onPressed: () {
