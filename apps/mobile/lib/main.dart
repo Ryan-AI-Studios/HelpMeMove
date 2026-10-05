@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:helpmemove/account/account_auth.dart';
 import 'package:helpmemove/design/app_theme.dart';
 import 'package:helpmemove/design/router.dart';
 import 'package:helpmemove/program/program_document.dart';
@@ -13,6 +14,7 @@ import 'package:helpmemove/storage/storage_controller.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
+  await AccountAuth.start();
   final StorageController storage = StorageController.production();
   final String initialLocation = await storage.open();
   runApp(
