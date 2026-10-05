@@ -461,6 +461,44 @@ class ProfileStore {
     }
   }
 
+  Future<String?> loadAppearanceChoice() async {
+    try {
+      final String subjectId = _requireActive();
+      final ProfileDatabase database = _requireDatabase();
+      final AppearanceRecord? row =
+          await (database.select(database.appearanceRecords)..where(
+                (AppearanceRecords table) => table.subjectId.equals(subjectId),
+              ))
+              .getSingleOrNull();
+      return row?.choice;
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(_surfaceStorageError(error), stackTrace);
+    }
+  }
+
+  Future<void> saveAppearanceChoice(String choice) async {
+    try {
+      final String subjectId = _requireActive();
+      final ProfileDatabase database = _requireDatabase();
+      if (choice != 'system' && choice != 'light' && choice != 'dark') {
+        throw const StorageSchemaException(
+          'appearance choice is not supported',
+        );
+      }
+      await database
+          .into(database.appearanceRecords)
+          .insertOnConflictUpdate(
+            AppearanceRecordsCompanion.insert(
+              subjectId: subjectId,
+              choice: choice,
+              updatedAtMs: _now(),
+            ),
+          );
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(_surfaceStorageError(error), stackTrace);
+    }
+  }
+
   Future<String?> loadReadinessRecord(String sessionId) async {
     final ProfileDatabase database = _requireDatabase();
     final String subjectId = _requireActive();
