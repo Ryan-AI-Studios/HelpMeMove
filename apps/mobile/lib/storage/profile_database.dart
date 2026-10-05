@@ -157,6 +157,25 @@ class FlareFollowupRecords extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId, sessionId};
 }
 
+class AppearanceRecords extends Table {
+  @override
+  String get tableName => 'appearance_records';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get choice => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId};
+
+  @override
+  List<String> get customConstraints => const <String>[
+    "CHECK (choice IN ('system', 'light', 'dark'))",
+  ];
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -217,6 +236,7 @@ QueryExecutor openEncryptedExecutor({
     ReadinessRecords,
     AdaptationRecords,
     FlareFollowupRecords,
+    AppearanceRecords,
   ],
 )
 class ProfileDatabase extends _$ProfileDatabase {
@@ -226,7 +246,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -259,6 +279,10 @@ class ProfileDatabase extends _$ProfileDatabase {
       }
       if (from == 6 && to == 7) {
         await migrator.createTable(flareFollowupRecords);
+        return;
+      }
+      if (from == 7 && to == 8) {
+        await migrator.createTable(appearanceRecords);
         return;
       }
       rejectSchemaUpgrade(from, to);

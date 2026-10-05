@@ -250,8 +250,16 @@ void main() {
       upgrade(migrator, 6, 8),
       throwsA(isA<StorageSchemaException>()),
     );
+    await database.customStatement('DROP TABLE IF EXISTS appearance_records');
+    await upgrade(migrator, 7, 8);
+    final List<drift.QueryRow> appearance = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'appearance_records'",
+        )
+        .get();
+    expect(appearance, hasLength(1));
     await expectLater(
-      upgrade(migrator, 7, 8),
+      upgrade(migrator, 8, 9),
       throwsA(isA<StorageSchemaException>()),
     );
     await database.customStatement('DROP TABLE IF EXISTS readiness_records');
@@ -263,7 +271,7 @@ void main() {
         )
         .get();
     expect(readiness, hasLength(1));
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
   });
 
   test('schema 2 opened by schema 4 is rejected', () async {
@@ -463,60 +471,94 @@ void main() {
     unchanged.close();
   });
 
-  test(
-    'schema 6 gains the flare table and keeps program workout and check rows',
-    () async {
-      const String program =
-          '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
-      const String sessionId = '11111111-1111-4111-8111-111111111111';
-      const String workout =
-          '{"session_id":"11111111-1111-4111-8111-111111111111"}';
-      const String readiness = '{"soreness":"low"}';
-      const String adaptation = '{"action":"maintain"}';
-      final ProfileStore store = openStore();
-      final String subjectId = await store.createProfile();
-      await store.saveProgramRecord(program);
-      await store.saveWorkoutTerminal(
-        sessionId: sessionId,
-        documentJson: workout,
-      );
-      await store.saveAdaptationPair(
-        sessionId: sessionId,
-        readinessJson: readiness,
-        adaptationJson: adaptation,
-        updatedAtMs: 6,
-      );
-      final File file = store.openDatabaseFile!;
-      final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
-      await store.close();
+  test('schema 7 gains appearance_records and keeps program workout flare and check rows', () async {
+    const String program =
+        '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
+    const String sessionId = '11111111-1111-4111-8111-111111111111';
+    const String workout =
+        '{"session_id":"11111111-1111-4111-8111-111111111111"}';
+    const String readiness = '{"soreness":"low"}';
+    const String adaptation = '{"action":"maintain"}';
+    const String flare = '{"choice":"worse_today","action":"keep_program"}';
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    await store.saveProgramRecord(program);
+    await store.saveWorkoutTerminal(
+      sessionId: sessionId,
+      documentJson: workout,
+    );
+    await store.saveAdaptationPair(
+      sessionId: sessionId,
+      readinessJson: readiness,
+      adaptationJson: adaptation,
+      updatedAtMs: 6,
+    );
+    await store.saveFlareFollowup(
+      sessionId: sessionId,
+      documentJson: flare,
+      updatedAtMs: 6,
+    );
+    final File file = store.openDatabaseFile!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    await store.close();
 
-      final Database raw = sqlite3.open(file.path);
-      applyEncryptionSetup(raw, keyHex);
-      raw.execute('DROP TABLE IF EXISTS flare_followup_records');
-      raw.execute('PRAGMA user_version = 6');
-      raw.close();
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    raw.execute('DROP TABLE IF EXISTS appearance_records');
+    raw.execute('PRAGMA user_version = 7');
+    raw.close();
 
-      await store.reopenActive();
-      expect(await store.loadProgramRecord(), program);
-      expect(await store.workoutRecordDocuments(), <String>[workout]);
-      expect(await store.loadReadinessRecord(sessionId), readiness);
-      expect(await store.loadAdaptationRecord(sessionId), adaptation);
-      expect(await store.loadFlareFollowup(sessionId), isNull);
-      await store.close();
+    await store.reopenActive();
+    expect(await store.loadProgramRecord(), program);
+    expect(await store.workoutRecordDocuments(), <String>[workout]);
+    expect(await store.loadReadinessRecord(sessionId), readiness);
+    expect(await store.loadAdaptationRecord(sessionId), adaptation);
+    expect(await store.loadFlareFollowup(sessionId), flare);
+    expect(await store.loadAppearanceChoice(), isNull);
+    await store.close();
 
-      final Database upgraded = sqlite3.open(file.path);
-      applyEncryptionSetup(upgraded, keyHex);
-      expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 7);
-      expect(
-        upgraded
-            .select('SELECT COUNT(*) FROM flare_followup_records')
-            .first
-            .columnAt(0),
-        0,
-      );
-      upgraded.close();
-    },
-  );
+    final Database upgraded = sqlite3.open(file.path);
+    applyEncryptionSetup(upgraded, keyHex);
+    expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 8);
+    expect(
+      upgraded
+          .select('SELECT COUNT(*) FROM appearance_records')
+          .first
+          .columnAt(0),
+      0,
+    );
+    expect(
+      upgraded
+          .select('SELECT document_json FROM flare_followup_records')
+          .first
+          .columnAt(0),
+      flare,
+    );
+    upgraded.close();
+  });
+
+  test('schema 6 does not jump to schema 8', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    final File file = store.openDatabaseFile!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    await store.close();
+
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    raw.execute('PRAGMA user_version = 6');
+    raw.close();
+
+    await expectLater(
+      store.reopenActive(),
+      throwsA(isA<StorageSchemaException>()),
+    );
+
+    final Database unchanged = sqlite3.open(file.path);
+    applyEncryptionSetup(unchanged, keyHex);
+    expect(unchanged.select('PRAGMA user_version').first.columnAt(0), 6);
+    unchanged.close();
+  });
 
   test('assessment record round-trips and uses the store clock', () async {
     final ProfileStore store = openStore();
@@ -884,6 +926,95 @@ void main() {
       'Today\'s check says to wait. The exercises stay the same.',
     );
     _expectMarkerAbsent(directory, 'Today\'s check keeps the same exercises.');
+  });
+
+  test('appearance choice stays with the subject that saved it', () async {
+    final ProfileStore store = openStore();
+    final String first = await store.createProfile();
+    expect(await store.loadAppearanceChoice(), isNull);
+    await store.saveAppearanceChoice('dark');
+    expect(await store.loadAppearanceChoice(), 'dark');
+    final int expected = DateTime.utc(
+      2026,
+      1,
+      2,
+      3,
+      4,
+      5,
+    ).millisecondsSinceEpoch;
+    final String keyHex = (await store.keys.read(profileKeyItem(first)))!;
+    final File file = store.openDatabaseFile!;
+    await store.checkpoint();
+    await store.close();
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    final ResultSet rows = raw.select(
+      'SELECT choice, updated_at_ms FROM appearance_records',
+    );
+    expect(rows.first.columnAt(0), 'dark');
+    expect(rows.first.columnAt(1), expected);
+    raw.close();
+
+    await store.reopenActive();
+    final String second = await store.createProfile();
+    expect(second, isNot(first));
+    expect(await store.loadAppearanceChoice(), isNull);
+    await store.saveAppearanceChoice('light');
+    expect(await store.loadAppearanceChoice(), 'light');
+    await store.switchTo(first);
+    expect(await store.loadAppearanceChoice(), 'dark');
+    await store.switchTo(second);
+    expect(await store.loadAppearanceChoice(), 'light');
+    await expectLater(
+      store.saveAppearanceChoice('sepia'),
+      throwsA(
+        isA<StorageSchemaException>().having(
+          (StorageSchemaException error) => error.message,
+          'message',
+          'appearance choice is not supported',
+        ),
+      ),
+    );
+    expect(await store.loadAppearanceChoice(), 'light');
+  });
+
+  test('appearance choice requires an active profile', () async {
+    final ProfileStore store = openStore();
+    await expectLater(
+      store.loadAppearanceChoice(),
+      throwsA(
+        isA<StorageIoException>().having(
+          (StorageIoException error) => error.message,
+          'message',
+          'no active profile',
+        ),
+      ),
+    );
+    await expectLater(
+      store.saveAppearanceChoice('system'),
+      throwsA(
+        isA<StorageIoException>().having(
+          (StorageIoException error) => error.message,
+          'message',
+          'no active profile',
+        ),
+      ),
+    );
+  });
+
+  test('checkpoint hides the privacy sentences', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    await store.saveAppearanceChoice('dark');
+    await store.checkpoint();
+    final Directory directory = store.openDatabaseFile!.parent;
+    _expectMarkerAbsent(directory, 'This profile stays on this device.');
+    _expectMarkerAbsent(directory, 'The profile database is encrypted.');
+    _expectMarkerAbsent(directory, 'Cloud sync is not connected.');
+    _expectMarkerAbsent(directory, 'No AI coach is active.');
+    _expectMarkerAbsent(directory, 'Privacy and appearance');
+    _expectMarkerAbsent(directory, 'The saved appearance could not be read.');
+    expect(await store.loadAppearanceChoice(), 'dark');
   });
 
   test('an invalid subject never becomes a path', () async {

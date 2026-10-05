@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:helpmemove/design/app_theme.dart';
@@ -53,18 +55,64 @@ class HelpMeMoveApp extends StatefulWidget {
 }
 
 class _HelpMeMoveAppState extends State<HelpMeMoveApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+  var _appearanceEpoch = 0;
+
   late final GoRouter _router = buildHelpMeMoveRouter(
     initialLocation: widget.initialLocation,
     recovery: widget.recovery,
     store: widget.store,
     readStore: widget.readStore,
-    storageBlocked:
-        widget.initialLocation == '/storage-failure' ||
-        widget.initialLocation == '/key-loss',
+    storageBlocked: _storageBlocked,
     previewSafetyView: widget.previewSafetyView,
     previewProgram: widget.previewProgram,
     previewSession: widget.previewSession,
+    onAppearanceSaved: _applyAppearance,
   );
+
+  bool get _storageBlocked =>
+      widget.initialLocation == '/storage-failure' ||
+      widget.initialLocation == '/key-loss';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_loadAppearance());
+    });
+  }
+
+  Future<void> _loadAppearance() async {
+    if (_storageBlocked) {
+      return;
+    }
+    final ProfileStore? store = widget.store ?? widget.readStore?.call();
+    if (store == null || store.openDatabaseFile == null) {
+      return;
+    }
+    final int epoch = _appearanceEpoch;
+    try {
+      final String? choice = await store.loadAppearanceChoice();
+      if (!mounted || epoch != _appearanceEpoch) {
+        return;
+      }
+      setState(() {
+        _themeMode = themeModeForAppearance(choice);
+      });
+    } on Object {
+      // A failed or unreadable read leaves the system theme in place.
+    }
+  }
+
+  void _applyAppearance(String choice) {
+    _appearanceEpoch += 1;
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _themeMode = themeModeForAppearance(choice);
+    });
+  }
 
   @override
   void dispose() {
@@ -80,8 +128,19 @@ class _HelpMeMoveAppState extends State<HelpMeMoveApp> {
       darkTheme: AppTheme.dark(),
       highContrastTheme: AppTheme.highContrastLight(),
       highContrastDarkTheme: AppTheme.highContrastDark(),
-      themeMode: ThemeMode.system,
+      themeMode: _themeMode,
       routerConfig: _router,
     );
+  }
+}
+
+ThemeMode themeModeForAppearance(String? choice) {
+  switch (choice) {
+    case 'light':
+      return ThemeMode.light;
+    case 'dark':
+      return ThemeMode.dark;
+    default:
+      return ThemeMode.system;
   }
 }

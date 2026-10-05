@@ -3387,6 +3387,279 @@ class FlareFollowupRecordsCompanion
   }
 }
 
+class $AppearanceRecordsTable extends AppearanceRecords
+    with TableInfo<$AppearanceRecordsTable, AppearanceRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AppearanceRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _choiceMeta = const VerificationMeta('choice');
+  @override
+  late final GeneratedColumn<String> choice = GeneratedColumn<String>(
+    'choice',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [subjectId, choice, updatedAtMs];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'appearance_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AppearanceRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('choice')) {
+      context.handle(
+        _choiceMeta,
+        choice.isAcceptableOrUnknown(data['choice']!, _choiceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_choiceMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId};
+  @override
+  AppearanceRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AppearanceRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      choice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}choice'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $AppearanceRecordsTable createAlias(String alias) {
+    return $AppearanceRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class AppearanceRecord extends DataClass
+    implements Insertable<AppearanceRecord> {
+  final String subjectId;
+  final String choice;
+  final int updatedAtMs;
+  const AppearanceRecord({
+    required this.subjectId,
+    required this.choice,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['choice'] = Variable<String>(choice);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  AppearanceRecordsCompanion toCompanion(bool nullToAbsent) {
+    return AppearanceRecordsCompanion(
+      subjectId: Value(subjectId),
+      choice: Value(choice),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory AppearanceRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AppearanceRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      choice: serializer.fromJson<String>(json['choice']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'choice': serializer.toJson<String>(choice),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  AppearanceRecord copyWith({
+    String? subjectId,
+    String? choice,
+    int? updatedAtMs,
+  }) => AppearanceRecord(
+    subjectId: subjectId ?? this.subjectId,
+    choice: choice ?? this.choice,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  AppearanceRecord copyWithCompanion(AppearanceRecordsCompanion data) {
+    return AppearanceRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      choice: data.choice.present ? data.choice.value : this.choice,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppearanceRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('choice: $choice, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, choice, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AppearanceRecord &&
+          other.subjectId == this.subjectId &&
+          other.choice == this.choice &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class AppearanceRecordsCompanion extends UpdateCompanion<AppearanceRecord> {
+  final Value<String> subjectId;
+  final Value<String> choice;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const AppearanceRecordsCompanion({
+    this.subjectId = const Value.absent(),
+    this.choice = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AppearanceRecordsCompanion.insert({
+    required String subjectId,
+    required String choice,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       choice = Value(choice),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<AppearanceRecord> custom({
+    Expression<String>? subjectId,
+    Expression<String>? choice,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (choice != null) 'choice': choice,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AppearanceRecordsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? choice,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return AppearanceRecordsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      choice: choice ?? this.choice,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (choice.present) {
+      map['choice'] = Variable<String>(choice.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AppearanceRecordsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('choice: $choice, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
@@ -3408,6 +3681,8 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
       $AdaptationRecordsTable(this);
   late final $FlareFollowupRecordsTable flareFollowupRecords =
       $FlareFollowupRecordsTable(this);
+  late final $AppearanceRecordsTable appearanceRecords =
+      $AppearanceRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3424,6 +3699,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
     readinessRecords,
     adaptationRecords,
     flareFollowupRecords,
+    appearanceRecords,
   ];
 }
 
@@ -5556,6 +5832,192 @@ typedef $$FlareFollowupRecordsTableProcessedTableManager =
       FlareFollowupRecord,
       PrefetchHooks Function()
     >;
+typedef $$AppearanceRecordsTableCreateCompanionBuilder =
+    AppearanceRecordsCompanion Function({
+      required String subjectId,
+      required String choice,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$AppearanceRecordsTableUpdateCompanionBuilder =
+    AppearanceRecordsCompanion Function({
+      Value<String> subjectId,
+      Value<String> choice,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$AppearanceRecordsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $AppearanceRecordsTable> {
+  $$AppearanceRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get choice => $composableBuilder(
+    column: $table.choice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AppearanceRecordsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $AppearanceRecordsTable> {
+  $$AppearanceRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get choice => $composableBuilder(
+    column: $table.choice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AppearanceRecordsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $AppearanceRecordsTable> {
+  $$AppearanceRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get choice =>
+      $composableBuilder(column: $table.choice, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$AppearanceRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $AppearanceRecordsTable,
+          AppearanceRecord,
+          $$AppearanceRecordsTableFilterComposer,
+          $$AppearanceRecordsTableOrderingComposer,
+          $$AppearanceRecordsTableAnnotationComposer,
+          $$AppearanceRecordsTableCreateCompanionBuilder,
+          $$AppearanceRecordsTableUpdateCompanionBuilder,
+          (
+            AppearanceRecord,
+            BaseReferences<
+              _$ProfileDatabase,
+              $AppearanceRecordsTable,
+              AppearanceRecord
+            >,
+          ),
+          AppearanceRecord,
+          PrefetchHooks Function()
+        > {
+  $$AppearanceRecordsTableTableManager(
+    _$ProfileDatabase db,
+    $AppearanceRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AppearanceRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AppearanceRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AppearanceRecordsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> choice = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AppearanceRecordsCompanion(
+                subjectId: subjectId,
+                choice: choice,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String choice,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => AppearanceRecordsCompanion.insert(
+                subjectId: subjectId,
+                choice: choice,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AppearanceRecordsTable, AppearanceRecord>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $AppearanceRecordsTable,
+                    AppearanceRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AppearanceRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $AppearanceRecordsTable,
+      AppearanceRecord,
+      $$AppearanceRecordsTableFilterComposer,
+      $$AppearanceRecordsTableOrderingComposer,
+      $$AppearanceRecordsTableAnnotationComposer,
+      $$AppearanceRecordsTableCreateCompanionBuilder,
+      $$AppearanceRecordsTableUpdateCompanionBuilder,
+      (
+        AppearanceRecord,
+        BaseReferences<
+          _$ProfileDatabase,
+          $AppearanceRecordsTable,
+          AppearanceRecord
+        >,
+      ),
+      AppearanceRecord,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -5582,4 +6044,6 @@ class $ProfileDatabaseManager {
       $$AdaptationRecordsTableTableManager(_db, _db.adaptationRecords);
   $$FlareFollowupRecordsTableTableManager get flareFollowupRecords =>
       $$FlareFollowupRecordsTableTableManager(_db, _db.flareFollowupRecords);
+  $$AppearanceRecordsTableTableManager get appearanceRecords =>
+      $$AppearanceRecordsTableTableManager(_db, _db.appearanceRecords);
 }
