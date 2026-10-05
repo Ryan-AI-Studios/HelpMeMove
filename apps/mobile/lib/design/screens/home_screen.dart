@@ -506,6 +506,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: AppSpacing.space24),
                           ],
+                          if (widget.liveStore != null &&
+                              !widget.blockedNow &&
+                              _entryReady) ...[
+                            PrimaryButton(
+                              label: 'Account',
+                              onPressed: () => context.go('/focus/account'),
+                            ),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
                           PrimaryButton(
                             label: 'Scaffold check',
                             onPressed: () {

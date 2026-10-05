@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:helpmemove/account/account_controller.dart';
+import 'package:helpmemove/account/account_screen.dart';
 import 'package:helpmemove/design/screens/focused_flow_screen.dart';
 import 'package:helpmemove/design/screens/foundations_screen.dart';
 import 'package:helpmemove/design/screens/home_screen.dart';
@@ -76,6 +78,7 @@ GoRouter buildHelpMeMoveRouter({
   if (movementGateOpen) {
     movement.open = true;
   }
+  AccountController? accountController;
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: false,
@@ -225,6 +228,21 @@ GoRouter buildHelpMeMoveRouter({
                         store: profile,
                         onAppearanceSaved: onAppearanceSaved,
                       );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'account',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      if (accountLinkIsUnavailable(state.uri)) {
+                        return const AccountScreen(unavailable: true);
+                      }
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const WorkoutUnavailable();
+                      }
+                      accountController ??= AccountController(store: profile);
+                      return AccountScreen(controller: accountController);
                     },
                   ),
                   GoRoute(

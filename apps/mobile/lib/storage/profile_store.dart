@@ -139,14 +139,24 @@ class ProfileStore {
     return subjectId;
   }
 
-  Future<void> switchTo(String raw) async {
+  Future<void> switchTo(String raw, {bool Function()? stillCurrent}) async {
     final String subjectId = acceptSubject(raw: raw);
     final String? keyHex = await keys.read(profileKeyItem(subjectId));
+    if (stillCurrent != null && !stillCurrent()) {
+      return;
+    }
     if (keyHex == null) {
       throw const StorageKeyLoss();
     }
     await _closeCurrent();
+    if (stillCurrent != null && !stillCurrent()) {
+      return;
+    }
     await _openExisting(subjectId, keyHex);
+    if (stillCurrent != null && !stillCurrent()) {
+      await _closeCurrent();
+      return;
+    }
     await keys.write(activeProfileItem, subjectId);
   }
 
@@ -170,6 +180,32 @@ class ProfileStore {
   }
 
   Future<void> close() => _closeCurrent();
+
+  String? get activeSubjectId => _activeSubjectId;
+
+  /// Closes the open database and clears the active pointer.
+  /// The profile key and files stay on disk.
+  Future<void> lockOpenProfile() async {
+    await _closeCurrent();
+    await keys.delete(activeProfileItem);
+  }
+
+  /// Deletes one subject's key and directory. Other subjects stay.
+  Future<void> deleteSubjectFiles(String raw) async {
+    final String subjectId = acceptSubject(raw: raw);
+    if (_activeSubjectId == subjectId) {
+      await _closeCurrent();
+    }
+    await keys.delete(profileKeyItem(subjectId));
+    final Directory directory = _profileDirectory(subjectId);
+    if (directory.existsSync()) {
+      directory.deleteSync(recursive: true);
+    }
+    final String? active = await keys.read(activeProfileItem);
+    if (active == subjectId) {
+      await keys.delete(activeProfileItem);
+    }
+  }
 
   Future<void> saveDraft(String documentJson) async {
     final ProfileDatabase database = _requireDatabase();
