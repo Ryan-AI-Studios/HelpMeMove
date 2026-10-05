@@ -67,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -213864189;
+  int get rustContentHash => -1948813267;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -147,6 +147,14 @@ abstract class RustLibApi extends BaseApi {
     required String programJson,
     required String workoutJson,
     required String readinessJson,
+  });
+
+  FlareView crateApiBridgePrepareFlareFollowup({
+    required String intakeJson,
+    required String assessmentJson,
+    required String programJson,
+    required String workoutJson,
+    required String followupJson,
   });
 
   String crateApiBridgeProbeContainedPanic();
@@ -721,12 +729,60 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  FlareView crateApiBridgePrepareFlareFollowup({
+    required String intakeJson,
+    required String assessmentJson,
+    required String programJson,
+    required String workoutJson,
+    required String followupJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(intakeJson, serializer);
+          sse_encode_String(assessmentJson, serializer);
+          sse_encode_String(programJson, serializer);
+          sse_encode_String(workoutJson, serializer);
+          sse_encode_String(followupJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_flare_view,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBridgePrepareFlareFollowupConstMeta,
+        argValues: [
+          intakeJson,
+          assessmentJson,
+          programJson,
+          workoutJson,
+          followupJson,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBridgePrepareFlareFollowupConstMeta =>
+      const TaskConstMeta(
+        debugName: "prepare_flare_followup",
+        argNames: [
+          "intakeJson",
+          "assessmentJson",
+          "programJson",
+          "workoutJson",
+          "followupJson",
+        ],
+      );
+
+  @override
   String crateApiBridgeProbeContainedPanic() {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -749,7 +805,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(caller, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -833,6 +889,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   double dco_decode_f_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as double;
+  }
+
+  @protected
+  FlareView dco_decode_flare_view(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return FlareView(
+      outcome: dco_decode_String(arr[0]),
+      withholdCode: dco_decode_String(arr[1]),
+      documentJson: dco_decode_String(arr[2]),
+    );
   }
 
   @protected
@@ -1036,6 +1105,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  FlareView sse_decode_flare_view(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_outcome = sse_decode_String(deserializer);
+    var var_withholdCode = sse_decode_String(deserializer);
+    var var_documentJson = sse_decode_String(deserializer);
+    return FlareView(
+      outcome: var_outcome,
+      withholdCode: var_withholdCode,
+      documentJson: var_documentJson,
+    );
+  }
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
@@ -1235,6 +1317,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_f_64(double self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putFloat64(self);
+  }
+
+  @protected
+  void sse_encode_flare_view(FlareView self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.outcome, serializer);
+    sse_encode_String(self.withholdCode, serializer);
+    sse_encode_String(self.documentJson, serializer);
   }
 
   @protected

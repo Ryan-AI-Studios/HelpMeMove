@@ -3054,6 +3054,339 @@ class AdaptationRecordsCompanion extends UpdateCompanion<AdaptationRecord> {
   }
 }
 
+class $FlareFollowupRecordsTable extends FlareFollowupRecords
+    with TableInfo<$FlareFollowupRecordsTable, FlareFollowupRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FlareFollowupRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentJsonMeta = const VerificationMeta(
+    'documentJson',
+  );
+  @override
+  late final GeneratedColumn<String> documentJson = GeneratedColumn<String>(
+    'document_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    subjectId,
+    sessionId,
+    documentJson,
+    updatedAtMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'flare_followup_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FlareFollowupRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('document_json')) {
+      context.handle(
+        _documentJsonMeta,
+        documentJson.isAcceptableOrUnknown(
+          data['document_json']!,
+          _documentJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentJsonMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId, sessionId};
+  @override
+  FlareFollowupRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FlareFollowupRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      documentJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_json'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $FlareFollowupRecordsTable createAlias(String alias) {
+    return $FlareFollowupRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class FlareFollowupRecord extends DataClass
+    implements Insertable<FlareFollowupRecord> {
+  final String subjectId;
+  final String sessionId;
+  final String documentJson;
+  final int updatedAtMs;
+  const FlareFollowupRecord({
+    required this.subjectId,
+    required this.sessionId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['session_id'] = Variable<String>(sessionId);
+    map['document_json'] = Variable<String>(documentJson);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  FlareFollowupRecordsCompanion toCompanion(bool nullToAbsent) {
+    return FlareFollowupRecordsCompanion(
+      subjectId: Value(subjectId),
+      sessionId: Value(sessionId),
+      documentJson: Value(documentJson),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory FlareFollowupRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FlareFollowupRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      documentJson: serializer.fromJson<String>(json['documentJson']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'documentJson': serializer.toJson<String>(documentJson),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  FlareFollowupRecord copyWith({
+    String? subjectId,
+    String? sessionId,
+    String? documentJson,
+    int? updatedAtMs,
+  }) => FlareFollowupRecord(
+    subjectId: subjectId ?? this.subjectId,
+    sessionId: sessionId ?? this.sessionId,
+    documentJson: documentJson ?? this.documentJson,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  FlareFollowupRecord copyWithCompanion(FlareFollowupRecordsCompanion data) {
+    return FlareFollowupRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      documentJson: data.documentJson.present
+          ? data.documentJson.value
+          : this.documentJson,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FlareFollowupRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(subjectId, sessionId, documentJson, updatedAtMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FlareFollowupRecord &&
+          other.subjectId == this.subjectId &&
+          other.sessionId == this.sessionId &&
+          other.documentJson == this.documentJson &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class FlareFollowupRecordsCompanion
+    extends UpdateCompanion<FlareFollowupRecord> {
+  final Value<String> subjectId;
+  final Value<String> sessionId;
+  final Value<String> documentJson;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const FlareFollowupRecordsCompanion({
+    this.subjectId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.documentJson = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FlareFollowupRecordsCompanion.insert({
+    required String subjectId,
+    required String sessionId,
+    required String documentJson,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       sessionId = Value(sessionId),
+       documentJson = Value(documentJson),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<FlareFollowupRecord> custom({
+    Expression<String>? subjectId,
+    Expression<String>? sessionId,
+    Expression<String>? documentJson,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (sessionId != null) 'session_id': sessionId,
+      if (documentJson != null) 'document_json': documentJson,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FlareFollowupRecordsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? sessionId,
+    Value<String>? documentJson,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return FlareFollowupRecordsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      sessionId: sessionId ?? this.sessionId,
+      documentJson: documentJson ?? this.documentJson,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (documentJson.present) {
+      map['document_json'] = Variable<String>(documentJson.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FlareFollowupRecordsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('documentJson: $documentJson, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
@@ -3073,6 +3406,8 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
   );
   late final $AdaptationRecordsTable adaptationRecords =
       $AdaptationRecordsTable(this);
+  late final $FlareFollowupRecordsTable flareFollowupRecords =
+      $FlareFollowupRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3088,6 +3423,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
     workoutRecords,
     readinessRecords,
     adaptationRecords,
+    flareFollowupRecords,
   ];
 }
 
@@ -5008,6 +5344,218 @@ typedef $$AdaptationRecordsTableProcessedTableManager =
       AdaptationRecord,
       PrefetchHooks Function()
     >;
+typedef $$FlareFollowupRecordsTableCreateCompanionBuilder =
+    FlareFollowupRecordsCompanion Function({
+      required String subjectId,
+      required String sessionId,
+      required String documentJson,
+      required int updatedAtMs,
+      Value<int> rowid,
+    });
+typedef $$FlareFollowupRecordsTableUpdateCompanionBuilder =
+    FlareFollowupRecordsCompanion Function({
+      Value<String> subjectId,
+      Value<String> sessionId,
+      Value<String> documentJson,
+      Value<int> updatedAtMs,
+      Value<int> rowid,
+    });
+
+class $$FlareFollowupRecordsTableFilterComposer
+    extends Composer<_$ProfileDatabase, $FlareFollowupRecordsTable> {
+  $$FlareFollowupRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FlareFollowupRecordsTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $FlareFollowupRecordsTable> {
+  $$FlareFollowupRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FlareFollowupRecordsTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $FlareFollowupRecordsTable> {
+  $$FlareFollowupRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get documentJson => $composableBuilder(
+    column: $table.documentJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$FlareFollowupRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $FlareFollowupRecordsTable,
+          FlareFollowupRecord,
+          $$FlareFollowupRecordsTableFilterComposer,
+          $$FlareFollowupRecordsTableOrderingComposer,
+          $$FlareFollowupRecordsTableAnnotationComposer,
+          $$FlareFollowupRecordsTableCreateCompanionBuilder,
+          $$FlareFollowupRecordsTableUpdateCompanionBuilder,
+          (
+            FlareFollowupRecord,
+            BaseReferences<
+              _$ProfileDatabase,
+              $FlareFollowupRecordsTable,
+              FlareFollowupRecord
+            >,
+          ),
+          FlareFollowupRecord,
+          PrefetchHooks Function()
+        > {
+  $$FlareFollowupRecordsTableTableManager(
+    _$ProfileDatabase db,
+    $FlareFollowupRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FlareFollowupRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FlareFollowupRecordsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$FlareFollowupRecordsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> documentJson = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FlareFollowupRecordsCompanion(
+                subjectId: subjectId,
+                sessionId: sessionId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String sessionId,
+                required String documentJson,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => FlareFollowupRecordsCompanion.insert(
+                subjectId: subjectId,
+                sessionId: sessionId,
+                documentJson: documentJson,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$FlareFollowupRecordsTable, FlareFollowupRecord>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $FlareFollowupRecordsTable,
+                    FlareFollowupRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FlareFollowupRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $FlareFollowupRecordsTable,
+      FlareFollowupRecord,
+      $$FlareFollowupRecordsTableFilterComposer,
+      $$FlareFollowupRecordsTableOrderingComposer,
+      $$FlareFollowupRecordsTableAnnotationComposer,
+      $$FlareFollowupRecordsTableCreateCompanionBuilder,
+      $$FlareFollowupRecordsTableUpdateCompanionBuilder,
+      (
+        FlareFollowupRecord,
+        BaseReferences<
+          _$ProfileDatabase,
+          $FlareFollowupRecordsTable,
+          FlareFollowupRecord
+        >,
+      ),
+      FlareFollowupRecord,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -5032,4 +5580,6 @@ class $ProfileDatabaseManager {
       $$ReadinessRecordsTableTableManager(_db, _db.readinessRecords);
   $$AdaptationRecordsTableTableManager get adaptationRecords =>
       $$AdaptationRecordsTableTableManager(_db, _db.adaptationRecords);
+  $$FlareFollowupRecordsTableTableManager get flareFollowupRecords =>
+      $$FlareFollowupRecordsTableTableManager(_db, _db.flareFollowupRecords);
 }

@@ -17,12 +17,16 @@ class _MoveChoice {
   const _MoveChoice({
     this.workout = '',
     this.checkIn = false,
+    this.flareCheckIn = false,
     this.notice = '',
+    this.clearedCheck = false,
   });
 
   final String workout;
   final bool checkIn;
+  final bool flareCheckIn;
   final String notice;
+  final bool clearedCheck;
 }
 
 class HomeScreen extends StatefulWidget {
@@ -58,6 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _workout = '';
   bool _clearedDraft = false;
   bool _showCheckIn = false;
+  bool _showFlareCheckIn = false;
+  bool _clearedCheck = false;
   String _moveNotice = '';
   GoRouter? _router;
   Listenable? _access;
@@ -175,6 +181,8 @@ class _HomeScreenState extends State<HomeScreen> {
     var workout = '';
     var cleared = false;
     var checkIn = false;
+    var flareCheckIn = false;
+    var clearedCheck = false;
     var notice = '';
     try {
       final String? raw = await store.loadWorkoutDraft();
@@ -206,6 +214,8 @@ class _HomeScreenState extends State<HomeScreen> {
         final _MoveChoice choice = await _moveChoice(store);
         workout = choice.workout;
         checkIn = choice.checkIn;
+        flareCheckIn = choice.flareCheckIn;
+        clearedCheck = choice.clearedCheck;
         notice = choice.notice;
       }
     }
@@ -219,6 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _workout = workout;
       _clearedDraft = cleared;
       _showCheckIn = checkIn;
+      _showFlareCheckIn = flareCheckIn;
+      _clearedCheck = clearedCheck;
       _moveNotice = notice;
     });
   }
@@ -257,12 +269,16 @@ class _HomeScreenState extends State<HomeScreen> {
       try {
         decodeReadiness(readiness, sessionId: terminal.sessionId);
         final StoredAdaptation decision = StoredAdaptation.decode(adaptation);
-        if (decision.sessionId == terminal.sessionId) {
-          return _MoveChoice(
-            workout: decision.action == 'maintain' ? 'start' : '',
-            notice: decision.reason,
-          );
+        if (decision.sessionId != terminal.sessionId) {
+          throw const AdaptationDocumentException();
         }
+        if (decision.action == 'pause_today') {
+          return _MoveChoice(notice: decision.reason);
+        }
+        if (decision.action != 'maintain') {
+          throw const AdaptationDocumentException();
+        }
+        return await _flareChoice(store, terminal.sessionId, decision.reason);
       } on AdaptationDocumentException {
         // The pair is replaced by the cleared notice below.
       }
@@ -277,10 +293,43 @@ class _HomeScreenState extends State<HomeScreen> {
     return const _MoveChoice(checkIn: true);
   }
 
+  Future<_MoveChoice> _flareChoice(
+    ProfileStore store,
+    String sessionId,
+    String readinessReason,
+  ) async {
+    final String? raw = await store.loadFlareFollowup(sessionId);
+    if (raw == null) {
+      return _MoveChoice(flareCheckIn: true, notice: readinessReason);
+    }
+    try {
+      final StoredFlareFollowup followup = StoredFlareFollowup.decode(raw);
+      if (followup.sessionId != sessionId) {
+        throw const AdaptationDocumentException();
+      }
+      if (followup.action == 'keep_program') {
+        return _MoveChoice(workout: 'start', notice: followup.reason);
+      }
+      if (followup.action == 'pause_today') {
+        return _MoveChoice(notice: followup.reason);
+      }
+      throw const AdaptationDocumentException();
+    } on AdaptationDocumentException {
+      await store.deleteFlareFollowup(sessionId);
+      return _MoveChoice(
+        flareCheckIn: true,
+        notice: readinessReason,
+        clearedCheck: true,
+      );
+    }
+  }
+
   bool get _showWithheld {
     try {
-      return GoRouterState.of(context).uri.queryParameters['adaptation'] ==
-          'withheld';
+      final Map<String, String> query = GoRouterState.of(context)
+          .uri
+          .queryParameters;
+      return query['adaptation'] == 'withheld' || query['flare'] == 'withheld';
     } catch (_) {
       return false;
     }
@@ -361,6 +410,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          if (_clearedCheck) ...[
+                            const Text(
+                              'The saved check could not be read. It was cleared.',
+                            ),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
                           if (_moveNotice.isNotEmpty) ...[
                             Text(_moveNotice),
                             const SizedBox(height: AppSpacing.space24),
@@ -388,6 +443,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             PrimaryButton(
                               label: 'How are you feeling today?',
                               onPressed: () => context.go('/focus/readiness'),
+                            ),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
+                          if (widget.liveStore != null &&
+                              !widget.blockedNow &&
+                              _entryReady &&
+                              _showFlareCheckIn) ...[
+                            PrimaryButton(
+                              label: 'Check in on the last session',
+                              onPressed: () =>
+                                  context.go('/focus/flare-followup'),
                             ),
                             const SizedBox(height: AppSpacing.space24),
                           ],

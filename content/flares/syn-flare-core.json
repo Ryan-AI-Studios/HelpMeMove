@@ -1,0 +1,22 @@
+{
+  "matches": [
+    {
+      "choice": "worse_today",
+      "action": "pause_today",
+      "reason": "Today's check says to wait. The exercises stay the same."
+    },
+    {
+      "choice": "same",
+      "action": "keep_program",
+      "reason": "Today's check keeps the same exercises."
+    },
+    {
+      "choice": "settled",
+      "action": "keep_program",
+      "reason": "Today's check keeps the same exercises."
+    }
+  ],
+  "record_version": 1,
+  "rule_id": "syn-flare-core",
+  "rule_version": 1
+}

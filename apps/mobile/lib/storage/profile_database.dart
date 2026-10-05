@@ -141,6 +141,22 @@ class AdaptationRecords extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId, sessionId};
 }
 
+class FlareFollowupRecords extends Table {
+  @override
+  String get tableName => 'flare_followup_records';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get sessionId => text()();
+
+  TextColumn get documentJson => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId, sessionId};
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -200,6 +216,7 @@ QueryExecutor openEncryptedExecutor({
     WorkoutRecords,
     ReadinessRecords,
     AdaptationRecords,
+    FlareFollowupRecords,
   ],
 )
 class ProfileDatabase extends _$ProfileDatabase {
@@ -209,7 +226,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -238,6 +255,10 @@ class ProfileDatabase extends _$ProfileDatabase {
       if (from == 5 && to == 6) {
         await migrator.createTable(readinessRecords);
         await migrator.createTable(adaptationRecords);
+        return;
+      }
+      if (from == 6 && to == 7) {
+        await migrator.createTable(flareFollowupRecords);
         return;
       }
       rejectSchemaUpgrade(from, to);

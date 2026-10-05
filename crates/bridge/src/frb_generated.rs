@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -213864189;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1948813267;
 
 // Section: executor
 
@@ -711,6 +711,46 @@ fn wire__crate__api__bridge__prepare_adaptation_impl(
         },
     )
 }
+fn wire__crate__api__bridge__prepare_flare_followup_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "prepare_flare_followup",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_intake_json = <String>::sse_decode(&mut deserializer);
+            let api_assessment_json = <String>::sse_decode(&mut deserializer);
+            let api_program_json = <String>::sse_decode(&mut deserializer);
+            let api_workout_json = <String>::sse_decode(&mut deserializer);
+            let api_followup_json = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::bridge::prepare_flare_followup(
+                    api_intake_json,
+                    api_assessment_json,
+                    api_program_json,
+                    api_workout_json,
+                    api_followup_json,
+                ))?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__bridge__probe_contained_panic_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -863,6 +903,20 @@ impl SseDecode for f64 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_f64::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for crate::api::bridge::FlareView {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_outcome = <String>::sse_decode(deserializer);
+        let mut var_withholdCode = <String>::sse_decode(deserializer);
+        let mut var_documentJson = <String>::sse_decode(deserializer);
+        return crate::api::bridge::FlareView {
+            outcome: var_outcome,
+            withhold_code: var_withholdCode,
+            document_json: var_documentJson,
+        };
     }
 }
 
@@ -1071,8 +1125,9 @@ fn pde_ffi_dispatcher_sync_impl(
         19 => wire__crate__api__bridge__observe_cancel_impl(ptr, rust_vec_len, data_len),
         20 => wire__crate__api__bridge__open_workout_impl(ptr, rust_vec_len, data_len),
         21 => wire__crate__api__bridge__prepare_adaptation_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__bridge__prepare_flare_followup_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1189,6 +1244,25 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::bridge::ExerciseDisplay>
     for crate::api::bridge::ExerciseDisplay
 {
     fn into_into_dart(self) -> crate::api::bridge::ExerciseDisplay {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::bridge::FlareView {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.outcome.into_into_dart().into_dart(),
+            self.withhold_code.into_into_dart().into_dart(),
+            self.document_json.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::bridge::FlareView {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::bridge::FlareView>
+    for crate::api::bridge::FlareView
+{
+    fn into_into_dart(self) -> crate::api::bridge::FlareView {
         self
     }
 }
@@ -1406,6 +1480,15 @@ impl SseEncode for f64 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_f64::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for crate::api::bridge::FlareView {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.outcome, serializer);
+        <String>::sse_encode(self.withhold_code, serializer);
+        <String>::sse_encode(self.document_json, serializer);
     }
 }
 

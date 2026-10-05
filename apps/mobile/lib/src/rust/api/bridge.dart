@@ -7,9 +7,9 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `adaptation_withheld`, `decision_fields`, `eligible_substitutions`, `embedded_exercises`, `emergency_fields`, `escalation_name`, `instrument_view`, `program_rule_view`, `ready`, `sorted`, `triage_name`, `withheld_plan`, `withheld`, `workout_from_content`, `workout_ready`, `workout_unavailable`
+// These functions are ignored because they are not marked as `pub`: `adaptation_withheld`, `decision_fields`, `eligible_substitutions`, `embedded_exercises`, `emergency_fields`, `escalation_name`, `flare_withheld`, `instrument_view`, `program_rule_view`, `ready`, `sorted`, `triage_name`, `withheld_plan`, `withheld`, `workout_from_content`, `workout_ready`, `workout_unavailable`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ProgramSelection`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `active_issues_for_areas`, `code`, `select_program`
 
 String bridgeVersion() => RustLib.instance.api.crateApiBridgeBridgeVersion();
@@ -144,6 +144,21 @@ AdaptationView prepareAdaptation({
   readinessJson: readinessJson,
 );
 
+/// Decide the follow-up from stored documents. Flutter passes no eligible list.
+FlareView prepareFlareFollowup({
+  required String intakeJson,
+  required String assessmentJson,
+  required String programJson,
+  required String workoutJson,
+  required String followupJson,
+}) => RustLib.instance.api.crateApiBridgePrepareFlareFollowup(
+  intakeJson: intakeJson,
+  assessmentJson: assessmentJson,
+  programJson: programJson,
+  workoutJson: workoutJson,
+  followupJson: followupJson,
+);
+
 class AdaptationView {
   final String outcome;
   final String withholdCode;
@@ -241,6 +256,31 @@ class ExerciseDisplay {
           runtimeType == other.runtimeType &&
           name == other.name &&
           writtenInstructions == other.writtenInstructions;
+}
+
+class FlareView {
+  final String outcome;
+  final String withholdCode;
+  final String documentJson;
+
+  const FlareView({
+    required this.outcome,
+    required this.withholdCode,
+    required this.documentJson,
+  });
+
+  @override
+  int get hashCode =>
+      outcome.hashCode ^ withholdCode.hashCode ^ documentJson.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FlareView &&
+          runtimeType == other.runtimeType &&
+          outcome == other.outcome &&
+          withholdCode == other.withholdCode &&
+          documentJson == other.documentJson;
 }
 
 class IntakeVocabulary {
