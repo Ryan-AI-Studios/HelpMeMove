@@ -13,6 +13,8 @@ import 'package:helpmemove/design/shell/app_shell.dart';
 import 'package:helpmemove/intake/intake_flow.dart';
 import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/program/program_flow.dart';
+import 'package:helpmemove/readiness/modified_plan_screen.dart';
+import 'package:helpmemove/readiness/readiness_flow.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 import 'package:helpmemove/workout/workout_flow.dart';
@@ -59,6 +61,7 @@ GoRouter buildHelpMeMoveRouter({
   SafetyView? previewSafetyView,
   LocalProgram? previewProgram,
   String? previewSession,
+  String? previewAdaptation,
   bool movementGateOpen = false,
 }) {
   final GlobalKey<NavigatorState> rootNavigatorKey =
@@ -169,6 +172,31 @@ GoRouter buildHelpMeMoveRouter({
                       return WorkoutFlow(
                         store: profile,
                         previewDocument: previewSession,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'readiness',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const WorkoutUnavailable();
+                      }
+                      return ReadinessFlow(store: profile);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'modified-plan',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const WorkoutUnavailable();
+                      }
+                      return ModifiedPlanScreen(
+                        store: profile,
+                        previewDocument: previewAdaptation,
                       );
                     },
                   ),

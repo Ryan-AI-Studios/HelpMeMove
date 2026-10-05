@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:drift/drift.dart' as drift;
+import 'package:drift/native.dart' as drift_native;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
@@ -211,6 +213,34 @@ void main() {
       () => rejectSchemaUpgrade(5, 4),
       throwsA(isA<StorageSchemaException>()),
     );
+    expect(
+      () => rejectSchemaUpgrade(5, 7),
+      throwsA(isA<StorageSchemaException>()),
+    );
+    expect(
+      () => rejectSchemaUpgrade(6, 7),
+      throwsA(isA<StorageSchemaException>()),
+    );
+  });
+
+  test('onUpgrade rejects 5 to 7 and 6 to 7', () async {
+    final ProfileDatabase database = ProfileDatabase(
+      drift_native.NativeDatabase.memory(),
+    );
+    addTearDown(database.close);
+    await database.customSelect('SELECT 1').get();
+    final Future<void> Function(drift.Migrator, int, int) upgrade =
+        database.migration.onUpgrade;
+    final drift.Migrator migrator = database.createMigrator();
+    await expectLater(
+      upgrade(migrator, 5, 7),
+      throwsA(isA<StorageSchemaException>()),
+    );
+    await expectLater(
+      upgrade(migrator, 6, 7),
+      throwsA(isA<StorageSchemaException>()),
+    );
+    expect(database.schemaVersion, 6);
   });
 
   test('schema 2 opened by schema 4 is rejected', () async {
@@ -323,7 +353,7 @@ void main() {
     unchanged.close();
   });
 
-  test('schema 4 gains workout tables and keeps the program row', () async {
+  test('schema 4 reopen fails closed and does not become version 6', () async {
     const String program =
         '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
     final ProfileStore store = openStore();
@@ -337,29 +367,82 @@ void main() {
     applyEncryptionSetup(raw, keyHex);
     raw.execute('DROP TABLE IF EXISTS workout_drafts');
     raw.execute('DROP TABLE IF EXISTS workout_records');
+    raw.execute('DROP TABLE IF EXISTS readiness_records');
+    raw.execute('DROP TABLE IF EXISTS adaptation_records');
     raw.execute('PRAGMA user_version = 4');
     raw.close();
 
-    await store.reopenActive();
-    expect(await store.loadProgramRecord(), program);
-    await store.close();
+    await expectLater(
+      store.reopenActive(),
+      throwsA(isA<StorageSchemaException>()),
+    );
 
-    final Database upgraded = sqlite3.open(file.path);
-    applyEncryptionSetup(upgraded, keyHex);
-    expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 5);
+    final Database unchanged = sqlite3.open(file.path);
+    applyEncryptionSetup(unchanged, keyHex);
+    expect(unchanged.select('PRAGMA user_version').first.columnAt(0), 4);
     expect(
-      upgraded
+      unchanged
           .select('SELECT document_json FROM program_records')
           .first
           .columnAt(0),
       program,
     );
-    final ResultSet tables = upgraded.select(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('workout_drafts', 'workout_records')",
-    );
-    expect(tables, hasLength(2));
-    upgraded.close();
+    unchanged.close();
   });
+
+  test(
+    'schema 5 gains readiness tables and keeps program and workout rows',
+    () async {
+      const String program =
+          '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
+      const String sessionId = '11111111-1111-4111-8111-111111111111';
+      const String workout =
+          '{"session_id":"11111111-1111-4111-8111-111111111111"}';
+      final ProfileStore store = openStore();
+      final String subjectId = await store.createProfile();
+      await store.saveProgramRecord(program);
+      await store.saveWorkoutTerminal(
+        sessionId: sessionId,
+        documentJson: workout,
+      );
+      final File file = store.openDatabaseFile!;
+      final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+      await store.close();
+
+      final Database raw = sqlite3.open(file.path);
+      applyEncryptionSetup(raw, keyHex);
+      raw.execute('DROP TABLE IF EXISTS readiness_records');
+      raw.execute('DROP TABLE IF EXISTS adaptation_records');
+      raw.execute('PRAGMA user_version = 5');
+      raw.close();
+
+      await store.reopenActive();
+      expect(await store.loadProgramRecord(), program);
+      expect(await store.workoutRecordDocuments(), <String>[workout]);
+      expect(await store.loadReadinessRecord(sessionId), isNull);
+      expect(await store.loadAdaptationRecord(sessionId), isNull);
+      await store.close();
+
+      final Database upgraded = sqlite3.open(file.path);
+      applyEncryptionSetup(upgraded, keyHex);
+      expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 6);
+      expect(
+        upgraded
+            .select('SELECT COUNT(*) FROM readiness_records')
+            .first
+            .columnAt(0),
+        0,
+      );
+      expect(
+        upgraded
+            .select('SELECT COUNT(*) FROM adaptation_records')
+            .first
+            .columnAt(0),
+        0,
+      );
+      upgraded.close();
+    },
+  );
 
   test('assessment record round-trips and uses the store clock', () async {
     final ProfileStore store = openStore();
@@ -537,6 +620,90 @@ void main() {
       final Directory directory = store.openDatabaseFile!.parent;
       _expectMarkerAbsent(directory, 'syn-shoulder-isometric');
       _expectMarkerAbsent(directory, 'This hurts');
+    },
+  );
+
+  test('a second adaptation pair keeps the first and delete leaves the workout', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    const String sessionId = '11111111-1111-4111-8111-111111111111';
+    const String otherId = '22222222-2222-4222-8222-222222222222';
+    const String program = '{"record_version":1}';
+    const String workout =
+        '{"session_id":"11111111-1111-4111-8111-111111111111"}';
+    const String readiness =
+        '{"soreness":"low","session_id":"11111111-1111-4111-8111-111111111111"}';
+    const String adaptation =
+        '{"action":"maintain","reason":"Today\'s check keeps the same exercises."}';
+    const String later =
+        '{"action":"pause_today","reason":"Today\'s check says to wait. The exercises stay the same."}';
+    await store.saveProgramRecord(program);
+    await store.saveWorkoutTerminal(
+      sessionId: sessionId,
+      documentJson: workout,
+    );
+    final int clock = store.clockMillis();
+    await store.saveAdaptationPair(
+      sessionId: sessionId,
+      readinessJson: readiness,
+      adaptationJson: adaptation,
+      updatedAtMs: clock,
+    );
+    await expectLater(
+      store.saveAdaptationPair(
+        sessionId: sessionId,
+        readinessJson: readiness,
+        adaptationJson: later,
+        updatedAtMs: clock,
+      ),
+      throwsA(anything),
+    );
+    expect(await store.loadReadinessRecord(sessionId), readiness);
+    expect(await store.loadAdaptationRecord(sessionId), adaptation);
+    await store.saveWorkoutTerminal(
+      sessionId: otherId,
+      documentJson: '{"session_id":"$otherId"}',
+    );
+    final StoredTerminalWorkout? newest = await store
+        .loadNewestTerminalWorkout();
+    expect(newest?.sessionId, otherId);
+    await store.deleteAdaptationPair(sessionId);
+    expect(await store.loadReadinessRecord(sessionId), isNull);
+    expect(await store.loadAdaptationRecord(sessionId), isNull);
+    expect(await store.loadProgramRecord(), program);
+    expect(await store.workoutRecordCount(), 2);
+  });
+
+  test(
+    'checkpoint removes the soreness token and both reason strings',
+    () async {
+      final ProfileStore store = openStore();
+      await store.createProfile();
+      const String sessionId = '11111111-1111-4111-8111-111111111111';
+      await store.saveAdaptationPair(
+        sessionId: sessionId,
+        readinessJson: '{"soreness":"high"}',
+        adaptationJson: '{"reason":"Today\'s check says to wait. The exercises stay the same."}',
+        updatedAtMs: store.clockMillis(),
+      );
+      await store.saveAdaptationPair(
+        sessionId: '22222222-2222-4222-8222-222222222222',
+        readinessJson: '{"soreness":"moderate"}',
+        adaptationJson: '{"reason":"Today\'s check keeps the same exercises."}',
+        updatedAtMs: store.clockMillis(),
+      );
+      await store.checkpoint();
+      final Directory directory = store.openDatabaseFile!.parent;
+      _expectMarkerAbsent(directory, 'high');
+      _expectMarkerAbsent(directory, 'moderate');
+      _expectMarkerAbsent(
+        directory,
+        'Today\'s check says to wait. The exercises stay the same.',
+      );
+      _expectMarkerAbsent(
+        directory,
+        'Today\'s check keeps the same exercises.',
+      );
     },
   );
 

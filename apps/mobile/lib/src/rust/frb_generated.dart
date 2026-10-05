@@ -67,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 937807355;
+  int get rustContentHash => -213864189;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -139,6 +139,14 @@ abstract class RustLibApi extends BaseApi {
     required String programJson,
     required PlatformInt64 monotonicMillis,
     required String sessionId,
+  });
+
+  AdaptationView crateApiBridgePrepareAdaptation({
+    required String intakeJson,
+    required String assessmentJson,
+    required String programJson,
+    required String workoutJson,
+    required String readinessJson,
   });
 
   String crateApiBridgeProbeContainedPanic();
@@ -665,12 +673,60 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  AdaptationView crateApiBridgePrepareAdaptation({
+    required String intakeJson,
+    required String assessmentJson,
+    required String programJson,
+    required String workoutJson,
+    required String readinessJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(intakeJson, serializer);
+          sse_encode_String(assessmentJson, serializer);
+          sse_encode_String(programJson, serializer);
+          sse_encode_String(workoutJson, serializer);
+          sse_encode_String(readinessJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_adaptation_view,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBridgePrepareAdaptationConstMeta,
+        argValues: [
+          intakeJson,
+          assessmentJson,
+          programJson,
+          workoutJson,
+          readinessJson,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBridgePrepareAdaptationConstMeta =>
+      const TaskConstMeta(
+        debugName: "prepare_adaptation",
+        argNames: [
+          "intakeJson",
+          "assessmentJson",
+          "programJson",
+          "workoutJson",
+          "readinessJson",
+        ],
+      );
+
+  @override
   String crateApiBridgeProbeContainedPanic() {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -693,7 +749,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(caller, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -713,6 +769,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as String;
+  }
+
+  @protected
+  AdaptationView dco_decode_adaptation_view(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return AdaptationView(
+      outcome: dco_decode_String(arr[0]),
+      withholdCode: dco_decode_String(arr[1]),
+      documentJson: dco_decode_String(arr[2]),
+    );
   }
 
   @protected
@@ -899,6 +968,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
     return utf8.decoder.convert(inner);
+  }
+
+  @protected
+  AdaptationView sse_decode_adaptation_view(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_outcome = sse_decode_String(deserializer);
+    var var_withholdCode = sse_decode_String(deserializer);
+    var var_documentJson = sse_decode_String(deserializer);
+    return AdaptationView(
+      outcome: var_outcome,
+      withholdCode: var_withholdCode,
+      documentJson: var_documentJson,
+    );
   }
 
   @protected
@@ -1095,6 +1177,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
+  }
+
+  @protected
+  void sse_encode_adaptation_view(
+    AdaptationView self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.outcome, serializer);
+    sse_encode_String(self.withholdCode, serializer);
+    sse_encode_String(self.documentJson, serializer);
   }
 
   @protected

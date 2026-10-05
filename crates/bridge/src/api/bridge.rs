@@ -1,9 +1,10 @@
 use helpmemove_content::{
-    AssessedArea, ContentError, Equipment, Exercise, Goal, MovementRating, ProgramRule, Region,
-    Session, SessionEvent, StartingExercise, apply_session_event, open_session,
-    parse_assessment_instrument, parse_exercise, parse_program_rule, parse_session,
-    read_program_assessment, read_program_intake, read_session_event, render_session,
-    render_starting_program,
+    AdaptationDecision, AdaptationError, AssessedArea, ContentError, Equipment, Exercise, Goal,
+    MovementRating, ProgramRule, Region, Session, SessionEvent, StartingExercise,
+    apply_session_event, decide_adaptation, open_session, parse_adaptation_rule,
+    parse_assessment_instrument, parse_exercise, parse_program_rule, parse_readiness,
+    parse_session, read_intake_safety_answers, read_program_assessment, read_program_intake,
+    read_session_event, render_session, render_starting_program,
 };
 use helpmemove_domain::{
     BRIDGE_VERSION, Confidence, DomainError, DomainInstant, Laterality, SubjectId,
@@ -20,6 +21,8 @@ const COMMITTED_RULE: &str = include_str!("../../../../content/rules/syn-safety-
 const COMMITTED_INSTRUMENT: &str =
     include_str!("../../../../content/assessments/syn-assessment-core.json");
 const COMMITTED_PROGRAM: &str = include_str!("../../../../content/programs/syn-program-core.json");
+const COMMITTED_ADAPTATION: &str =
+    include_str!("../../../../content/adaptations/syn-adaptation-core.json");
 const EXERCISE_KNEE: &str =
     include_str!("../../../../content/exercises/syn-knee-sit-to-stand.json");
 const EXERCISE_BAND: &str = include_str!("../../../../content/exercises/syn-shoulder-band.json");
@@ -422,19 +425,13 @@ pub fn select_program(
     exercises: &[Exercise],
     rule: &ProgramRule,
 ) -> ProgramSelection {
-    let mut issues = Vec::new();
+    let issues = active_issues_for_areas(areas);
     let mut assessed = Vec::new();
     for area in areas {
         if assessed.contains(&area.region) {
             continue;
         }
         assessed.push(area.region);
-        let mut id = String::from("area-");
-        id.push_str(area.region.as_str());
-        issues.push(ActiveIssue {
-            id,
-            restrictions: Vec::new(),
-        });
     }
     let mut ordered: Vec<&Exercise> = exercises.iter().collect();
     ordered.sort_by(|left, right| left.id.cmp(&right.id));
@@ -732,6 +729,139 @@ fn triage_name(level: TriageLevel) -> &'static str {
         TriageLevel::Yellow => "yellow",
         TriageLevel::Orange => "orange",
         TriageLevel::Red => "red",
+    }
+}
+
+/// One issue per distinct assessed region, in first-seen order.
+#[flutter_rust_bridge::frb(ignore)]
+pub fn active_issues_for_areas(areas: &[AssessedArea]) -> Vec<ActiveIssue> {
+    let mut issues = Vec::new();
+    let mut assessed = Vec::new();
+    for area in areas {
+        if assessed.contains(&area.region) {
+            continue;
+        }
+        assessed.push(area.region);
+        let mut id = String::from("area-");
+        id.push_str(area.region.as_str());
+        issues.push(ActiveIssue {
+            id,
+            restrictions: Vec::new(),
+        });
+    }
+    issues
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdaptationView {
+    pub outcome: String,
+    pub withhold_code: String,
+    pub document_json: String,
+}
+
+/// Decide the next session from stored documents. Flutter passes no eligible list.
+#[flutter_rust_bridge::frb(sync)]
+pub fn prepare_adaptation(
+    intake_json: String,
+    assessment_json: String,
+    program_json: String,
+    workout_json: String,
+    readiness_json: String,
+) -> AdaptationView {
+    if intake_json.is_empty() {
+        return adaptation_withheld("intake_unusable");
+    }
+    if assessment_json.is_empty() {
+        return adaptation_withheld("assessment_incomplete");
+    }
+    if program_json.is_empty() {
+        return adaptation_withheld("no_program");
+    }
+    if workout_json.is_empty() {
+        return adaptation_withheld("no_terminal_workout");
+    }
+    if readiness_json.is_empty() {
+        return adaptation_withheld("readiness_unusable");
+    }
+    let Ok(readiness) = parse_readiness(&readiness_json) else {
+        return adaptation_withheld("readiness_unusable");
+    };
+    let Ok(answers) = read_intake_safety_answers(&intake_json) else {
+        return adaptation_withheld("intake_unusable");
+    };
+    let Ok(rule) = parse_rule_set(COMMITTED_RULE.as_bytes()) else {
+        return adaptation_withheld("progression_denied");
+    };
+    let Ok(millis) = i64::try_from(readiness.recorded_at_ms) else {
+        return adaptation_withheld("readiness_unusable");
+    };
+    let pairs: Vec<(&str, &str)> = answers
+        .iter()
+        .map(|(token, value)| (token.as_str(), value.as_str()))
+        .collect();
+    let Ok(classification) = classify(&rule, &pairs, DomainInstant::from_unix_millis(millis), &[])
+    else {
+        return adaptation_withheld("progression_denied");
+    };
+    if !classification.permits_progression || classification.screening_required {
+        return adaptation_withheld("progression_denied");
+    }
+    let Ok(areas) = read_program_assessment(&assessment_json) else {
+        return adaptation_withheld("assessment_incomplete");
+    };
+    let issues = active_issues_for_areas(&areas);
+    let Ok(library) = embedded_exercises() else {
+        return adaptation_withheld("program_unusable");
+    };
+    if library.is_empty() {
+        return adaptation_withheld("program_unusable");
+    }
+    let Ok(program) = open_session(&program_json, &library, 0, "adaptation-probe") else {
+        return adaptation_withheld("program_unusable");
+    };
+    let mut eligible = Vec::with_capacity(program.exercises.len());
+    for exercise in &program.exercises {
+        let Some(fixture) = library
+            .iter()
+            .find(|item| item.id.as_str() == exercise.exercise_id)
+        else {
+            return adaptation_withheld("program_unusable");
+        };
+        match screen_exercise(&classification, &issues, fixture) {
+            Ok(ScreenDecision::Eligible) => eligible.push(exercise.exercise_id.clone()),
+            _ => return adaptation_withheld("exercise_denied"),
+        }
+    }
+    let eligible_ids: Vec<&str> = eligible.iter().map(String::as_str).collect();
+    if parse_adaptation_rule(COMMITTED_ADAPTATION).is_err() {
+        return adaptation_withheld("program_unusable");
+    }
+    match decide_adaptation(
+        &workout_json,
+        &program_json,
+        &readiness_json,
+        COMMITTED_ADAPTATION,
+        &library,
+        &eligible_ids,
+        classification.permits_progression,
+    ) {
+        Ok(AdaptationDecision::Ready(document)) => AdaptationView {
+            outcome: "ready".to_owned(),
+            withhold_code: String::new(),
+            document_json: document,
+        },
+        Ok(AdaptationDecision::Withheld(code)) => adaptation_withheld(code),
+        Err(AdaptationError::ProgramRejected) => adaptation_withheld("program_unusable"),
+        Err(AdaptationError::WorkoutRejected) => adaptation_withheld("no_terminal_workout"),
+        Err(AdaptationError::Invalid) => adaptation_withheld("readiness_unusable"),
+    }
+}
+
+fn adaptation_withheld(code: &str) -> AdaptationView {
+    AdaptationView {
+        outcome: "withheld".to_owned(),
+        withhold_code: code.to_owned(),
+        document_json: String::new(),
     }
 }
 
