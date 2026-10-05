@@ -128,3 +128,13 @@ jobs:
           tar -xzf "$asset" gitleaks
           sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
       - run: gitleaks detect --source . --redact --exit-code 1
+
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 2.109.1
+      - run: supabase db start
+      - run: supabase test db

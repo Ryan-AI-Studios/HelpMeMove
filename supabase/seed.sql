@@ -1,0 +1,1 @@
+-- This track does not seed rows. pgTAP inserts synthetic markers and rolls them back.
