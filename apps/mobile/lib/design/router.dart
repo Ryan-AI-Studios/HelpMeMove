@@ -13,6 +13,7 @@ import 'package:helpmemove/design/shell/app_shell.dart';
 import 'package:helpmemove/intake/intake_flow.dart';
 import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/program/program_flow.dart';
+import 'package:helpmemove/progress/progress_screen.dart';
 import 'package:helpmemove/readiness/flare_followup_flow.dart';
 import 'package:helpmemove/readiness/modified_plan_screen.dart';
 import 'package:helpmemove/readiness/readiness_flow.dart';
@@ -196,6 +197,17 @@ GoRouter buildHelpMeMoveRouter({
                         return const WorkoutUnavailable();
                       }
                       return FlareFollowupFlow(store: profile);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'progress',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const WorkoutUnavailable();
+                      }
+                      return ProgressScreen(store: profile);
                     },
                   ),
                   GoRoute(

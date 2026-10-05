@@ -67,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1948813267;
+  int get rustContentHash => -2037038075;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -155,6 +155,10 @@ abstract class RustLibApi extends BaseApi {
     required String programJson,
     required String workoutJson,
     required String followupJson,
+  });
+
+  ProgressView crateApiBridgePrepareProgressSummary({
+    required String entriesJson,
   });
 
   String crateApiBridgeProbeContainedPanic();
@@ -777,12 +781,40 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  ProgressView crateApiBridgePrepareProgressSummary({
+    required String entriesJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(entriesJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_progress_view,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBridgePrepareProgressSummaryConstMeta,
+        argValues: [entriesJson],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBridgePrepareProgressSummaryConstMeta =>
+      const TaskConstMeta(
+        debugName: "prepare_progress_summary",
+        argNames: ["entriesJson"],
+      );
+
+  @override
   String crateApiBridgeProbeContainedPanic() {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -805,7 +837,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(caller, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 25)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -957,6 +989,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return ProgramRuleView(
       ruleId: dco_decode_String(arr[0]),
       ruleVersion: dco_decode_i_64(arr[1]),
+    );
+  }
+
+  @protected
+  ProgressView dco_decode_progress_view(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return ProgressView(
+      outcome: dco_decode_String(arr[0]),
+      withholdCode: dco_decode_String(arr[1]),
+      documentJson: dco_decode_String(arr[2]),
     );
   }
 
@@ -1186,6 +1231,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ProgressView sse_decode_progress_view(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_outcome = sse_decode_String(deserializer);
+    var var_withholdCode = sse_decode_String(deserializer);
+    var var_documentJson = sse_decode_String(deserializer);
+    return ProgressView(
+      outcome: var_outcome,
+      withholdCode: var_withholdCode,
+      documentJson: var_documentJson,
+    );
+  }
+
+  @protected
   SafetyAnswer sse_decode_safety_answer(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_token = sse_decode_String(deserializer);
@@ -1390,6 +1448,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.ruleId, serializer);
     sse_encode_i_64(self.ruleVersion, serializer);
+  }
+
+  @protected
+  void sse_encode_progress_view(ProgressView self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.outcome, serializer);
+    sse_encode_String(self.withholdCode, serializer);
+    sse_encode_String(self.documentJson, serializer);
   }
 
   @protected

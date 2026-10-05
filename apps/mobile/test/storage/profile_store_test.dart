@@ -748,6 +748,59 @@ void main() {
     expect(await store.workoutRecordCount(), 2);
   });
 
+  test('workout records stay with the subject that stored them', () async {
+    final ProfileStore store = openStore();
+    final String first = await store.createProfile();
+    const String older = '11111111-1111-4111-8111-111111111111';
+    const String newer = '22222222-2222-4222-8222-222222222222';
+    await store.saveWorkoutTerminal(
+      sessionId: older,
+      documentJson: '{"session_id":"$older"}',
+    );
+    await store.saveWorkoutTerminal(
+      sessionId: newer,
+      documentJson: '{"session_id":"$newer"}',
+    );
+    final List<StoredTerminalWorkout> stored = await store.loadWorkoutRecords();
+    expect(
+      stored.map((StoredTerminalWorkout row) => row.sessionId).toSet(),
+      <String>{older, newer},
+    );
+    expect((await store.loadNewestTerminalWorkout())?.sessionId, newer);
+
+    final String second = await store.createProfile();
+    expect(await store.loadWorkoutRecords(), isEmpty);
+    expect(await store.loadNewestTerminalWorkout(), isNull);
+
+    await store.switchTo(first);
+    expect((await store.loadWorkoutRecords()).length, 2);
+    expect((await store.loadNewestTerminalWorkout())?.sessionId, newer);
+
+    await store.switchTo(second);
+    expect(await store.loadWorkoutRecords(), isEmpty);
+  });
+
+  test('checkpoint hides the progress sentences and rule token', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    await store.saveWorkoutTerminal(
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      documentJson: '{"session_id":"11111111-1111-4111-8111-111111111111","state":"completed"}',
+    );
+    await store.checkpoint();
+    final Directory directory = store.openDatabaseFile!.parent;
+    _expectMarkerAbsent(directory, 'syn-progress-core');
+    _expectMarkerAbsent(directory, 'No stored session yet.');
+    _expectMarkerAbsent(directory, 'A stored session is on this device.');
+    _expectMarkerAbsent(directory, 'The saved sessions could not be read.');
+    _expectMarkerAbsent(directory, 'Last stored pain');
+    _expectMarkerAbsent(directory, 'Completed sessions');
+    _expectMarkerAbsent(directory, 'Abandoned sessions');
+    _expectMarkerAbsent(directory, 'Safety stops');
+    _expectMarkerAbsent(directory, 'Local progress');
+    _expectMarkerAbsent(directory, 'See local progress');
+  });
+
   test(
     'checkpoint removes the soreness token and both reason strings',
     () async {

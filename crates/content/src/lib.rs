@@ -8,6 +8,7 @@ mod error;
 mod flare;
 mod model;
 mod program;
+mod progress;
 mod session;
 mod validate;
 
@@ -31,6 +32,7 @@ pub use program::{
     AssessedArea, ProgramIntake, ProgramRule, StartingExercise, parse_program_rule,
     read_program_assessment, read_program_intake, render_starting_program,
 };
+pub use progress::{ProgressError, summarize_progress};
 pub use session::{
     Session, SessionEvent, SessionExercise, SessionState, Symptom, apply_session_event,
     open_session, parse_session, read_session_event, render_session,
