@@ -121,6 +121,153 @@ void _nonNegative(Object? value) {
   }
 }
 
+class StoredFlareFollowup {
+  const StoredFlareFollowup({
+    required this.action,
+    required this.reason,
+    required this.sessionId,
+    required this.choice,
+  });
+
+  final String action;
+  final String reason;
+  final String sessionId;
+  final String choice;
+
+  static StoredFlareFollowup decode(String raw) {
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } on FormatException {
+      throw const AdaptationDocumentException();
+    }
+    if (decoded is! Map) {
+      throw const AdaptationDocumentException();
+    }
+    const Set<String> keys = <String>{'decision', 'followup', 'record_version'};
+    if (decoded.length != keys.length ||
+        decoded.keys.any(
+          (Object? key) => key is! String || !keys.contains(key),
+        )) {
+      throw const AdaptationDocumentException();
+    }
+    if (decoded['record_version'] != 1) {
+      throw const AdaptationDocumentException();
+    }
+    final String sessionId = _followupSession(decoded['followup']);
+    final StoredAdaptation decision = _decision(decoded['decision']);
+    if (decision.sessionId != sessionId) {
+      throw const AdaptationDocumentException();
+    }
+    final Object? followup = decoded['followup'];
+    if (followup is! Map) {
+      throw const AdaptationDocumentException();
+    }
+    final Object? choice = followup['choice'];
+    if (choice is! String) {
+      throw const AdaptationDocumentException();
+    }
+    if (choice == 'worse_today') {
+      if (decision.action != 'pause_today') {
+        throw const AdaptationDocumentException();
+      }
+    } else if (decision.action != 'keep_program') {
+      throw const AdaptationDocumentException();
+    }
+    return StoredFlareFollowup(
+      action: decision.action,
+      reason: decision.reason,
+      sessionId: sessionId,
+      choice: choice,
+    );
+  }
+}
+
+String _followupSession(Object? followup) {
+  if (followup is! Map) {
+    throw const AdaptationDocumentException();
+  }
+  const Set<String> keys = <String>{
+    'choice',
+    'record_version',
+    'recorded_at_ms',
+    'rule_id',
+    'rule_version',
+    'session_id',
+  };
+  if (followup.length != keys.length ||
+      followup.keys.any(
+        (Object? key) => key is! String || !keys.contains(key),
+      )) {
+    throw const AdaptationDocumentException();
+  }
+  final Object? recordedAt = followup['recorded_at_ms'];
+  final Object? sessionId = followup['session_id'];
+  final Object? choice = followup['choice'];
+  if (followup['record_version'] != 1 ||
+      followup['rule_version'] != 1 ||
+      followup['rule_id'] != 'syn-flare-core' ||
+      recordedAt is! int ||
+      recordedAt < 0 ||
+      sessionId is! String ||
+      sessionId.isEmpty ||
+      (choice != 'worse_today' && choice != 'same' && choice != 'settled')) {
+    throw const AdaptationDocumentException();
+  }
+  return sessionId;
+}
+
+StoredAdaptation _decision(Object? decision) {
+  if (decision is! Map) {
+    throw const AdaptationDocumentException();
+  }
+  const Set<String> keys = <String>{
+    'action',
+    'exercises',
+    'reason',
+    'record_version',
+    'reported_pain',
+    'rule_id',
+    'rule_version',
+    'session_id',
+  };
+  if (decision.length != keys.length ||
+      decision.keys.any(
+        (Object? key) => key is! String || !keys.contains(key),
+      )) {
+    throw const AdaptationDocumentException();
+  }
+  if (decision['record_version'] != 1 ||
+      decision['rule_version'] != 1 ||
+      decision['rule_id'] != 'syn-flare-core') {
+    throw const AdaptationDocumentException();
+  }
+  final Object? action = decision['action'];
+  final Object? reason = decision['reason'];
+  final Object? sessionId = decision['session_id'];
+  if (action is! String || reason is! String || sessionId is! String) {
+    throw const AdaptationDocumentException();
+  }
+  if (sessionId.isEmpty) {
+    throw const AdaptationDocumentException();
+  }
+  if (action == 'keep_program' && reason != maintainReason) {
+    throw const AdaptationDocumentException();
+  }
+  if (action == 'pause_today' && reason != pauseReason) {
+    throw const AdaptationDocumentException();
+  }
+  if (action != 'keep_program' && action != 'pause_today') {
+    throw const AdaptationDocumentException();
+  }
+  _requireExercises(decision['exercises']);
+  final Object? pain = decision['reported_pain'];
+  if (pain != null && (pain is! int || pain < 0 || pain > 10)) {
+    throw const AdaptationDocumentException();
+  }
+  return StoredAdaptation(action: action, reason: reason, sessionId: sessionId);
+}
+
 void decodeReadiness(String raw, {required String sessionId}) {
   final Object? decoded;
   try {

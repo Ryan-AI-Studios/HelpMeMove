@@ -1,8 +1,9 @@
 use helpmemove_content::{
-    AdaptationDecision, AdaptationError, AssessedArea, ContentError, Equipment, Exercise, Goal,
-    MovementRating, ProgramRule, Region, Session, SessionEvent, StartingExercise,
-    apply_session_event, decide_adaptation, open_session, parse_adaptation_rule,
-    parse_assessment_instrument, parse_exercise, parse_program_rule, parse_readiness,
+    AdaptationDecision, AdaptationError, AssessedArea, ContentError, Equipment, Exercise,
+    FlareDecision, FlareError, Goal, MovementRating, ProgramRule, Region, Session, SessionEvent,
+    StartingExercise, apply_session_event, decide_adaptation, decide_flare,
+    flare_followup_envelope, open_session, parse_adaptation_rule, parse_assessment_instrument,
+    parse_exercise, parse_flare_rule, parse_followup, parse_program_rule, parse_readiness,
     parse_session, read_intake_safety_answers, read_program_assessment, read_program_intake,
     read_session_event, render_session, render_starting_program,
 };
@@ -23,6 +24,7 @@ const COMMITTED_INSTRUMENT: &str =
 const COMMITTED_PROGRAM: &str = include_str!("../../../../content/programs/syn-program-core.json");
 const COMMITTED_ADAPTATION: &str =
     include_str!("../../../../content/adaptations/syn-adaptation-core.json");
+const COMMITTED_FLARE: &str = include_str!("../../../../content/flares/syn-flare-core.json");
 const EXERCISE_KNEE: &str =
     include_str!("../../../../content/exercises/syn-knee-sit-to-stand.json");
 const EXERCISE_BAND: &str = include_str!("../../../../content/exercises/syn-shoulder-band.json");
@@ -859,6 +861,124 @@ pub fn prepare_adaptation(
 
 fn adaptation_withheld(code: &str) -> AdaptationView {
     AdaptationView {
+        outcome: "withheld".to_owned(),
+        withhold_code: code.to_owned(),
+        document_json: String::new(),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FlareView {
+    pub outcome: String,
+    pub withhold_code: String,
+    pub document_json: String,
+}
+
+/// Decide the follow-up from stored documents. Flutter passes no eligible list.
+#[flutter_rust_bridge::frb(sync)]
+pub fn prepare_flare_followup(
+    intake_json: String,
+    assessment_json: String,
+    program_json: String,
+    workout_json: String,
+    followup_json: String,
+) -> FlareView {
+    if intake_json.is_empty() {
+        return flare_withheld("intake_unusable");
+    }
+    if assessment_json.is_empty() {
+        return flare_withheld("assessment_incomplete");
+    }
+    if program_json.is_empty() {
+        return flare_withheld("no_program");
+    }
+    if workout_json.is_empty() {
+        return flare_withheld("no_terminal_workout");
+    }
+    if followup_json.is_empty() {
+        return flare_withheld("followup_unusable");
+    }
+    let Ok(followup) = parse_followup(&followup_json) else {
+        return flare_withheld("followup_unusable");
+    };
+    let Ok(answers) = read_intake_safety_answers(&intake_json) else {
+        return flare_withheld("intake_unusable");
+    };
+    let Ok(rule) = parse_rule_set(COMMITTED_RULE.as_bytes()) else {
+        return flare_withheld("progression_denied");
+    };
+    let Ok(millis) = i64::try_from(followup.recorded_at_ms) else {
+        return flare_withheld("followup_unusable");
+    };
+    let pairs: Vec<(&str, &str)> = answers
+        .iter()
+        .map(|(token, value)| (token.as_str(), value.as_str()))
+        .collect();
+    let Ok(classification) = classify(&rule, &pairs, DomainInstant::from_unix_millis(millis), &[])
+    else {
+        return flare_withheld("progression_denied");
+    };
+    if !classification.permits_progression || classification.screening_required {
+        return flare_withheld("progression_denied");
+    }
+    let Ok(areas) = read_program_assessment(&assessment_json) else {
+        return flare_withheld("assessment_incomplete");
+    };
+    let issues = active_issues_for_areas(&areas);
+    let Ok(library) = embedded_exercises() else {
+        return flare_withheld("program_unusable");
+    };
+    if library.is_empty() {
+        return flare_withheld("program_unusable");
+    }
+    let Ok(program) = open_session(&program_json, &library, 0, "flare-probe") else {
+        return flare_withheld("program_unusable");
+    };
+    let mut eligible = Vec::with_capacity(program.exercises.len());
+    for exercise in &program.exercises {
+        let Some(fixture) = library
+            .iter()
+            .find(|item| item.id.as_str() == exercise.exercise_id)
+        else {
+            return flare_withheld("program_unusable");
+        };
+        match screen_exercise(&classification, &issues, fixture) {
+            Ok(ScreenDecision::Eligible) => eligible.push(exercise.exercise_id.clone()),
+            _ => return flare_withheld("exercise_denied"),
+        }
+    }
+    let eligible_ids: Vec<&str> = eligible.iter().map(String::as_str).collect();
+    if parse_flare_rule(COMMITTED_FLARE).is_err() {
+        return flare_withheld("program_unusable");
+    }
+    match decide_flare(
+        &workout_json,
+        &program_json,
+        &followup_json,
+        COMMITTED_FLARE,
+        &library,
+        &eligible_ids,
+        classification.permits_progression,
+    ) {
+        Ok(FlareDecision::Ready(document)) => {
+            let Ok(envelope) = flare_followup_envelope(&followup_json, &document) else {
+                return flare_withheld("followup_unusable");
+            };
+            FlareView {
+                outcome: "ready".to_owned(),
+                withhold_code: String::new(),
+                document_json: envelope,
+            }
+        }
+        Ok(FlareDecision::Withheld(code)) => flare_withheld(code),
+        Err(FlareError::ProgramRejected) => flare_withheld("program_unusable"),
+        Err(FlareError::WorkoutRejected) => flare_withheld("no_terminal_workout"),
+        Err(FlareError::Invalid) => flare_withheld("followup_unusable"),
+    }
+}
+
+fn flare_withheld(code: &str) -> FlareView {
+    FlareView {
         outcome: "withheld".to_owned(),
         withhold_code: code.to_owned(),
         document_json: String::new(),

@@ -104,7 +104,7 @@ class _ReadinessFlowState extends State<ReadinessFlow> {
       if (!mounted) {
         return;
       }
-      context.go('/focus/modified-plan');
+      context.go('/');
       return;
     }
     context.go('/?adaptation=withheld');

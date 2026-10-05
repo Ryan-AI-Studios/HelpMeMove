@@ -498,6 +498,50 @@ class ProfileStore {
     });
   }
 
+  Future<String?> loadFlareFollowup(String sessionId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final FlareFollowupRecord? row =
+        await (database.select(database.flareFollowupRecords)..where(
+              (FlareFollowupRecords table) =>
+                  table.subjectId.equals(subjectId) &
+                  table.sessionId.equals(sessionId),
+            ))
+            .getSingleOrNull();
+    return row?.documentJson;
+  }
+
+  /// Insert one envelope. A duplicate key throws and the first row stays.
+  Future<void> saveFlareFollowup({
+    required String sessionId,
+    required String documentJson,
+    required int updatedAtMs,
+  }) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await database
+        .into(database.flareFollowupRecords)
+        .insert(
+          FlareFollowupRecordsCompanion.insert(
+            subjectId: subjectId,
+            sessionId: sessionId,
+            documentJson: documentJson,
+            updatedAtMs: updatedAtMs,
+          ),
+        );
+  }
+
+  Future<void> deleteFlareFollowup(String sessionId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await (database.delete(database.flareFollowupRecords)..where(
+          (FlareFollowupRecords table) =>
+              table.subjectId.equals(subjectId) &
+              table.sessionId.equals(sessionId),
+        ))
+        .go();
+  }
+
   Future<void> deleteAdaptationPair(String sessionId) async {
     final ProfileDatabase database = _requireDatabase();
     final String subjectId = _requireActive();

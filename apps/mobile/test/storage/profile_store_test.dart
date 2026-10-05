@@ -223,7 +223,7 @@ void main() {
     );
   });
 
-  test('onUpgrade rejects 5 to 7 and 6 to 7', () async {
+  test('onUpgrade accepts 6 to 7 and rejects the other new pairs', () async {
     final ProfileDatabase database = ProfileDatabase(
       drift_native.NativeDatabase.memory(),
     );
@@ -232,15 +232,38 @@ void main() {
     final Future<void> Function(drift.Migrator, int, int) upgrade =
         database.migration.onUpgrade;
     final drift.Migrator migrator = database.createMigrator();
+    await database.customStatement(
+      'DROP TABLE IF EXISTS flare_followup_records',
+    );
+    await upgrade(migrator, 6, 7);
+    final List<drift.QueryRow> created = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'flare_followup_records'",
+        )
+        .get();
+    expect(created, hasLength(1));
     await expectLater(
       upgrade(migrator, 5, 7),
       throwsA(isA<StorageSchemaException>()),
     );
     await expectLater(
-      upgrade(migrator, 6, 7),
+      upgrade(migrator, 6, 8),
       throwsA(isA<StorageSchemaException>()),
     );
-    expect(database.schemaVersion, 6);
+    await expectLater(
+      upgrade(migrator, 7, 8),
+      throwsA(isA<StorageSchemaException>()),
+    );
+    await database.customStatement('DROP TABLE IF EXISTS readiness_records');
+    await database.customStatement('DROP TABLE IF EXISTS adaptation_records');
+    await upgrade(migrator, 5, 6);
+    final List<drift.QueryRow> readiness = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'readiness_records'",
+        )
+        .get();
+    expect(readiness, hasLength(1));
+    expect(database.schemaVersion, 7);
   });
 
   test('schema 2 opened by schema 4 is rejected', () async {
@@ -390,14 +413,66 @@ void main() {
     unchanged.close();
   });
 
+  test('schema 5 opened by schema 7 is rejected', () async {
+    const String program =
+        '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
+    const String sessionId = '11111111-1111-4111-8111-111111111111';
+    const String workout =
+        '{"session_id":"11111111-1111-4111-8111-111111111111"}';
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    await store.saveProgramRecord(program);
+    await store.saveWorkoutTerminal(
+      sessionId: sessionId,
+      documentJson: workout,
+    );
+    final File file = store.openDatabaseFile!;
+    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+    await store.close();
+
+    final Database raw = sqlite3.open(file.path);
+    applyEncryptionSetup(raw, keyHex);
+    raw.execute('DROP TABLE IF EXISTS readiness_records');
+    raw.execute('DROP TABLE IF EXISTS adaptation_records');
+    raw.execute('DROP TABLE IF EXISTS flare_followup_records');
+    raw.execute('PRAGMA user_version = 5');
+    raw.close();
+
+    await expectLater(
+      store.reopenActive(),
+      throwsA(isA<StorageSchemaException>()),
+    );
+
+    final Database unchanged = sqlite3.open(file.path);
+    applyEncryptionSetup(unchanged, keyHex);
+    expect(unchanged.select('PRAGMA user_version').first.columnAt(0), 5);
+    expect(
+      unchanged
+          .select('SELECT document_json FROM program_records')
+          .first
+          .columnAt(0),
+      program,
+    );
+    expect(
+      unchanged
+          .select('SELECT document_json FROM workout_records')
+          .first
+          .columnAt(0),
+      workout,
+    );
+    unchanged.close();
+  });
+
   test(
-    'schema 5 gains readiness tables and keeps program and workout rows',
+    'schema 6 gains the flare table and keeps program workout and check rows',
     () async {
       const String program =
           '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
       const String sessionId = '11111111-1111-4111-8111-111111111111';
       const String workout =
           '{"session_id":"11111111-1111-4111-8111-111111111111"}';
+      const String readiness = '{"soreness":"low"}';
+      const String adaptation = '{"action":"maintain"}';
       final ProfileStore store = openStore();
       final String subjectId = await store.createProfile();
       await store.saveProgramRecord(program);
@@ -405,37 +480,36 @@ void main() {
         sessionId: sessionId,
         documentJson: workout,
       );
+      await store.saveAdaptationPair(
+        sessionId: sessionId,
+        readinessJson: readiness,
+        adaptationJson: adaptation,
+        updatedAtMs: 6,
+      );
       final File file = store.openDatabaseFile!;
       final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
       await store.close();
 
       final Database raw = sqlite3.open(file.path);
       applyEncryptionSetup(raw, keyHex);
-      raw.execute('DROP TABLE IF EXISTS readiness_records');
-      raw.execute('DROP TABLE IF EXISTS adaptation_records');
-      raw.execute('PRAGMA user_version = 5');
+      raw.execute('DROP TABLE IF EXISTS flare_followup_records');
+      raw.execute('PRAGMA user_version = 6');
       raw.close();
 
       await store.reopenActive();
       expect(await store.loadProgramRecord(), program);
       expect(await store.workoutRecordDocuments(), <String>[workout]);
-      expect(await store.loadReadinessRecord(sessionId), isNull);
-      expect(await store.loadAdaptationRecord(sessionId), isNull);
+      expect(await store.loadReadinessRecord(sessionId), readiness);
+      expect(await store.loadAdaptationRecord(sessionId), adaptation);
+      expect(await store.loadFlareFollowup(sessionId), isNull);
       await store.close();
 
       final Database upgraded = sqlite3.open(file.path);
       applyEncryptionSetup(upgraded, keyHex);
-      expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 6);
+      expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 7);
       expect(
         upgraded
-            .select('SELECT COUNT(*) FROM readiness_records')
-            .first
-            .columnAt(0),
-        0,
-      );
-      expect(
-        upgraded
-            .select('SELECT COUNT(*) FROM adaptation_records')
+            .select('SELECT COUNT(*) FROM flare_followup_records')
             .first
             .columnAt(0),
         0,
@@ -706,6 +780,58 @@ void main() {
       );
     },
   );
+
+  test('a flare envelope inserts once and checkpoint hides its tokens', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    const String sessionId = '11111111-1111-4111-8111-111111111111';
+    const String otherId = '22222222-2222-4222-8222-222222222222';
+    const String readiness = '{"soreness":"low"}';
+    const String adaptation = '{"action":"maintain"}';
+    const String first =
+        '{"choice":"worse_today","action":"keep_program","reason":"Today\'s check keeps the same exercises.","other":"settled","pause":"Today\'s check says to wait. The exercises stay the same."}';
+    const String later = '{"choice":"settled"}';
+    await store.saveAdaptationPair(
+      sessionId: sessionId,
+      readinessJson: readiness,
+      adaptationJson: adaptation,
+      updatedAtMs: store.clockMillis(),
+    );
+    await store.saveFlareFollowup(
+      sessionId: sessionId,
+      documentJson: first,
+      updatedAtMs: store.clockMillis(),
+    );
+    await expectLater(
+      store.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: later,
+        updatedAtMs: store.clockMillis(),
+      ),
+      throwsA(anything),
+    );
+    expect(await store.loadFlareFollowup(sessionId), first);
+    expect(await store.loadReadinessRecord(sessionId), readiness);
+    await store.deleteFlareFollowup(sessionId);
+    expect(await store.loadFlareFollowup(sessionId), isNull);
+    expect(await store.loadReadinessRecord(sessionId), readiness);
+    expect(await store.loadAdaptationRecord(sessionId), adaptation);
+    await store.saveFlareFollowup(
+      sessionId: otherId,
+      documentJson: first,
+      updatedAtMs: store.clockMillis(),
+    );
+    await store.checkpoint();
+    final Directory directory = store.openDatabaseFile!.parent;
+    _expectMarkerAbsent(directory, 'worse_today');
+    _expectMarkerAbsent(directory, 'settled');
+    _expectMarkerAbsent(directory, 'keep_program');
+    _expectMarkerAbsent(
+      directory,
+      'Today\'s check says to wait. The exercises stay the same.',
+    );
+    _expectMarkerAbsent(directory, 'Today\'s check keeps the same exercises.');
+  });
 
   test('an invalid subject never becomes a path', () async {
     final ProfileStore store = openStore();

@@ -5,6 +5,7 @@
 mod adaptation;
 mod assessment;
 mod error;
+mod flare;
 mod model;
 mod program;
 mod session;
@@ -17,6 +18,10 @@ pub use adaptation::{
 
 pub use assessment::{AssessmentInstrument, MovementRating, parse_assessment_instrument};
 pub use error::{ContentError, LinkKind};
+pub use flare::{
+    FlareDecision, FlareError, FlareRule, FollowupChoice, FollowupDocument, decide_flare,
+    flare_followup_envelope, parse_flare_rule, parse_followup,
+};
 pub use model::{
     ApprovalStatus, CameraView, Equipment, EvidenceReference, Exercise, ExerciseId,
     ExerciseLibrary, Goal, License, LicenseType, Media, Position, Region, SyntheticOnly, Tempo,

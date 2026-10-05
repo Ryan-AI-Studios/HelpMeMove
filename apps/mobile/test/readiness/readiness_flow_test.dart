@@ -196,16 +196,18 @@ void main() {
     expect(find.text('High soreness'), findsOneWidget);
 
     await tester.tap(find.text('Low soreness'));
-    await until(tester, find.text(maintainReason));
-    expect(find.text('Start workout'), findsOneWidget);
-
-    await tester.tap(find.text('Back'));
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text(maintainReason));
-    expect(find.text('Start workout'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Check in on the last session'), findsOneWidget);
     expect(find.text('Foundations'), findsWidgets);
     expect(find.text('Back'), findsNothing);
     expect(find.text('How are you feeling today?'), findsNothing);
+    await tester.tap(find.text('Check in on the last session'));
+    await until(tester, find.text('Settled'));
+    await tester.tap(find.text('Settled'));
+    await until(tester, find.text(maintainReason));
+    expect(find.text('Start workout'), findsOneWidget);
     await tester.tap(find.text('Start workout'));
     await until(tester, find.text("Today's session"));
     expect(find.text('HelpMeMove'), findsNothing);
@@ -220,12 +222,10 @@ void main() {
     await pumpRouter(tester, store, initialLocation: '/focus/readiness');
     await until(tester, find.text('High soreness'));
     await tester.tap(find.text('High soreness'));
-    await until(tester, find.text(pauseReason));
-    expect(find.text('Start workout'), findsNothing);
-    await tester.tap(find.text('Back'));
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text(pauseReason));
     expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Check in on the last session'), findsNothing);
     expect(find.text('Back'), findsNothing);
     expect(find.text('How are you feeling today?'), findsNothing);
   });
@@ -394,6 +394,7 @@ void main() {
     await until(tester, find.text('Home'));
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('How are you feeling today?'), findsNothing);
+    expect(find.text('Check in on the last session'), findsNothing);
   });
 
   testWidgets('readiness ignores the movement gate', (tester) async {
@@ -419,10 +420,12 @@ void main() {
     await pumpRouter(tester, store, initialLocation: '/focus/readiness');
     await until(tester, find.text('Low soreness'));
     await tester.tap(find.text('Low soreness'));
-    await until(tester, find.text(maintainReason));
+    await until(tester, find.text('HelpMeMove'));
+    await until(tester, find.text('Check in on the last session'));
+    expect(find.text('Start workout'), findsNothing);
     await pumpRouter(tester, store, initialLocation: '/focus/modified-plan');
     await until(tester, find.text(maintainReason));
-    expect(find.text('Start workout'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
   });
 
   testWidgets('large text keeps the readiness buttons on a phone surface', (
@@ -483,5 +486,336 @@ void main() {
     );
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
+  });
+
+  const String maintainPair =
+      '{"action":"maintain","exercises":[],"reason":"Today\'s check keeps the same exercises.","record_version":1,"reported_pain":null,"rule_id":"syn-adaptation-core","rule_version":1,"session_id":"11111111-1111-4111-8111-111111111111"}';
+  const String readinessDocument =
+      '{"record_version":1,"recorded_at_ms":1000,"rule_id":"syn-adaptation-core","rule_version":1,"session_id":"11111111-1111-4111-8111-111111111111","soreness":"low"}';
+
+  String flareEnvelope(String choice, String action, String reason) {
+    return '{"decision":{"action":"$action","exercises":[],"reason":"$reason","record_version":1,"reported_pain":null,"rule_id":"syn-flare-core","rule_version":1,"session_id":"$sessionId"},"followup":{"choice":"$choice","record_version":1,"recorded_at_ms":1000,"rule_id":"syn-flare-core","rule_version":1,"session_id":"$sessionId"},"record_version":1}';
+  }
+
+  Future<ProfileStore> seedMaintain(String workout) async {
+    final ProfileStore store = await seed(workout: workout);
+    await store.saveAdaptationPair(
+      sessionId: sessionId,
+      readinessJson: readinessDocument,
+      adaptationJson: maintainPair,
+      updatedAtMs: store.clockMillis(),
+    );
+    return store;
+  }
+
+  testWidgets('maintain without a flare row hides start', (tester) async {
+    final String workout = completedWorkout(await io(tester, program));
+    final ProfileStore store = await io(tester, () => seedMaintain(workout));
+    await pumpRouter(tester, store);
+    await until(tester, find.text('HelpMeMove'));
+    await until(tester, find.text('Check in on the last session'));
+    expect(find.text(maintainReason), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('How are you feeling today?'), findsNothing);
+  });
+
+  testWidgets('keep program shows start and no second check-in', (
+    tester,
+  ) async {
+    final ProfileStore store = await io(tester, () async {
+      final ProfileStore opened = await seedMaintain(
+        completedWorkout(await program()),
+      );
+      await opened.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: flareEnvelope('settled', 'keep_program', maintainReason),
+        updatedAtMs: opened.clockMillis(),
+      );
+      return opened;
+    });
+    await pumpRouter(tester, store);
+    await until(tester, find.text('HelpMeMove'));
+    await until(tester, find.text(maintainReason));
+    expect(find.text('Start workout'), findsOneWidget);
+    expect(find.text('Check in on the last session'), findsNothing);
+  });
+
+  testWidgets('modified plan shows start only after keep program', (
+    tester,
+  ) async {
+    final ProfileStore store = await io(tester, () async {
+      return seedMaintain(completedWorkout(await program()));
+    });
+    await pumpRouter(tester, store, initialLocation: '/focus/modified-plan');
+    await until(tester, find.text(maintainReason));
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Back'), findsOneWidget);
+    await io(tester, () async {
+      return store.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: flareEnvelope('same', 'keep_program', maintainReason),
+        updatedAtMs: store.clockMillis(),
+      );
+    });
+    await pumpRouter(tester, store, initialLocation: '/focus/modified-plan');
+    await until(tester, find.text(maintainReason));
+    expect(find.text('Start workout'), findsOneWidget);
+  });
+
+  testWidgets('modified plan hides start when the terminal cannot be read', (
+    tester,
+  ) async {
+    final ProfileStore store = openStore();
+    await io(tester, () async {
+      await store.createProfile();
+      await store.saveWorkoutTerminal(
+        sessionId: sessionId,
+        documentJson: '{"not":"a session"}',
+      );
+    });
+    await pumpRouter(
+      tester,
+      store,
+      initialLocation: '/focus/modified-plan',
+      previewAdaptation: maintainPair,
+    );
+    await until(tester, find.text(maintainReason));
+    expect(find.text('Start workout'), findsNothing);
+  });
+
+  testWidgets('modified plan hides start for an unfinished terminal', (
+    tester,
+  ) async {
+    final ProfileStore store = openStore();
+    await io(tester, () async {
+      await store.createProfile();
+      final WorkoutView opened = openWorkout(
+        programJson: await program(),
+        monotonicMillis: 1000,
+        sessionId: sessionId,
+      );
+      expect(opened.outcome, 'ready');
+      await store.saveWorkoutTerminal(
+        sessionId: sessionId,
+        documentJson: opened.documentJson,
+      );
+    });
+    await pumpRouter(
+      tester,
+      store,
+      initialLocation: '/focus/modified-plan',
+      previewAdaptation: maintainPair,
+    );
+    await until(tester, find.text(maintainReason));
+    expect(find.text('Start workout'), findsNothing);
+  });
+
+  testWidgets('a saved pause hides start', (tester) async {
+    final ProfileStore store = await io(tester, () async {
+      final ProfileStore opened = await seedMaintain(
+        completedWorkout(await program()),
+      );
+      await opened.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: flareEnvelope('worse_today', 'pause_today', pauseReason),
+        updatedAtMs: opened.clockMillis(),
+      );
+      return opened;
+    });
+    await pumpRouter(tester, store);
+    await until(tester, find.text('HelpMeMove'));
+    await until(tester, find.text(pauseReason));
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Check in on the last session'), findsNothing);
+  });
+
+  testWidgets('worse today saves a pause and hides start', (tester) async {
+    final String workout = completedWorkout(await io(tester, program));
+    final ProfileStore store = await io(tester, () => seedMaintain(workout));
+    await pumpRouter(tester, store, initialLocation: '/focus/flare-followup');
+    await until(tester, find.text('Worse today'));
+    await tester.tap(find.text('Worse today'));
+    await until(tester, find.text(pauseReason));
+    expect(find.text('Start workout'), findsNothing);
+    await tester.tap(find.text('Back'));
+    await until(tester, find.text('HelpMeMove'));
+    await until(tester, find.text(pauseReason));
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Check in on the last session'), findsNothing);
+  });
+
+  testWidgets('a corrupt flare envelope clears only that row', (tester) async {
+    final ProfileStore store = await io(tester, () async {
+      final ProfileStore opened = await seedMaintain(
+        completedWorkout(await program()),
+      );
+      await opened.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: '{"record_version":1,"exercises":[42]}',
+        updatedAtMs: opened.clockMillis(),
+      );
+      return opened;
+    });
+    await pumpRouter(tester, store);
+    await until(tester, find.text('HelpMeMove'));
+    await until(
+      tester,
+      find.text('The saved check could not be read. It was cleared.'),
+    );
+    expect(find.text(maintainReason), findsOneWidget);
+    expect(find.text('Check in on the last session'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+    expect(
+      await io(tester, () => store.loadReadinessRecord(sessionId)),
+      readinessDocument,
+    );
+    expect(await io(tester, () => store.loadFlareFollowup(sessionId)), isNull);
+  });
+
+  testWidgets('a worse today keep program envelope is cleared', (tester) async {
+    final ProfileStore store = await io(tester, () async {
+      final ProfileStore opened = await seedMaintain(
+        completedWorkout(await program()),
+      );
+      await opened.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: flareEnvelope(
+          'worse_today',
+          'keep_program',
+          maintainReason,
+        ),
+        updatedAtMs: opened.clockMillis(),
+      );
+      return opened;
+    });
+    await pumpRouter(tester, store);
+    await until(tester, find.text('HelpMeMove'));
+    await until(
+      tester,
+      find.text('The saved check could not be read. It was cleared.'),
+    );
+    expect(find.text('Check in on the last session'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+    expect(await io(tester, () => store.loadFlareFollowup(sessionId)), isNull);
+    expect(
+      await io(tester, () => store.loadReadinessRecord(sessionId)),
+      readinessDocument,
+    );
+  });
+
+  testWidgets('a same choice pause envelope is cleared', (tester) async {
+    final ProfileStore store = await io(tester, () async {
+      final ProfileStore opened = await seedMaintain(
+        completedWorkout(await program()),
+      );
+      await opened.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: flareEnvelope('same', 'pause_today', pauseReason),
+        updatedAtMs: opened.clockMillis(),
+      );
+      return opened;
+    });
+    await pumpRouter(tester, store);
+    await until(tester, find.text('HelpMeMove'));
+    await until(
+      tester,
+      find.text('The saved check could not be read. It was cleared.'),
+    );
+    expect(find.text('Start workout'), findsNothing);
+    expect(await io(tester, () => store.loadFlareFollowup(sessionId)), isNull);
+  });
+
+  testWidgets('a withheld flare query shows that nothing was saved', (
+    tester,
+  ) async {
+    final String workout = completedWorkout(await io(tester, program));
+    final ProfileStore store = await io(tester, () => seedMaintain(workout));
+    await pumpRouter(tester, store, initialLocation: '/?flare=withheld');
+    await until(tester, find.text('HelpMeMove'));
+    await until(tester, find.text('Check in on the last session'));
+    expect(find.text('No change was saved.'), findsOneWidget);
+    expect(find.text('Start workout'), findsNothing);
+  });
+
+  testWidgets('large text keeps the follow-up buttons on a phone surface', (
+    tester,
+  ) async {
+    final String workout = completedWorkout(await io(tester, program));
+    final ProfileStore store = await io(tester, () => seed(workout: workout));
+    await pumpRouter(
+      tester,
+      store,
+      initialLocation: '/focus/flare-followup',
+      size: const Size(390, 844),
+      textScale: 2,
+    );
+    await until(tester, find.text('Worse today'));
+    await tester.scrollUntilVisible(
+      find.text('Settled'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('About the same'), findsOneWidget);
+    expect(find.text('Settled'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('wide follow-up shows the three choices', (tester) async {
+    final String workout = completedWorkout(await io(tester, program));
+    final ProfileStore store = await io(tester, () => seed(workout: workout));
+    await pumpRouter(
+      tester,
+      store,
+      initialLocation: '/focus/flare-followup',
+      size: const Size(840, 1200),
+    );
+    await until(tester, find.text('Worse today'));
+    expect(find.text('About the same'), findsOneWidget);
+    expect(find.text('Settled'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('follow-up ignores the movement gate', (tester) async {
+    final String workout = completedWorkout(await io(tester, program));
+    final ProfileStore store = await io(tester, () => seed(workout: workout));
+    await pumpRouter(
+      tester,
+      store,
+      initialLocation: '/focus/flare-followup',
+      movementGateOpen: false,
+    );
+    await until(tester, find.text('About the same'));
+  });
+
+  testWidgets('follow-up without a terminal returns home', (tester) async {
+    final ProfileStore store = openStore();
+    await io(tester, () async {
+      await store.createProfile();
+      await store.saveProgramRecord(await program());
+    });
+    await pumpRouter(tester, store, initialLocation: '/focus/flare-followup');
+    await until(tester, find.text('HelpMeMove'));
+    await until(tester, find.text('Start workout'));
+    expect(find.text('Worse today'), findsNothing);
+  });
+
+  testWidgets('a missing profile on follow-up uses the unavailable screen', (
+    tester,
+  ) async {
+    await pumpBare(tester, location: '/focus/flare-followup');
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Worse today'), findsNothing);
+  });
+
+  testWidgets('a blocked store on follow-up uses the unavailable screen', (
+    tester,
+  ) async {
+    await pumpBare(
+      tester,
+      location: '/focus/flare-followup',
+      storageBlocked: true,
+    );
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Settled'), findsNothing);
   });
 }
