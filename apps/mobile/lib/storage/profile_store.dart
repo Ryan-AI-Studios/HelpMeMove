@@ -12,6 +12,18 @@ import 'package:helpmemove/storage/profile_database.dart';
 import 'package:helpmemove/storage/profile_key_store.dart';
 import 'package:helpmemove/storage/storage_exception.dart';
 
+class StoredTerminalWorkout {
+  const StoredTerminalWorkout({
+    required this.sessionId,
+    required this.documentJson,
+    required this.updatedAtMs,
+  });
+
+  final String sessionId;
+  final String documentJson;
+  final int updatedAtMs;
+}
+
 const String activeProfileItem = 'active-profile';
 const String _profileKeyPrefix = 'profile-key.';
 
@@ -396,6 +408,116 @@ class ProfileStore {
             .get();
     return rows.length;
   }
+
+  Future<StoredTerminalWorkout?> loadNewestTerminalWorkout() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final WorkoutRecord? row =
+        await (database.select(database.workoutRecords)
+              ..where(
+                (WorkoutRecords table) => table.subjectId.equals(subjectId),
+              )
+              ..orderBy(<OrderClauseGenerator<WorkoutRecords>>[
+                (WorkoutRecords table) => OrderingTerm(
+                  expression: table.updatedAtMs,
+                  mode: OrderingMode.desc,
+                ),
+                (WorkoutRecords table) => OrderingTerm(
+                  expression: table.sessionId,
+                  mode: OrderingMode.desc,
+                ),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    return StoredTerminalWorkout(
+      sessionId: row.sessionId,
+      documentJson: row.documentJson,
+      updatedAtMs: row.updatedAtMs,
+    );
+  }
+
+  Future<String?> loadReadinessRecord(String sessionId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final ReadinessRecord? row =
+        await (database.select(database.readinessRecords)..where(
+              (ReadinessRecords table) =>
+                  table.subjectId.equals(subjectId) &
+                  table.sessionId.equals(sessionId),
+            ))
+            .getSingleOrNull();
+    return row?.documentJson;
+  }
+
+  Future<String?> loadAdaptationRecord(String sessionId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final AdaptationRecord? row =
+        await (database.select(database.adaptationRecords)..where(
+              (AdaptationRecords table) =>
+                  table.subjectId.equals(subjectId) &
+                  table.sessionId.equals(sessionId),
+            ))
+            .getSingleOrNull();
+    return row?.documentJson;
+  }
+
+  /// Insert readiness, then adaptation. A duplicate key rolls the pair back.
+  Future<void> saveAdaptationPair({
+    required String sessionId,
+    required String readinessJson,
+    required String adaptationJson,
+    required int updatedAtMs,
+  }) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await database.transaction(() async {
+      await database
+          .into(database.readinessRecords)
+          .insert(
+            ReadinessRecordsCompanion.insert(
+              subjectId: subjectId,
+              sessionId: sessionId,
+              documentJson: readinessJson,
+              updatedAtMs: updatedAtMs,
+            ),
+          );
+      await database
+          .into(database.adaptationRecords)
+          .insert(
+            AdaptationRecordsCompanion.insert(
+              subjectId: subjectId,
+              sessionId: sessionId,
+              documentJson: adaptationJson,
+              updatedAtMs: updatedAtMs,
+            ),
+          );
+    });
+  }
+
+  Future<void> deleteAdaptationPair(String sessionId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await database.transaction(() async {
+      await (database.delete(database.readinessRecords)..where(
+            (ReadinessRecords table) =>
+                table.subjectId.equals(subjectId) &
+                table.sessionId.equals(sessionId),
+          ))
+          .go();
+      await (database.delete(database.adaptationRecords)..where(
+            (AdaptationRecords table) =>
+                table.subjectId.equals(subjectId) &
+                table.sessionId.equals(sessionId),
+          ))
+          .go();
+    });
+  }
+
+  int clockMillis() => _now();
 
   Future<int?> workoutRecordUpdatedAtMs(String sessionId) async {
     final ProfileDatabase database = _requireDatabase();

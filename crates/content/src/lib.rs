@@ -2,12 +2,18 @@
 //!
 //! The committed fixtures are schema examples. They are not a clinician-approved library.
 
+mod adaptation;
 mod assessment;
 mod error;
 mod model;
 mod program;
 mod session;
 mod validate;
+
+pub use adaptation::{
+    AdaptationDecision, AdaptationError, AdaptationRule, ReadinessDocument, Soreness,
+    decide_adaptation, parse_adaptation_rule, parse_readiness, read_intake_safety_answers,
+};
 
 pub use assessment::{AssessmentInstrument, MovementRating, parse_assessment_instrument};
 pub use error::{ContentError, LinkKind};

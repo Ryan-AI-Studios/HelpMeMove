@@ -8,9 +8,22 @@ import 'package:helpmemove/design/components/primary_button.dart';
 import 'package:helpmemove/design/components/tertiary_button.dart';
 import 'package:helpmemove/intake/intake_draft.dart';
 import 'package:helpmemove/program/program_document.dart';
+import 'package:helpmemove/readiness/adaptation_document.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 import 'package:helpmemove/workout/session_document.dart';
+
+class _MoveChoice {
+  const _MoveChoice({
+    this.workout = '',
+    this.checkIn = false,
+    this.notice = '',
+  });
+
+  final String workout;
+  final bool checkIn;
+  final String notice;
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -44,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _resumeStep = 'intent';
   String _workout = '';
   bool _clearedDraft = false;
+  bool _showCheckIn = false;
+  String _moveNotice = '';
   GoRouter? _router;
   Listenable? _access;
   String? _lastPath;
@@ -159,6 +174,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     var workout = '';
     var cleared = false;
+    var checkIn = false;
+    var notice = '';
     try {
       final String? raw = await store.loadWorkoutDraft();
       if (raw != null) {
@@ -175,14 +192,21 @@ class _HomeScreenState extends State<HomeScreen> {
       cleared = false;
     }
     if (workout.isEmpty) {
+      var programReady = false;
       try {
         final String? raw = await store.loadProgramRecord();
         if (raw != null) {
           LocalProgram.decode(raw);
-          workout = 'start';
+          programReady = true;
         }
       } catch (_) {
-        workout = '';
+        programReady = false;
+      }
+      if (programReady) {
+        final _MoveChoice choice = await _moveChoice(store);
+        workout = choice.workout;
+        checkIn = choice.checkIn;
+        notice = choice.notice;
       }
     }
     if (!mounted || generation != _loadGeneration) {
@@ -194,7 +218,72 @@ class _HomeScreenState extends State<HomeScreen> {
       _resumeStep = step;
       _workout = workout;
       _clearedDraft = cleared;
+      _showCheckIn = checkIn;
+      _moveNotice = notice;
     });
+  }
+
+  Future<_MoveChoice> _moveChoice(ProfileStore store) async {
+    final StoredTerminalWorkout? terminal;
+    try {
+      terminal = await store.loadNewestTerminalWorkout();
+    } catch (_) {
+      return const _MoveChoice(workout: 'start');
+    }
+    if (terminal == null) {
+      return const _MoveChoice(workout: 'start');
+    }
+    final LocalSession session;
+    try {
+      session = LocalSession.decode(terminal.documentJson);
+    } on LocalSessionException {
+      return const _MoveChoice();
+    }
+    if (session.outcome == 'safety_stopped') {
+      return const _MoveChoice(
+        notice: 'The last session stopped. No change was saved.',
+      );
+    }
+    if (session.outcome != 'completed' && session.outcome != 'abandoned') {
+      return const _MoveChoice();
+    }
+    final String? readiness = await store.loadReadinessRecord(
+      terminal.sessionId,
+    );
+    final String? adaptation = await store.loadAdaptationRecord(
+      terminal.sessionId,
+    );
+    if (readiness != null && adaptation != null) {
+      try {
+        decodeReadiness(readiness, sessionId: terminal.sessionId);
+        final StoredAdaptation decision = StoredAdaptation.decode(adaptation);
+        if (decision.sessionId == terminal.sessionId) {
+          return _MoveChoice(
+            workout: decision.action == 'maintain' ? 'start' : '',
+            notice: decision.reason,
+          );
+        }
+      } on AdaptationDocumentException {
+        // The pair is replaced by the cleared notice below.
+      }
+    }
+    if (readiness != null || adaptation != null) {
+      await store.deleteAdaptationPair(terminal.sessionId);
+      return const _MoveChoice(
+        checkIn: true,
+        notice: 'The saved check could not be read. It was cleared.',
+      );
+    }
+    return const _MoveChoice(checkIn: true);
+  }
+
+  bool get _showWithheld {
+    try {
+      return GoRouterState.of(context).uri.queryParameters['adaptation'] ==
+          'withheld';
+    } catch (_) {
+      return false;
+    }
   }
 
   bool get _showCleared {
@@ -272,6 +361,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          if (_moveNotice.isNotEmpty) ...[
+                            Text(_moveNotice),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
+                          if (_showWithheld) ...[
+                            const Text('No change was saved.'),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
                           if (widget.liveStore != null &&
                               !widget.blockedNow &&
                               _entryReady &&
@@ -281,6 +378,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ? 'Resume workout'
                                   : 'Start workout',
                               onPressed: () => context.go('/focus/workout'),
+                            ),
+                            const SizedBox(height: AppSpacing.space24),
+                          ],
+                          if (widget.liveStore != null &&
+                              !widget.blockedNow &&
+                              _entryReady &&
+                              _showCheckIn) ...[
+                            PrimaryButton(
+                              label: 'How are you feeling today?',
+                              onPressed: () => context.go('/focus/readiness'),
                             ),
                             const SizedBox(height: AppSpacing.space24),
                           ],

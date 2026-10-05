@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:helpmemove/design/app_theme.dart';
 import 'package:helpmemove/design/router.dart';
 import 'package:helpmemove/main.dart';
@@ -279,9 +280,10 @@ void main() {
     expect(await tester.runAsync(store.loadProgramRecord), program);
 
     await tester.tap(find.text('Home'));
-    await until(tester, find.text('Start workout'));
+    await until(tester, find.text('How are you feeling today?'));
+    expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
-    await tester.tap(find.text('Start workout'));
+    GoRouter.of(tester.element(find.text('HelpMeMove'))).go('/focus/workout');
     await until(tester, find.text('Start'));
     await tester.tap(find.text('Start'));
     await until(tester, find.text("I'm ready"));
@@ -322,8 +324,29 @@ void main() {
     expect(stopped, contains('numbness_tingling'));
 
     await tester.tap(find.text('Home'));
-    await until(tester, find.text('Start workout'));
-    await tester.tap(find.text('Start workout'));
+    var homeSettled = false;
+    for (var attempt = 0; attempt < 40; attempt++) {
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 40)),
+      );
+      final bool checkIn = find
+          .text('How are you feeling today?')
+          .evaluate()
+          .isNotEmpty;
+      final bool stopped = find
+          .text('The last session stopped. No change was saved.')
+          .evaluate()
+          .isNotEmpty;
+      if (checkIn || stopped) {
+        homeSettled = true;
+        break;
+      }
+    }
+    expect(homeSettled, isTrue);
+    expect(find.text('Start workout'), findsNothing);
+    expect(find.text('Resume workout'), findsNothing);
+    GoRouter.of(tester.element(find.text('HelpMeMove'))).go('/focus/workout');
     await until(tester, find.text('Start'));
     await tester.tap(find.text('Start'));
     await until(tester, find.text("I'm ready"));
@@ -587,7 +610,8 @@ void main() {
     expect(store.terminalEntered, 1);
     await tester.pumpWidget(HelpMeMoveApp(key: UniqueKey(), store: store));
     store.holdTerminal!.complete();
-    await until(tester, find.text('Start workout'));
+    await until(tester, find.text('How are you feeling today?'));
+    expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
     expect(await tester.runAsync(store.loadWorkoutDraft), isNull);
     final List<String> records =
