@@ -571,11 +571,13 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
         return _ended(
           'Session ended',
           'This synthetic session was not saved as complete.',
+          session,
         );
       case 'safety_stopped':
         return _ended(
           'Session stopped',
           'You ended this synthetic session. Nothing was marked complete.',
+          session,
         );
       default:
         return _missingChildren();
@@ -815,16 +817,28 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
       Text('$exercises $exerciseWord. $reps completed $repWord.'),
       const SizedBox(height: AppSpacing.space24),
       PrimaryButton(label: 'Home', onPressed: () => context.go('/')),
+      const SizedBox(height: AppSpacing.space12),
+      SecondaryButton(
+        label: 'Report a problem',
+        onPressed: () =>
+            context.go('/focus/report?session=${session.sessionId}'),
+      ),
     ];
   }
 
-  List<Widget> _ended(String title, String sentence) {
+  List<Widget> _ended(String title, String sentence, LocalSession session) {
     return <Widget>[
       Text(title),
       const SizedBox(height: AppSpacing.space16),
       Text(sentence),
       const SizedBox(height: AppSpacing.space24),
       PrimaryButton(label: 'Home', onPressed: () => context.go('/')),
+      const SizedBox(height: AppSpacing.space12),
+      SecondaryButton(
+        label: 'Report a problem',
+        onPressed: () =>
+            context.go('/focus/report?session=${session.sessionId}'),
+      ),
     ];
   }
 
