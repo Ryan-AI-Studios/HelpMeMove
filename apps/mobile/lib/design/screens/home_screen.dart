@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:helpmemove/design/app_colors.dart';
 import 'package:helpmemove/design/app_spacing.dart';
 import 'package:helpmemove/design/components/primary_button.dart';
+import 'package:helpmemove/design/components/secondary_button.dart';
 import 'package:helpmemove/design/components/tertiary_button.dart';
 import 'package:helpmemove/intake/intake_draft.dart';
 import 'package:helpmemove/program/program_document.dart';
@@ -503,6 +504,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? 'Resume workout'
                                     : 'Start workout',
                                 onPressed: () => context.go('/focus/workout'),
+                              ),
+                              const SizedBox(height: AppSpacing.space12),
+                              SecondaryButton(
+                                label: 'Position with camera',
+                                onPressed: () =>
+                                    context.go('/focus/camera-guidance'),
                               ),
                               const SizedBox(height: AppSpacing.space24),
                             ],

@@ -23,6 +23,7 @@ import 'package:helpmemove/readiness/modified_plan_screen.dart';
 import 'package:helpmemove/readiness/readiness_flow.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
+import 'package:helpmemove/workout/camera_preview_host.dart';
 import 'package:helpmemove/workout/workout_flow.dart';
 
 class StorageRecovery {
@@ -166,6 +167,19 @@ GoRouter buildHelpMeMoveRouter({
                       return ProgramFlow(
                         store: profile,
                         preview: previewProgram,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'camera-guidance',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      final ProfileStore? profile = readStore?.call() ?? store;
+                      if (profile == null || access.blocked) {
+                        return const WorkoutUnavailable();
+                      }
+                      return CameraGuidanceRoute(
+                        onLeave: () => context.go('/focus/workout'),
                       );
                     },
                   ),
