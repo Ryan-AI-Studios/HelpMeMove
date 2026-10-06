@@ -7,6 +7,7 @@ mod assessment;
 mod error;
 mod flare;
 mod model;
+mod owned_copy;
 mod program;
 mod progress;
 mod session;
@@ -28,6 +29,7 @@ pub use model::{
     ExerciseLibrary, Goal, License, LicenseType, Media, Position, Region, SyntheticOnly, Tempo,
     TrackedMetric,
 };
+pub use owned_copy::{OwnedCopyDecision, reconcile_owned_copy};
 pub use program::{
     AssessedArea, ProgramIntake, ProgramRule, StartingExercise, parse_program_rule,
     read_program_assessment, read_program_intake, render_starting_program,

@@ -4474,6 +4474,481 @@ class ProblemReportRecordsCompanion
   }
 }
 
+class $SyncOutboxTable extends SyncOutbox
+    with TableInfo<$SyncOutboxTable, SyncOutboxData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncOutboxTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eventIdMeta = const VerificationMeta(
+    'eventId',
+  );
+  @override
+  late final GeneratedColumn<String> eventId = GeneratedColumn<String>(
+    'event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityMeta = const VerificationMeta('entity');
+  @override
+  late final GeneratedColumn<String> entity = GeneratedColumn<String>(
+    'entity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localKeyMeta = const VerificationMeta(
+    'localKey',
+  );
+  @override
+  late final GeneratedColumn<String> localKey = GeneratedColumn<String>(
+    'local_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _documentSha256Meta = const VerificationMeta(
+    'documentSha256',
+  );
+  @override
+  late final GeneratedColumn<String> documentSha256 = GeneratedColumn<String>(
+    'document_sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMsMeta = const VerificationMeta(
+    'updatedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAtMs = GeneratedColumn<int>(
+    'updated_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    subjectId,
+    eventId,
+    entity,
+    localKey,
+    documentSha256,
+    state,
+    updatedAtMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_outbox';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncOutboxData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('event_id')) {
+      context.handle(
+        _eventIdMeta,
+        eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventIdMeta);
+    }
+    if (data.containsKey('entity')) {
+      context.handle(
+        _entityMeta,
+        entity.isAcceptableOrUnknown(data['entity']!, _entityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityMeta);
+    }
+    if (data.containsKey('local_key')) {
+      context.handle(
+        _localKeyMeta,
+        localKey.isAcceptableOrUnknown(data['local_key']!, _localKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localKeyMeta);
+    }
+    if (data.containsKey('document_sha256')) {
+      context.handle(
+        _documentSha256Meta,
+        documentSha256.isAcceptableOrUnknown(
+          data['document_sha256']!,
+          _documentSha256Meta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_documentSha256Meta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('updated_at_ms')) {
+      context.handle(
+        _updatedAtMsMeta,
+        updatedAtMs.isAcceptableOrUnknown(
+          data['updated_at_ms']!,
+          _updatedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId, eventId};
+  @override
+  SyncOutboxData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncOutboxData(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      eventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_id'],
+      )!,
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      localKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_key'],
+      )!,
+      documentSha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_sha256'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      updatedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncOutboxTable createAlias(String alias) {
+    return $SyncOutboxTable(attachedDatabase, alias);
+  }
+}
+
+class SyncOutboxData extends DataClass implements Insertable<SyncOutboxData> {
+  final String subjectId;
+  final String eventId;
+  final String entity;
+  final String localKey;
+  final String documentSha256;
+  final String state;
+  final int updatedAtMs;
+  const SyncOutboxData({
+    required this.subjectId,
+    required this.eventId,
+    required this.entity,
+    required this.localKey,
+    required this.documentSha256,
+    required this.state,
+    required this.updatedAtMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['event_id'] = Variable<String>(eventId);
+    map['entity'] = Variable<String>(entity);
+    map['local_key'] = Variable<String>(localKey);
+    map['document_sha256'] = Variable<String>(documentSha256);
+    map['state'] = Variable<String>(state);
+    map['updated_at_ms'] = Variable<int>(updatedAtMs);
+    return map;
+  }
+
+  SyncOutboxCompanion toCompanion(bool nullToAbsent) {
+    return SyncOutboxCompanion(
+      subjectId: Value(subjectId),
+      eventId: Value(eventId),
+      entity: Value(entity),
+      localKey: Value(localKey),
+      documentSha256: Value(documentSha256),
+      state: Value(state),
+      updatedAtMs: Value(updatedAtMs),
+    );
+  }
+
+  factory SyncOutboxData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncOutboxData(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      eventId: serializer.fromJson<String>(json['eventId']),
+      entity: serializer.fromJson<String>(json['entity']),
+      localKey: serializer.fromJson<String>(json['localKey']),
+      documentSha256: serializer.fromJson<String>(json['documentSha256']),
+      state: serializer.fromJson<String>(json['state']),
+      updatedAtMs: serializer.fromJson<int>(json['updatedAtMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'eventId': serializer.toJson<String>(eventId),
+      'entity': serializer.toJson<String>(entity),
+      'localKey': serializer.toJson<String>(localKey),
+      'documentSha256': serializer.toJson<String>(documentSha256),
+      'state': serializer.toJson<String>(state),
+      'updatedAtMs': serializer.toJson<int>(updatedAtMs),
+    };
+  }
+
+  SyncOutboxData copyWith({
+    String? subjectId,
+    String? eventId,
+    String? entity,
+    String? localKey,
+    String? documentSha256,
+    String? state,
+    int? updatedAtMs,
+  }) => SyncOutboxData(
+    subjectId: subjectId ?? this.subjectId,
+    eventId: eventId ?? this.eventId,
+    entity: entity ?? this.entity,
+    localKey: localKey ?? this.localKey,
+    documentSha256: documentSha256 ?? this.documentSha256,
+    state: state ?? this.state,
+    updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+  );
+  SyncOutboxData copyWithCompanion(SyncOutboxCompanion data) {
+    return SyncOutboxData(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
+      entity: data.entity.present ? data.entity.value : this.entity,
+      localKey: data.localKey.present ? data.localKey.value : this.localKey,
+      documentSha256: data.documentSha256.present
+          ? data.documentSha256.value
+          : this.documentSha256,
+      state: data.state.present ? data.state.value : this.state,
+      updatedAtMs: data.updatedAtMs.present
+          ? data.updatedAtMs.value
+          : this.updatedAtMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxData(')
+          ..write('subjectId: $subjectId, ')
+          ..write('eventId: $eventId, ')
+          ..write('entity: $entity, ')
+          ..write('localKey: $localKey, ')
+          ..write('documentSha256: $documentSha256, ')
+          ..write('state: $state, ')
+          ..write('updatedAtMs: $updatedAtMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    subjectId,
+    eventId,
+    entity,
+    localKey,
+    documentSha256,
+    state,
+    updatedAtMs,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncOutboxData &&
+          other.subjectId == this.subjectId &&
+          other.eventId == this.eventId &&
+          other.entity == this.entity &&
+          other.localKey == this.localKey &&
+          other.documentSha256 == this.documentSha256 &&
+          other.state == this.state &&
+          other.updatedAtMs == this.updatedAtMs);
+}
+
+class SyncOutboxCompanion extends UpdateCompanion<SyncOutboxData> {
+  final Value<String> subjectId;
+  final Value<String> eventId;
+  final Value<String> entity;
+  final Value<String> localKey;
+  final Value<String> documentSha256;
+  final Value<String> state;
+  final Value<int> updatedAtMs;
+  final Value<int> rowid;
+  const SyncOutboxCompanion({
+    this.subjectId = const Value.absent(),
+    this.eventId = const Value.absent(),
+    this.entity = const Value.absent(),
+    this.localKey = const Value.absent(),
+    this.documentSha256 = const Value.absent(),
+    this.state = const Value.absent(),
+    this.updatedAtMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncOutboxCompanion.insert({
+    required String subjectId,
+    required String eventId,
+    required String entity,
+    required String localKey,
+    required String documentSha256,
+    required String state,
+    required int updatedAtMs,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       eventId = Value(eventId),
+       entity = Value(entity),
+       localKey = Value(localKey),
+       documentSha256 = Value(documentSha256),
+       state = Value(state),
+       updatedAtMs = Value(updatedAtMs);
+  static Insertable<SyncOutboxData> custom({
+    Expression<String>? subjectId,
+    Expression<String>? eventId,
+    Expression<String>? entity,
+    Expression<String>? localKey,
+    Expression<String>? documentSha256,
+    Expression<String>? state,
+    Expression<int>? updatedAtMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (eventId != null) 'event_id': eventId,
+      if (entity != null) 'entity': entity,
+      if (localKey != null) 'local_key': localKey,
+      if (documentSha256 != null) 'document_sha256': documentSha256,
+      if (state != null) 'state': state,
+      if (updatedAtMs != null) 'updated_at_ms': updatedAtMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncOutboxCompanion copyWith({
+    Value<String>? subjectId,
+    Value<String>? eventId,
+    Value<String>? entity,
+    Value<String>? localKey,
+    Value<String>? documentSha256,
+    Value<String>? state,
+    Value<int>? updatedAtMs,
+    Value<int>? rowid,
+  }) {
+    return SyncOutboxCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      eventId: eventId ?? this.eventId,
+      entity: entity ?? this.entity,
+      localKey: localKey ?? this.localKey,
+      documentSha256: documentSha256 ?? this.documentSha256,
+      state: state ?? this.state,
+      updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (eventId.present) {
+      map['event_id'] = Variable<String>(eventId.value);
+    }
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (localKey.present) {
+      map['local_key'] = Variable<String>(localKey.value);
+    }
+    if (documentSha256.present) {
+      map['document_sha256'] = Variable<String>(documentSha256.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (updatedAtMs.present) {
+      map['updated_at_ms'] = Variable<int>(updatedAtMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('eventId: $eventId, ')
+          ..write('entity: $entity, ')
+          ..write('localKey: $localKey, ')
+          ..write('documentSha256: $documentSha256, ')
+          ..write('state: $state, ')
+          ..write('updatedAtMs: $updatedAtMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ProfileDatabase extends GeneratedDatabase {
   _$ProfileDatabase(QueryExecutor e) : super(e);
   $ProfileDatabaseManager get managers => $ProfileDatabaseManager(this);
@@ -4499,6 +4974,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
       $AppearanceRecordsTable(this);
   late final $ProblemReportRecordsTable problemReportRecords =
       $ProblemReportRecordsTable(this);
+  late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4517,6 +4993,7 @@ abstract class _$ProfileDatabase extends GeneratedDatabase {
     flareFollowupRecords,
     appearanceRecords,
     problemReportRecords,
+    syncOutbox,
   ];
 }
 
@@ -7230,6 +7707,255 @@ typedef $$ProblemReportRecordsTableProcessedTableManager =
       ProblemReportRecord,
       PrefetchHooks Function()
     >;
+typedef $$SyncOutboxTableCreateCompanionBuilder = SyncOutboxCompanion Function({
+  required String subjectId,
+  required String eventId,
+  required String entity,
+  required String localKey,
+  required String documentSha256,
+  required String state,
+  required int updatedAtMs,
+  Value<int> rowid,
+});
+typedef $$SyncOutboxTableUpdateCompanionBuilder = SyncOutboxCompanion Function({
+  Value<String> subjectId,
+  Value<String> eventId,
+  Value<String> entity,
+  Value<String> localKey,
+  Value<String> documentSha256,
+  Value<String> state,
+  Value<int> updatedAtMs,
+  Value<int> rowid,
+});
+
+class $$SyncOutboxTableFilterComposer
+    extends Composer<_$ProfileDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localKey => $composableBuilder(
+    column: $table.localKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentSha256 => $composableBuilder(
+    column: $table.documentSha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncOutboxTableOrderingComposer
+    extends Composer<_$ProfileDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localKey => $composableBuilder(
+    column: $table.localKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentSha256 => $composableBuilder(
+    column: $table.documentSha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncOutboxTableAnnotationComposer
+    extends Composer<_$ProfileDatabase, $SyncOutboxTable> {
+  $$SyncOutboxTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get eventId =>
+      $composableBuilder(column: $table.eventId, builder: (column) => column);
+
+  GeneratedColumn<String> get entity =>
+      $composableBuilder(column: $table.entity, builder: (column) => column);
+
+  GeneratedColumn<String> get localKey =>
+      $composableBuilder(column: $table.localKey, builder: (column) => column);
+
+  GeneratedColumn<String> get documentSha256 => $composableBuilder(
+    column: $table.documentSha256,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAtMs => $composableBuilder(
+    column: $table.updatedAtMs,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncOutboxTableTableManager
+    extends
+        RootTableManager<
+          _$ProfileDatabase,
+          $SyncOutboxTable,
+          SyncOutboxData,
+          $$SyncOutboxTableFilterComposer,
+          $$SyncOutboxTableOrderingComposer,
+          $$SyncOutboxTableAnnotationComposer,
+          $$SyncOutboxTableCreateCompanionBuilder,
+          $$SyncOutboxTableUpdateCompanionBuilder,
+          (
+            SyncOutboxData,
+            BaseReferences<_$ProfileDatabase, $SyncOutboxTable, SyncOutboxData>,
+          ),
+          SyncOutboxData,
+          PrefetchHooks Function()
+        > {
+  $$SyncOutboxTableTableManager(_$ProfileDatabase db, $SyncOutboxTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncOutboxTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncOutboxTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncOutboxTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<String> eventId = const Value.absent(),
+                Value<String> entity = const Value.absent(),
+                Value<String> localKey = const Value.absent(),
+                Value<String> documentSha256 = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<int> updatedAtMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncOutboxCompanion(
+                subjectId: subjectId,
+                eventId: eventId,
+                entity: entity,
+                localKey: localKey,
+                documentSha256: documentSha256,
+                state: state,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required String eventId,
+                required String entity,
+                required String localKey,
+                required String documentSha256,
+                required String state,
+                required int updatedAtMs,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncOutboxCompanion.insert(
+                subjectId: subjectId,
+                eventId: eventId,
+                entity: entity,
+                localKey: localKey,
+                documentSha256: documentSha256,
+                state: state,
+                updatedAtMs: updatedAtMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncOutboxTable, SyncOutboxData>(table),
+                  BaseReferences<
+                    _$ProfileDatabase,
+                    $SyncOutboxTable,
+                    SyncOutboxData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncOutboxTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ProfileDatabase,
+      $SyncOutboxTable,
+      SyncOutboxData,
+      $$SyncOutboxTableFilterComposer,
+      $$SyncOutboxTableOrderingComposer,
+      $$SyncOutboxTableAnnotationComposer,
+      $$SyncOutboxTableCreateCompanionBuilder,
+      $$SyncOutboxTableUpdateCompanionBuilder,
+      (
+        SyncOutboxData,
+        BaseReferences<_$ProfileDatabase, $SyncOutboxTable, SyncOutboxData>,
+      ),
+      SyncOutboxData,
+      PrefetchHooks Function()
+    >;
 
 class $ProfileDatabaseManager {
   final _$ProfileDatabase _db;
@@ -7260,4 +7986,6 @@ class $ProfileDatabaseManager {
       $$AppearanceRecordsTableTableManager(_db, _db.appearanceRecords);
   $$ProblemReportRecordsTableTableManager get problemReportRecords =>
       $$ProblemReportRecordsTableTableManager(_db, _db.problemReportRecords);
+  $$SyncOutboxTableTableManager get syncOutbox =>
+      $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
 }

@@ -215,6 +215,35 @@ class ProblemReportRecords extends Table {
   ];
 }
 
+class SyncOutbox extends Table {
+  @override
+  String get tableName => 'sync_outbox';
+
+  TextColumn get subjectId => text()();
+
+  TextColumn get eventId => text()();
+
+  TextColumn get entity => text()();
+
+  TextColumn get localKey => text()();
+
+  TextColumn get documentSha256 => text()();
+
+  TextColumn get state => text()();
+
+  IntColumn get updatedAtMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{subjectId, eventId};
+
+  @override
+  List<String> get customConstraints => const <String>[
+    "CHECK (entity IN ('program_records', 'workout_records'))",
+    "CHECK (state IN ('pending', 'confirmed', 'rejected'))",
+    'UNIQUE(subject_id, entity, local_key)',
+  ];
+}
+
 class LocalEvents extends Table {
   @override
   String get tableName => 'local_events';
@@ -277,6 +306,7 @@ QueryExecutor openEncryptedExecutor({
     FlareFollowupRecords,
     AppearanceRecords,
     ProblemReportRecords,
+    SyncOutbox,
   ],
 )
 class ProfileDatabase extends _$ProfileDatabase {
@@ -286,7 +316,7 @@ class ProfileDatabase extends _$ProfileDatabase {
     : super(openEncryptedExecutor(file: file, keyHex: keyHex));
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -327,6 +357,10 @@ class ProfileDatabase extends _$ProfileDatabase {
       }
       if (from == 8 && to == 9) {
         await migrator.createTable(problemReportRecords);
+        return;
+      }
+      if (from == 9 && to == 10) {
+        await migrator.createTable(syncOutbox);
         return;
       }
       rejectSchemaUpgrade(from, to);

@@ -285,9 +285,17 @@ void main() {
         .get();
     expect(reports, hasLength(1));
     await expectLater(
-      upgrade(migrator, 9, 10),
+      upgrade(migrator, 8, 10),
       throwsA(isA<StorageSchemaException>()),
     );
+    await database.customStatement('DROP TABLE IF EXISTS sync_outbox');
+    await upgrade(migrator, 9, 10);
+    final List<drift.QueryRow> outbox = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sync_outbox'",
+        )
+        .get();
+    expect(outbox, hasLength(1));
     await database.customStatement('DROP TABLE IF EXISTS readiness_records');
     await database.customStatement('DROP TABLE IF EXISTS adaptation_records');
     await upgrade(migrator, 5, 6);
@@ -297,7 +305,7 @@ void main() {
         )
         .get();
     expect(readiness, hasLength(1));
-    expect(database.schemaVersion, 9);
+    expect(database.schemaVersion, 10);
   });
 
   test('schema 2 opened by schema 4 is rejected', () async {
@@ -497,86 +505,98 @@ void main() {
     unchanged.close();
   });
 
-  test('schema 8 gains problem_report_records and keeps appearance flare and program rows', () async {
-    const String program =
-        '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
-    const String sessionId = '11111111-1111-4111-8111-111111111111';
-    const String workout =
-        '{"session_id":"11111111-1111-4111-8111-111111111111"}';
-    const String readiness = '{"soreness":"low"}';
-    const String adaptation = '{"action":"maintain"}';
-    const String flare = '{"choice":"worse_today","action":"keep_program"}';
-    final ProfileStore store = openStore();
-    final String subjectId = await store.createProfile();
-    await store.saveProgramRecord(program);
-    await store.saveWorkoutTerminal(
-      sessionId: sessionId,
-      documentJson: workout,
-    );
-    await store.saveAdaptationPair(
-      sessionId: sessionId,
-      readinessJson: readiness,
-      adaptationJson: adaptation,
-      updatedAtMs: 6,
-    );
-    await store.saveFlareFollowup(
-      sessionId: sessionId,
-      documentJson: flare,
-      updatedAtMs: 6,
-    );
-    await store.saveAppearanceChoice('dark');
-    final File file = store.openDatabaseFile!;
-    final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
-    await store.close();
+  test(
+    'schema 9 gains sync_outbox and keeps appearance flare and program rows',
+    () async {
+      const String program =
+          '{"record_version":1,"rule_id":"syn-program-core","exercises":[]}';
+      const String sessionId = '11111111-1111-4111-8111-111111111111';
+      const String workout =
+          '{"session_id":"11111111-1111-4111-8111-111111111111"}';
+      const String readiness = '{"soreness":"low"}';
+      const String adaptation = '{"action":"maintain"}';
+      const String flare = '{"choice":"worse_today","action":"keep_program"}';
+      final ProfileStore store = openStore();
+      final String subjectId = await store.createProfile();
+      await store.saveProgramRecord(program);
+      await store.saveWorkoutTerminal(
+        sessionId: sessionId,
+        documentJson: workout,
+      );
+      await store.saveAdaptationPair(
+        sessionId: sessionId,
+        readinessJson: readiness,
+        adaptationJson: adaptation,
+        updatedAtMs: 6,
+      );
+      await store.saveFlareFollowup(
+        sessionId: sessionId,
+        documentJson: flare,
+        updatedAtMs: 6,
+      );
+      await store.saveAppearanceChoice('dark');
+      final File file = store.openDatabaseFile!;
+      final String keyHex = (await store.keys.read(profileKeyItem(subjectId)))!;
+      await store.close();
 
-    final Database raw = sqlite3.open(file.path);
-    applyEncryptionSetup(raw, keyHex);
-    raw.execute('DROP TABLE IF EXISTS problem_report_records');
-    raw.execute('PRAGMA user_version = 8');
-    raw.close();
+      final Database raw = sqlite3.open(file.path);
+      applyEncryptionSetup(raw, keyHex);
+      raw.execute('DROP TABLE IF EXISTS sync_outbox');
+      raw.execute('PRAGMA user_version = 9');
+      raw.close();
 
-    await store.reopenActive();
-    expect(await store.loadProgramRecord(), program);
-    expect(await store.workoutRecordDocuments(), <String>[workout]);
-    expect(await store.loadReadinessRecord(sessionId), readiness);
-    expect(await store.loadAdaptationRecord(sessionId), adaptation);
-    expect(await store.loadFlareFollowup(sessionId), flare);
-    expect(await store.loadAppearanceChoice(), 'dark');
-    await store.close();
+      await store.reopenActive();
+      expect(await store.loadProgramRecord(), program);
+      expect(await store.workoutRecordDocuments(), <String>[workout]);
+      expect(await store.loadReadinessRecord(sessionId), readiness);
+      expect(await store.loadAdaptationRecord(sessionId), adaptation);
+      expect(await store.loadFlareFollowup(sessionId), flare);
+      expect(await store.loadAppearanceChoice(), 'dark');
+      await store.close();
 
-    final Database upgraded = sqlite3.open(file.path);
-    applyEncryptionSetup(upgraded, keyHex);
-    expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 9);
-    expect(
-      upgraded
-          .select('SELECT COUNT(*) FROM problem_report_records')
-          .first
-          .columnAt(0),
-      0,
-    );
-    expect(
-      upgraded
-          .select('SELECT choice FROM appearance_records')
-          .first
-          .columnAt(0),
-      'dark',
-    );
-    expect(
-      upgraded
-          .select('SELECT document_json FROM flare_followup_records')
-          .first
-          .columnAt(0),
-      flare,
-    );
-    expect(
-      upgraded
-          .select('SELECT document_json FROM program_records')
-          .first
-          .columnAt(0),
-      program,
-    );
-    upgraded.close();
-  });
+      final Database upgraded = sqlite3.open(file.path);
+      applyEncryptionSetup(upgraded, keyHex);
+      expect(upgraded.select('PRAGMA user_version').first.columnAt(0), 10);
+      expect(
+        upgraded
+            .select(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sync_outbox'",
+            )
+            .first
+            .columnAt(0),
+        'sync_outbox',
+      );
+      expect(
+        upgraded
+            .select('SELECT COUNT(*) FROM problem_report_records')
+            .first
+            .columnAt(0),
+        0,
+      );
+      expect(
+        upgraded
+            .select('SELECT choice FROM appearance_records')
+            .first
+            .columnAt(0),
+        'dark',
+      );
+      expect(
+        upgraded
+            .select('SELECT document_json FROM flare_followup_records')
+            .first
+            .columnAt(0),
+        flare,
+      );
+      expect(
+        upgraded
+            .select('SELECT document_json FROM program_records')
+            .first
+            .columnAt(0),
+        program,
+      );
+      upgraded.close();
+    },
+  );
 
   test('schema 7 does not jump to schema 9', () async {
     const String program =
@@ -1388,6 +1408,118 @@ void main() {
       throwsA(isA<BridgeError>()),
     );
     expect(temp.listSync(recursive: true), isEmpty);
+  });
+
+  test('writes before copy acceptance do not enqueue outbox rows', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    await store.saveProgramRecord(_validProgram);
+    await store.saveWorkoutTerminal(
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      documentJson: '{"session_id":"11111111-1111-4111-8111-111111111111"}',
+    );
+    expect(await store.loadPendingOutbox(subjectId), isEmpty);
+    expect(store.isCopyAccepted(subjectId), isFalse);
+  });
+
+  test('saveProgramRecord commits the program and outbox together', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    await store.markCopyAccepted(subjectId);
+    var enqueued = 0;
+    store.onOutboxEnqueued = () {
+      enqueued += 1;
+    };
+    await store.saveProgramRecord(_validProgram);
+    expect(await store.loadProgramRecord(), _validProgram);
+    final List<SyncOutboxPendingItem> pending = await store.loadPendingOutbox(
+      subjectId,
+    );
+    expect(pending, hasLength(1));
+    expect(pending.single.entity, 'program_records');
+    expect(pending.single.localKey, subjectId);
+    expect(pending.single.documentJson, _validProgram);
+    expect(enqueued, 1);
+  });
+
+  test('interruptWorkoutSave leaves no outbox row', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    await store.markCopyAccepted(subjectId);
+    var enqueued = 0;
+    store.onOutboxEnqueued = () {
+      enqueued += 1;
+    };
+    const String sessionId = '22222222-2222-4222-8222-222222222222';
+    await store.interruptWorkoutSave(
+      sessionId: sessionId,
+      documentJson: '{"session_id":"$sessionId"}',
+    );
+    expect(await store.workoutRecordCount(), 0);
+    expect(await store.loadPendingOutbox(subjectId), isEmpty);
+    expect(enqueued, 0);
+  });
+
+  test('markOutboxState with a sha miss leaves the row pending', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    await store.markCopyAccepted(subjectId);
+    await store.saveProgramRecord(_validProgram);
+    final SyncOutboxPendingItem pending = (await store.loadPendingOutbox(
+      subjectId,
+    )).single;
+    await store.markOutboxState(
+      subjectId: subjectId,
+      eventId: pending.eventId,
+      expectedSha: '0' * 64,
+      state: 'confirmed',
+    );
+    final List<SyncOutboxPendingItem> still = await store.loadPendingOutbox(
+      subjectId,
+    );
+    expect(still, hasLength(1));
+    expect(still.single.eventId, pending.eventId);
+    expect(still.single.documentSha256, pending.documentSha256);
+  });
+
+  test('an illegal outbox entity or state insert fails the CHECK', () async {
+    final ProfileDatabase database = ProfileDatabase(
+      drift_native.NativeDatabase.memory(),
+    );
+    addTearDown(database.close);
+    await database.customSelect('SELECT 1').get();
+    await expectLater(
+      database
+          .into(database.syncOutbox)
+          .insert(
+            SyncOutboxCompanion.insert(
+              subjectId: 'p-check',
+              eventId: '11111111-1111-4111-8111-111111111111',
+              entity: 'intake_drafts',
+              localKey: 'p-check',
+              documentSha256: 'a' * 64,
+              state: 'pending',
+              updatedAtMs: 1,
+            ),
+          ),
+      throwsA(isA<SqliteException>()),
+    );
+    await expectLater(
+      database
+          .into(database.syncOutbox)
+          .insert(
+            SyncOutboxCompanion.insert(
+              subjectId: 'p-check',
+              eventId: '22222222-2222-4222-8222-222222222222',
+              entity: 'program_records',
+              localKey: 'p-check',
+              documentSha256: 'b' * 64,
+              state: 'sending',
+              updatedAtMs: 1,
+            ),
+          ),
+      throwsA(isA<SqliteException>()),
+    );
   });
 }
 

@@ -68,7 +68,7 @@ void main() {
     expect(pubspec.contains('sign_in_with_apple'), isFalse);
     expect(pubspec.contains('google_sign_in'), isFalse);
     expect(pubspec.contains('flutter_secure_storage: 11.2.0'), isTrue);
-    expect(database.contains('int get schemaVersion => 9;'), isTrue);
+    expect(database.contains('int get schemaVersion => 10;'), isTrue);
   });
 
   test('a token, email, or session query is unavailable', () {

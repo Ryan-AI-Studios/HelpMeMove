@@ -604,7 +604,7 @@ void main() {
     },
   );
 
-  test('schemaVersion is 9', () async {
+  test('schemaVersion is 10', () async {
     final ProfileStore store = openStore();
     await store.createProfile();
     final String subjectId = (await store.keys.read(activeProfileItem))!;
@@ -613,13 +613,13 @@ void main() {
     await store.close();
     final Database raw = sqlite3.open(file.path);
     applyEncryptionSetup(raw, keyHex);
-    expect(raw.select('PRAGMA user_version').first.columnAt(0), 9);
+    expect(raw.select('PRAGMA user_version').first.columnAt(0), 10);
     raw.close();
     final ProfileDatabase database = ProfileDatabase.open(
       file: file,
       keyHex: keyHex,
     );
-    expect(database.schemaVersion, 9);
+    expect(database.schemaVersion, 10);
     await database.close();
   });
 

@@ -50,6 +50,9 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.47.6
+      - run: flutter pub get
+      - run: dart run build_runner build
+      - run: git diff --exit-code -- lib/storage/profile_database.g.dart
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze --fatal-infos --fatal-warnings
       # flutter_rust_bridge 2.13 opens lib<stem>.so from rust_root/target/release

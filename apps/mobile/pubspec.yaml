@@ -38,6 +38,7 @@ dependencies:
   flutter_secure_storage: 11.2.0
   path_provider: 2.1.6
   supabase_flutter: 2.18.0
+  crypto: 3.0.7
 
 dev_dependencies:
   flutter_test:
