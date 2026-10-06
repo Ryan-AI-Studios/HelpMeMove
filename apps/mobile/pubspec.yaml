@@ -40,6 +40,7 @@ dependencies:
   supabase_flutter: 2.18.0
   crypto: 3.0.7
   camera: 0.12.1
+  flutter_tts: 4.2.5
   movement_vision:
     path: ../../packages/movement_vision
 
