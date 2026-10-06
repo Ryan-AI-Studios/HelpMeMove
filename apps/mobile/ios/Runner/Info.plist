@@ -53,6 +53,10 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSCameraUsageDescription</key>
+	<string>HelpMeMove shows a positioning preview on this device. Video is not saved.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>HelpMeMove does not record audio for this preview.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
