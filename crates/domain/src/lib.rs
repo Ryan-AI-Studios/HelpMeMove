@@ -1,5 +1,9 @@
 //! Pure value objects for the bridge smoke. No I/O, clock, or FFI.
 
+mod pose;
+
+pub use pose::{PoseFrame, PosePoint, normalize_pose_frame};
+
 /// Opaque fixture token. Not a person, account, or stored subject.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubjectId(String);
@@ -145,6 +149,7 @@ pub enum DomainError {
     ClockWentBackwards,
     VersionMismatch,
     Cancelled,
+    InvalidPoseFrame,
 }
 
 impl DomainError {
@@ -157,6 +162,7 @@ impl DomainError {
             Self::ClockWentBackwards => "clock-went-backwards",
             Self::VersionMismatch => "version-mismatch",
             Self::Cancelled => "cancelled",
+            Self::InvalidPoseFrame => "invalid-pose-frame",
         }
     }
 }

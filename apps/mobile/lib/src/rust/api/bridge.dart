@@ -9,7 +9,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `adaptation_withheld`, `decision_fields`, `eligible_substitutions`, `embedded_exercises`, `emergency_fields`, `escalation_name`, `flare_withheld`, `instrument_view`, `program_rule_view`, `progress_withheld`, `ready`, `sorted`, `triage_name`, `withheld_plan`, `withheld`, `workout_from_content`, `workout_ready`, `workout_unavailable`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ProgramSelection`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `active_issues_for_areas`, `code`, `select_program`
 
 String bridgeVersion() => RustLib.instance.api.crateApiBridgeBridgeVersion();
@@ -22,6 +22,26 @@ String acceptLaterality({required String raw}) =>
 
 double acceptConfidence({required double value}) =>
     RustLib.instance.api.crateApiBridgeAcceptConfidence(value: value);
+
+PoseFrame acceptPoseFrame({
+  required List<double> x,
+  required List<double> y,
+  required List<double> z,
+  required List<double> visibility,
+  required List<double> presence,
+  required PlatformInt64 timestampUnixMs,
+  required int rotationDegrees,
+  required bool mirrored,
+}) => RustLib.instance.api.crateApiBridgeAcceptPoseFrame(
+  x: x,
+  y: y,
+  z: z,
+  visibility: visibility,
+  presence: presence,
+  timestampUnixMs: timestampUnixMs,
+  rotationDegrees: rotationDegrees,
+  mirrored: mirrored,
+);
 
 int convertLengthMmToInchThousandths({required int millimeters}) => RustLib
     .instance
@@ -287,6 +307,7 @@ enum BridgeError {
   invalidRating,
   invalidInstrument,
   invalidProgram,
+  invalidPoseFrame,
 }
 
 class ExerciseDisplay {
@@ -364,6 +385,61 @@ class IntakeVocabulary {
           goals == other.goals &&
           equipment == other.equipment &&
           lateralities == other.lateralities;
+}
+
+/// Thirty-three landmarks and the caller timestamp. No image bytes.
+class PoseFrame {
+  final PlatformInt64 timestampUnixMs;
+  final List<PosePoint> points;
+
+  const PoseFrame({required this.timestampUnixMs, required this.points});
+
+  @override
+  int get hashCode => timestampUnixMs.hashCode ^ points.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PoseFrame &&
+          runtimeType == other.runtimeType &&
+          timestampUnixMs == other.timestampUnixMs &&
+          points == other.points;
+}
+
+/// One landmark. `z` has no angle meaning.
+class PosePoint {
+  final double x;
+  final double y;
+  final double z;
+  final double visibility;
+  final double presence;
+
+  const PosePoint({
+    required this.x,
+    required this.y,
+    required this.z,
+    required this.visibility,
+    required this.presence,
+  });
+
+  @override
+  int get hashCode =>
+      x.hashCode ^
+      y.hashCode ^
+      z.hashCode ^
+      visibility.hashCode ^
+      presence.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PosePoint &&
+          runtimeType == other.runtimeType &&
+          x == other.x &&
+          y == other.y &&
+          z == other.z &&
+          visibility == other.visibility &&
+          presence == other.presence;
 }
 
 class ProgramRuleView {
