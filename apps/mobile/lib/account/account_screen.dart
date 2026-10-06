@@ -48,6 +48,38 @@ class AccountScreen extends StatelessWidget {
   }
 
   List<Widget> _children(BuildContext context, AccountController account) {
+    if (account.phase == AccountPhase.signedIn && account.copyPreview) {
+      return <Widget>[
+        const Text('Bring this profile to the signed-in account?'),
+        const Text(
+          'This phone keeps the profile until you confirm. Nothing is uploaded until you confirm.',
+        ),
+        PrimaryButton(
+          label: 'Bring it over',
+          onPressed: () => unawaited(account.bringItOver()),
+        ),
+        PrimaryButton(label: 'Not now', onPressed: account.cancelCopy),
+      ];
+    }
+    final List<Widget> children = List<Widget>.of(
+      _phaseChildren(context, account),
+    );
+    final String? notice = account.copyNotice;
+    if (notice != null) {
+      children.add(Text(notice));
+      if (notice == copyInterruptedNotice) {
+        children.add(
+          PrimaryButton(
+            label: 'Try again',
+            onPressed: () => unawaited(account.retryCopy()),
+          ),
+        );
+      }
+    }
+    return children;
+  }
+
+  List<Widget> _phaseChildren(BuildContext context, AccountController account) {
     switch (account.phase) {
       case AccountPhase.signedOut:
         return <Widget>[
@@ -78,6 +110,11 @@ class AccountScreen extends StatelessWidget {
       case AccountPhase.signedIn:
         return <Widget>[
           const Text('Signed in on this device.'),
+          if (!account.copyAccepted)
+            PrimaryButton(
+              label: 'Bring this profile over',
+              onPressed: account.openCopyPreview,
+            ),
           PrimaryButton(label: 'Sign out', onPressed: account.requestSignOut),
         ];
       case AccountPhase.signOutChoice:

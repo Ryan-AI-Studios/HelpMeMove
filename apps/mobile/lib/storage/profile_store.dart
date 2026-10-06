@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -23,6 +24,22 @@ class StoredTerminalWorkout {
   final String sessionId;
   final String documentJson;
   final int updatedAtMs;
+}
+
+class SyncOutboxPendingItem {
+  const SyncOutboxPendingItem({
+    required this.eventId,
+    required this.entity,
+    required this.localKey,
+    required this.documentSha256,
+    required this.documentJson,
+  });
+
+  final String eventId;
+  final String entity;
+  final String localKey;
+  final String documentSha256;
+  final String documentJson;
 }
 
 class StoredProblemReport {
@@ -56,7 +73,13 @@ class StoredProblemReport {
 }
 
 const String activeProfileItem = 'active-profile';
+const String copyAcceptedName = 'sync-copy-accepted';
 const String _profileKeyPrefix = 'profile-key.';
+const String _programOutboxEntity = 'program_records';
+const String _workoutOutboxEntity = 'workout_records';
+const String _outboxPending = 'pending';
+const String _outboxConfirmed = 'confirmed';
+const String _outboxRejected = 'rejected';
 
 String profileKeyItem(String subjectId) => '$_profileKeyPrefix$subjectId';
 
@@ -74,6 +97,8 @@ class ProfileStore {
   final DateTime Function() clock;
   final Random random;
   final Future<void> Function(String path) excludeFromBackup;
+
+  void Function()? onOutboxEnqueued;
 
   ProfileDatabase? _database;
   Completer<void>? _workoutTurn;
@@ -182,6 +207,115 @@ class ProfileStore {
   Future<void> close() => _closeCurrent();
 
   String? get activeSubjectId => _activeSubjectId;
+
+  bool get hasOpenDatabase => _database != null;
+
+  bool isCopyAccepted(String subjectId) {
+    return _copyAcceptedFile(subjectId).existsSync();
+  }
+
+  Future<void> markCopyAccepted(String subjectId) async {
+    final Directory directory = _profileDirectory(subjectId);
+    directory.createSync(recursive: true);
+    _copyAcceptedFile(subjectId).writeAsBytesSync(const <int>[]);
+    await excludeFromBackup(directory.path);
+  }
+
+  Future<List<SyncOutboxPendingItem>> loadPendingOutbox(
+    String subjectId,
+  ) async {
+    final ProfileDatabase database = _requireDatabase();
+    final List<SyncOutboxData> rows =
+        await (database.select(database.syncOutbox)..where(
+              (SyncOutbox table) =>
+                  table.subjectId.equals(subjectId) &
+                  table.state.equals(_outboxPending),
+            ))
+            .get();
+    final List<SyncOutboxPendingItem> items = <SyncOutboxPendingItem>[];
+    for (final SyncOutboxData row in rows) {
+      final String? documentJson = await _outboxDocumentJson(
+        database,
+        subjectId,
+        row.entity,
+        row.localKey,
+      );
+      if (documentJson == null) {
+        continue;
+      }
+      items.add(
+        SyncOutboxPendingItem(
+          eventId: row.eventId,
+          entity: row.entity,
+          localKey: row.localKey,
+          documentSha256: row.documentSha256,
+          documentJson: documentJson,
+        ),
+      );
+    }
+    return items;
+  }
+
+  Future<void> markOutboxState({
+    required String subjectId,
+    required String eventId,
+    required String expectedSha,
+    required String state,
+  }) async {
+    if (state != _outboxConfirmed && state != _outboxRejected) {
+      return;
+    }
+    final ProfileDatabase database = _requireDatabase();
+    await (database.update(database.syncOutbox)..where(
+          (SyncOutbox table) =>
+              table.subjectId.equals(subjectId) &
+              table.eventId.equals(eventId) &
+              table.documentSha256.equals(expectedSha),
+        ))
+        .write(
+          SyncOutboxCompanion(
+            state: Value<String>(state),
+            updatedAtMs: Value<int>(_now()),
+          ),
+        );
+  }
+
+  Future<void> sweepCopyOutbox() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    await database.transaction(() async {
+      final List<ProgramRecord> programs =
+          await (database.select(database.programRecords)..where(
+                (ProgramRecords table) => table.subjectId.equals(subjectId),
+              ))
+              .get();
+      for (final ProgramRecord program in programs) {
+        await _upsertProgramOutbox(database, subjectId, program.documentJson);
+      }
+      final List<WorkoutRecord> workouts =
+          await (database.select(database.workoutRecords)..where(
+                (WorkoutRecords table) => table.subjectId.equals(subjectId),
+              ))
+              .get();
+      for (final WorkoutRecord workout in workouts) {
+        final SyncOutboxData? existing = await _outboxRow(
+          database,
+          subjectId,
+          _workoutOutboxEntity,
+          workout.sessionId,
+        );
+        if (existing == null) {
+          await _insertPendingOutbox(
+            database,
+            subjectId: subjectId,
+            entity: _workoutOutboxEntity,
+            localKey: workout.sessionId,
+            documentJson: workout.documentJson,
+          );
+        }
+      }
+    });
+  }
 
   /// Closes the open database and clears the active pointer.
   /// The profile key and files stay on disk.
@@ -311,15 +445,28 @@ class ProfileStore {
   Future<void> saveProgramRecord(String documentJson) async {
     final ProfileDatabase database = _requireDatabase();
     final String subjectId = _requireActive();
-    await database
-        .into(database.programRecords)
-        .insertOnConflictUpdate(
-          ProgramRecordsCompanion.insert(
-            subjectId: subjectId,
-            documentJson: documentJson,
-            updatedAtMs: _now(),
-          ),
+    var outboxChanged = false;
+    await database.transaction(() async {
+      await database
+          .into(database.programRecords)
+          .insertOnConflictUpdate(
+            ProgramRecordsCompanion.insert(
+              subjectId: subjectId,
+              documentJson: documentJson,
+              updatedAtMs: _now(),
+            ),
+          );
+      if (await _shouldEnqueueOutbox(database, subjectId)) {
+        outboxChanged = await _upsertProgramOutbox(
+          database,
+          subjectId,
+          documentJson,
         );
+      }
+    });
+    if (outboxChanged) {
+      onOutboxEnqueued?.call();
+    }
   }
 
   Future<String?> loadProgramRecord() async {
@@ -409,6 +556,7 @@ class ProfileStore {
       await onWorkoutQueueEntered();
       final ProfileDatabase database = _requireDatabase();
       final String subjectId = _requireActive();
+      var outboxInserted = false;
       await database.transaction(() async {
         await database
             .into(database.workoutRecords)
@@ -422,7 +570,18 @@ class ProfileStore {
               mode: InsertMode.insertOrIgnore,
             );
         await _deleteWorkoutDraftNow(subjectId);
+        if (await _shouldEnqueueOutbox(database, subjectId)) {
+          outboxInserted = await _insertMissingWorkoutOutbox(
+            database,
+            subjectId,
+            sessionId,
+            documentJson,
+          );
+        }
       });
+      if (outboxInserted) {
+        onOutboxEnqueued?.call();
+      }
     });
   }
 
@@ -1084,6 +1243,168 @@ class ProfileStore {
       '${supportDirectory.path}${Platform.pathSeparator}profiles'
       '${Platform.pathSeparator}$subjectId',
     );
+  }
+
+  File _copyAcceptedFile(String subjectId) {
+    return File(
+      '${_profileDirectory(subjectId).path}${Platform.pathSeparator}$copyAcceptedName',
+    );
+  }
+
+  String _sha256Text(String text) {
+    return sha256.convert(utf8.encode(text)).toString();
+  }
+
+  Future<bool> _shouldEnqueueOutbox(
+    ProfileDatabase database,
+    String subjectId,
+  ) async {
+    if (isCopyAccepted(subjectId)) {
+      return true;
+    }
+    final SyncOutboxData? row =
+        await (database.select(database.syncOutbox)
+              ..where((SyncOutbox table) => table.subjectId.equals(subjectId))
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<SyncOutboxData?> _outboxRow(
+    ProfileDatabase database,
+    String subjectId,
+    String entity,
+    String localKey,
+  ) {
+    return (database.select(database.syncOutbox)..where(
+          (SyncOutbox table) =>
+              table.subjectId.equals(subjectId) &
+              table.entity.equals(entity) &
+              table.localKey.equals(localKey),
+        ))
+        .getSingleOrNull();
+  }
+
+  Future<bool> _upsertProgramOutbox(
+    ProfileDatabase database,
+    String subjectId,
+    String documentJson,
+  ) async {
+    final SyncOutboxData? existing = await _outboxRow(
+      database,
+      subjectId,
+      _programOutboxEntity,
+      subjectId,
+    );
+    if (existing == null) {
+      await _insertPendingOutbox(
+        database,
+        subjectId: subjectId,
+        entity: _programOutboxEntity,
+        localKey: subjectId,
+        documentJson: documentJson,
+      );
+      return true;
+    }
+    if (existing.state != _outboxPending) {
+      return false;
+    }
+    await (database.update(database.syncOutbox)..where(
+          (SyncOutbox table) =>
+              table.subjectId.equals(subjectId) &
+              table.eventId.equals(existing.eventId),
+        ))
+        .write(
+          SyncOutboxCompanion(
+            documentSha256: Value<String>(_sha256Text(documentJson)),
+            updatedAtMs: Value<int>(_now()),
+          ),
+        );
+    return true;
+  }
+
+  Future<bool> _insertMissingWorkoutOutbox(
+    ProfileDatabase database,
+    String subjectId,
+    String sessionId,
+    String documentJson,
+  ) async {
+    final SyncOutboxData? existing = await _outboxRow(
+      database,
+      subjectId,
+      _workoutOutboxEntity,
+      sessionId,
+    );
+    if (existing != null) {
+      return false;
+    }
+    final WorkoutRecord? stored =
+        await (database.select(database.workoutRecords)..where(
+              (WorkoutRecords table) =>
+                  table.subjectId.equals(subjectId) &
+                  table.sessionId.equals(sessionId),
+            ))
+            .getSingleOrNull();
+    if (stored == null) {
+      return false;
+    }
+    await _insertPendingOutbox(
+      database,
+      subjectId: subjectId,
+      entity: _workoutOutboxEntity,
+      localKey: sessionId,
+      documentJson: stored.documentJson,
+    );
+    return true;
+  }
+
+  Future<void> _insertPendingOutbox(
+    ProfileDatabase database, {
+    required String subjectId,
+    required String entity,
+    required String localKey,
+    required String documentJson,
+  }) {
+    return database
+        .into(database.syncOutbox)
+        .insert(
+          SyncOutboxCompanion.insert(
+            subjectId: subjectId,
+            eventId: _newEventId(),
+            entity: entity,
+            localKey: localKey,
+            documentSha256: _sha256Text(documentJson),
+            state: _outboxPending,
+            updatedAtMs: _now(),
+          ),
+        );
+  }
+
+  Future<String?> _outboxDocumentJson(
+    ProfileDatabase database,
+    String subjectId,
+    String entity,
+    String localKey,
+  ) async {
+    if (entity == _programOutboxEntity) {
+      final ProgramRecord? row =
+          await (database.select(database.programRecords)..where(
+                (ProgramRecords table) => table.subjectId.equals(subjectId),
+              ))
+              .getSingleOrNull();
+      return row?.documentJson;
+    }
+    if (entity == _workoutOutboxEntity) {
+      final WorkoutRecord? row =
+          await (database.select(database.workoutRecords)..where(
+                (WorkoutRecords table) =>
+                    table.subjectId.equals(subjectId) &
+                    table.sessionId.equals(localKey),
+              ))
+              .getSingleOrNull();
+      return row?.documentJson;
+    }
+    return null;
   }
 
   Object _surfaceStorageError(Object error) {

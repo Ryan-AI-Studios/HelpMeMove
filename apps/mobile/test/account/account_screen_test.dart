@@ -134,7 +134,11 @@ void main() {
     expect(bodyIsReadable || buttonsOnly, isTrue);
   }
 
-  Future<void> capture(WidgetTester tester, String name) async {
+  Future<void> captureTo(
+    WidgetTester tester,
+    String directory,
+    String name,
+  ) async {
     final RenderRepaintBoundary boundary = tester
         .renderObject<RenderRepaintBoundary>(
           find.byKey(const Key('account-capture')),
@@ -148,11 +152,13 @@ void main() {
     if (!_captureFontReady) {
       return;
     }
-    final File file = File(
-      '$_evidenceDirectory${Platform.pathSeparator}$name.png',
-    );
+    final File file = File('$directory${Platform.pathSeparator}$name.png');
     file.parent.createSync(recursive: true);
     file.writeAsBytesSync(data!.buffer.asUint8List());
+  }
+
+  Future<void> capture(WidgetTester tester, String name) {
+    return captureTo(tester, _evidenceDirectory, name);
   }
 
   testWidgets('a widget test can open a profile', (tester) async {
@@ -209,6 +215,7 @@ void main() {
             prepare: (AccountController account) {
               account.actorId = _actor;
               account.phase = AccountPhase.signedIn;
+              account.copyAccepted = true;
             },
           ),
           (
@@ -344,6 +351,180 @@ void main() {
     expect(find.text('Stay on this device'), findsOneWidget);
   });
 
+  testWidgets(
+    'unsigned copy accepted is Sign out only, unsigned is Bring over',
+    (tester) async {
+      final ProfileStore store = openStore();
+      final AccountController account = AccountController(store: store);
+      account.actorId = _actor;
+      account.phase = AccountPhase.signedIn;
+      account.copyAccepted = false;
+      account.copyPreview = false;
+      account.notifyListeners();
+      await pumpScreen(
+        tester,
+        size: const Size(390, 844),
+        textScale: 1,
+        brightness: Brightness.light,
+        controller: account,
+      );
+      expect(find.text('Signed in on this device.'), findsOneWidget);
+      expect(find.text('Bring this profile over'), findsOneWidget);
+      expect(find.text('Sign out'), findsOneWidget);
+      expect(find.byType(PrimaryButton), findsNWidgets(2));
+    },
+  );
+
+  testWidgets('copy states render at the 0020 viewports', (tester) async {
+    const String evidenceDirectory =
+        r'C:\dev\HelpMeMove\conductor\0020-SyncAndAnonymousImport\ui-evidence';
+    final ProfileStore store = openStore();
+    final AccountController account = AccountController(store: store);
+    final List<
+      ({
+        String name,
+        String? sentence,
+        List<String> buttons,
+        void Function(AccountController account) prepare,
+        bool unavailable,
+      })
+    >
+    states =
+        <
+          ({
+            String name,
+            String? sentence,
+            List<String> buttons,
+            void Function(AccountController account) prepare,
+            bool unavailable,
+          })
+        >[
+          (
+            name: 'preview',
+            sentence: 'Bring this profile to the signed-in account?',
+            buttons: <String>['Bring it over', 'Not now'],
+            unavailable: false,
+            prepare: (AccountController account) {
+              account.actorId = _actor;
+              account.phase = AccountPhase.signedIn;
+              account.copyPreview = true;
+              account.copyAccepted = false;
+              account.copyNotice = null;
+            },
+          ),
+          (
+            name: 'cancel',
+            sentence: 'This profile stays on this phone.',
+            buttons: <String>['Bring this profile over', 'Sign out'],
+            unavailable: false,
+            prepare: (AccountController account) {
+              account.actorId = _actor;
+              account.phase = AccountPhase.signedIn;
+              account.copyPreview = false;
+              account.copyAccepted = false;
+              account.copyNotice = 'This profile stays on this phone.';
+            },
+          ),
+          (
+            name: 'interrupted',
+            sentence: 'The copy stopped. This phone still has the profile.',
+            buttons: <String>['Sign out', 'Try again'],
+            unavailable: false,
+            prepare: (AccountController account) {
+              account.actorId = _actor;
+              account.phase = AccountPhase.signedIn;
+              account.copyPreview = false;
+              account.copyAccepted = true;
+              account.copyNotice =
+                  'The copy stopped. This phone still has the profile.';
+            },
+          ),
+          (
+            name: 'unavailable',
+            sentence: 'That page is unavailable.',
+            buttons: <String>[],
+            unavailable: true,
+            prepare: (AccountController account) {},
+          ),
+          (
+            name: 'signed-in-bring-over',
+            sentence: 'Signed in on this device.',
+            buttons: <String>['Bring this profile over', 'Sign out'],
+            unavailable: false,
+            prepare: (AccountController account) {
+              account.actorId = _actor;
+              account.phase = AccountPhase.signedIn;
+              account.copyPreview = false;
+              account.copyAccepted = false;
+              account.copyNotice = null;
+            },
+          ),
+        ];
+    const List<({String name, Size size, double scale, Brightness brightness})>
+    viewports =
+        <({String name, Size size, double scale, Brightness brightness})>[
+          (
+            name: 'light-390',
+            size: Size(390, 844),
+            scale: 1,
+            brightness: Brightness.light,
+          ),
+          (
+            name: 'dark-390',
+            size: Size(390, 844),
+            scale: 1,
+            brightness: Brightness.dark,
+          ),
+          (
+            name: 'light-840',
+            size: Size(840, 900),
+            scale: 1,
+            brightness: Brightness.light,
+          ),
+          (
+            name: 'light-390-t1.3',
+            size: Size(390, 844),
+            scale: 1.3,
+            brightness: Brightness.light,
+          ),
+        ];
+
+    for (final ({String name, Size size, double scale, Brightness brightness})
+        viewport
+        in viewports) {
+      for (final state in states) {
+        account.previousMarker = _hidden;
+        state.prepare(account);
+        account.notifyListeners();
+        await pumpScreen(
+          tester,
+          size: viewport.size,
+          textScale: viewport.scale,
+          brightness: viewport.brightness,
+          controller: account,
+          unavailable: state.unavailable,
+        );
+        if (state.sentence != null) {
+          expect(find.text(state.sentence!), findsOneWidget);
+        }
+        expect(find.byType(PrimaryButton), findsNWidgets(state.buttons.length));
+        for (final String label in state.buttons) {
+          expect(find.text(label), findsOneWidget);
+        }
+        expect(find.text(_hidden), findsNothing);
+        expect(find.text(_actor), findsNothing);
+        expect(find.text('a@example.test'), findsNothing);
+        expect(find.byType(NavigationBar), findsNothing);
+        expect(tester.takeException(), isNull);
+        await captureTo(
+          tester,
+          evidenceDirectory,
+          'copy-${state.name}-${viewport.name}',
+        );
+      }
+    }
+  });
+
   testWidgets('the account controls bind, decline, sign out, and confirm', (
     tester,
   ) async {
@@ -387,7 +568,16 @@ void main() {
     await tester.tap(find.text('Use this sign-in'));
     await tester.pump();
     await _press(tester, 'Use this sign-in');
+    expect(
+      find.text('Bring this profile to the signed-in account?'),
+      findsOneWidget,
+    );
+    expect(find.text('Signed in on this device.'), findsNothing);
+    await tester.tap(find.text('Not now'));
+    await tester.pump();
     expect(find.text('Signed in on this device.'), findsOneWidget);
+    expect(find.text('This profile stays on this phone.'), findsOneWidget);
+    expect(find.text('Bring this profile over'), findsOneWidget);
     expect(await store.keys.read(AccountController.actorItem(_actor)), first);
 
     await tester.tap(find.text('Sign out'));
