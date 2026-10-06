@@ -1,0 +1,9 @@
+[package]
+name = "helpmemove_movement"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+helpmemove_domain = { path = "../domain", version = "0.1.0" }
