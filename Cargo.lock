@@ -567,6 +567,13 @@ name = "helpmemove_domain"
 version = "0.1.0"
 
 [[package]]
+name = "helpmemove_movement"
+version = "0.1.0"
+dependencies = [
+ "helpmemove_domain",
+]
+
+[[package]]
 name = "helpmemove_safety"
 version = "0.1.0"
 dependencies = [
