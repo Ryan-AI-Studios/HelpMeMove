@@ -1,11 +1,13 @@
 use helpmemove_content::{
     AdaptationDecision, AdaptationError, AssessedArea, ContentError, Equipment, Exercise,
-    FlareDecision, FlareError, Goal, MovementRating, ProgramRule, ProgressError, Region, Session,
-    SessionEvent, StartingExercise, apply_session_event, decide_adaptation, decide_flare,
-    flare_followup_envelope, open_session, parse_adaptation_rule, parse_assessment_instrument,
-    parse_exercise, parse_flare_rule, parse_followup, parse_program_rule, parse_readiness,
-    parse_session, read_intake_safety_answers, read_program_assessment, read_program_intake,
-    read_session_event, render_session, render_starting_program, summarize_progress,
+    FIXTURE_PACK_VERIFYING_KEY, FlareDecision, FlareError, Goal, MovementRating, ProgramRule,
+    ProgressError, Region, Session, SessionEvent, StartingExercise, apply_session_event,
+    decide_adaptation, decide_flare, evaluate_pack, flare_followup_envelope, open_session,
+    parse_adaptation_rule, parse_assessment_instrument, parse_disable_list, parse_exercise,
+    parse_flare_rule, parse_followup, parse_program_rule, parse_readiness, parse_session,
+    parse_signature_hex, read_intake_safety_answers, read_program_assessment, read_program_intake,
+    read_session_event, recalled_sessions as list_recalled_sessions, render_session,
+    render_starting_program, summarize_progress, verify_disable_list as verify_disable_list_bytes,
 };
 use helpmemove_domain::{
     BRIDGE_VERSION, Confidence, DomainError, DomainInstant, Laterality, SubjectId,
@@ -32,6 +34,10 @@ const EXERCISE_ISOMETRIC: &str =
     include_str!("../../../../content/exercises/syn-shoulder-isometric.json");
 const EXERCISE_TORSO: &str =
     include_str!("../../../../content/exercises/syn-torso-pelvic-tilt.json");
+const COMMITTED_DISABLE_LIST: &str =
+    include_str!("../../../../content/packs/syn-disable-list.json");
+const COMMITTED_DISABLE_LIST_SIG: &str =
+    include_str!("../../../../content/packs/syn-disable-list.sig");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeError {
@@ -1029,6 +1035,82 @@ fn escalation_name(escalation: Escalation) -> String {
         Escalation::Evaluation => "evaluation",
         Escalation::Emergency => "emergency",
     }
+    .to_owned()
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn committed_disable_list() -> String {
+    COMMITTED_DISABLE_LIST.to_owned()
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn committed_disable_list_sig() -> String {
+    COMMITTED_DISABLE_LIST_SIG.trim().to_owned()
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn verify_disable_list(json: String, signature_hex: String) -> String {
+    let Ok(signature) = parse_signature_hex(signature_hex.trim()) else {
+        return "invalid-signature".to_owned();
+    };
+    match verify_disable_list_bytes(json.as_bytes(), &signature, &FIXTURE_PACK_VERIFYING_KEY) {
+        Ok(_) => "accept".to_owned(),
+        Err(error) => error.code(),
+    }
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn recalled_sessions(documents: Vec<String>, disable_list_json: String) -> Vec<String> {
+    let Ok(list) = parse_disable_list(disable_list_json.as_bytes()) else {
+        return Vec::new();
+    };
+    list_recalled_sessions(&documents, &list)
+}
+
+#[allow(clippy::too_many_arguments)]
+#[flutter_rust_bridge::frb(sync)]
+pub fn evaluate_content_pack(
+    manifest_json: String,
+    signature_hex: String,
+    file_paths: Vec<String>,
+    file_contents: Vec<Vec<u8>>,
+    floor_version: u32,
+    disable_list_json: String,
+    disable_list_sig_hex: String,
+    now_ms: i64,
+    last_verified_at_ms: i64,
+    max_offline_age_ms: Option<i64>,
+) -> String {
+    if file_paths.len() != file_contents.len() {
+        return "invalid-manifest".to_owned();
+    }
+    let Ok(signature) = parse_signature_hex(signature_hex.trim()) else {
+        return "invalid-signature".to_owned();
+    };
+    let Ok(list_sig) = parse_signature_hex(disable_list_sig_hex.trim()) else {
+        return "invalid-signature".to_owned();
+    };
+    let list = match verify_disable_list_bytes(
+        disable_list_json.as_bytes(),
+        &list_sig,
+        &FIXTURE_PACK_VERIFYING_KEY,
+    ) {
+        Ok(list) => list,
+        Err(error) => return error.code(),
+    };
+    let files: Vec<(String, Vec<u8>)> = file_paths.into_iter().zip(file_contents).collect();
+    evaluate_pack(
+        manifest_json.as_bytes(),
+        &signature,
+        &files,
+        &FIXTURE_PACK_VERIFYING_KEY,
+        floor_version,
+        &list,
+        now_ms,
+        last_verified_at_ms,
+        max_offline_age_ms,
+    )
+    .code()
     .to_owned()
 }
 

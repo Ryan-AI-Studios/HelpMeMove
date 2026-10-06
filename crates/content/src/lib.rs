@@ -8,6 +8,7 @@ mod error;
 mod flare;
 mod model;
 mod owned_copy;
+mod pack;
 mod program;
 mod progress;
 mod session;
@@ -30,6 +31,10 @@ pub use model::{
     TrackedMetric,
 };
 pub use owned_copy::{OwnedCopyDecision, reconcile_owned_copy};
+pub use pack::{
+    DisableList, FIXTURE_PACK_VERIFYING_KEY, PackDecision, encode_lower_hex, evaluate_pack,
+    parse_disable_list, parse_signature_hex, recalled_sessions, verify_disable_list,
+};
 pub use program::{
     AssessedArea, ProgramIntake, ProgramRule, StartingExercise, parse_program_rule,
     read_program_assessment, read_program_intake, render_starting_program,

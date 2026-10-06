@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2037038075;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1333471971;
 
 // Section: executor
 
@@ -390,6 +390,64 @@ fn wire__crate__api__bridge__classify_committed_rule_impl(
         },
     )
 }
+fn wire__crate__api__bridge__committed_disable_list_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "committed_disable_list",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::bridge::committed_disable_list())?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__bridge__committed_disable_list_sig_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "committed_disable_list_sig",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::bridge::committed_disable_list_sig())?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__bridge__compose_starting_plan_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -483,6 +541,56 @@ fn wire__crate__api__bridge__elapsed_millis_impl(
             deserializer.end();
             transform_result_sse::<_, crate::api::bridge::BridgeError>((move || {
                 let output_ok = crate::api::bridge::elapsed_millis(api_earlier, api_later)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__bridge__evaluate_content_pack_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "evaluate_content_pack",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_manifest_json = <String>::sse_decode(&mut deserializer);
+            let api_signature_hex = <String>::sse_decode(&mut deserializer);
+            let api_file_paths = <Vec<String>>::sse_decode(&mut deserializer);
+            let api_file_contents = <Vec<Vec<u8>>>::sse_decode(&mut deserializer);
+            let api_floor_version = <u32>::sse_decode(&mut deserializer);
+            let api_disable_list_json = <String>::sse_decode(&mut deserializer);
+            let api_disable_list_sig_hex = <String>::sse_decode(&mut deserializer);
+            let api_now_ms = <i64>::sse_decode(&mut deserializer);
+            let api_last_verified_at_ms = <i64>::sse_decode(&mut deserializer);
+            let api_max_offline_age_ms = <Option<i64>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::bridge::evaluate_content_pack(
+                    api_manifest_json,
+                    api_signature_hex,
+                    api_file_paths,
+                    api_file_contents,
+                    api_floor_version,
+                    api_disable_list_json,
+                    api_disable_list_sig_hex,
+                    api_now_ms,
+                    api_last_verified_at_ms,
+                    api_max_offline_age_ms,
+                ))?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -812,6 +920,40 @@ fn wire__crate__api__bridge__probe_contained_panic_impl(
         },
     )
 }
+fn wire__crate__api__bridge__recalled_sessions_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "recalled_sessions",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_documents = <Vec<String>>::sse_decode(&mut deserializer);
+            let api_disable_list_json = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::bridge::recalled_sessions(
+                    api_documents,
+                    api_disable_list_json,
+                ))?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__bridge__require_version_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -837,6 +979,40 @@ fn wire__crate__api__bridge__require_version_impl(
             deserializer.end();
             transform_result_sse::<_, crate::api::bridge::BridgeError>((move || {
                 let output_ok = crate::api::bridge::require_version(api_caller)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__bridge__verify_disable_list_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "verify_disable_list",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_json = <String>::sse_decode(&mut deserializer);
+            let api_signature_hex = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::bridge::verify_disable_list(
+                    api_json,
+                    api_signature_hex,
+                ))?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -994,6 +1170,18 @@ impl SseDecode for Vec<String> {
     }
 }
 
+impl SseDecode for Vec<Vec<u8>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<Vec<u8>>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<u8> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1015,6 +1203,17 @@ impl SseDecode for Vec<crate::api::bridge::SafetyAnswer> {
             ans_.push(<crate::api::bridge::SafetyAnswer>::sse_decode(deserializer));
         }
         return ans_;
+    }
+}
+
+impl SseDecode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<i64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
     }
 }
 
@@ -1155,26 +1354,33 @@ fn pde_ffi_dispatcher_sync_impl(
         9 => wire__crate__api__bridge__assessment_vocabulary_impl(ptr, rust_vec_len, data_len),
         10 => wire__crate__api__bridge__bridge_version_impl(ptr, rust_vec_len, data_len),
         11 => wire__crate__api__bridge__classify_committed_rule_impl(ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__bridge__compose_starting_plan_impl(ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__bridge__convert_length_mm_to_inch_thousandths_impl(
+        12 => wire__crate__api__bridge__committed_disable_list_impl(ptr, rust_vec_len, data_len),
+        13 => {
+            wire__crate__api__bridge__committed_disable_list_sig_impl(ptr, rust_vec_len, data_len)
+        }
+        14 => wire__crate__api__bridge__compose_starting_plan_impl(ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__bridge__convert_length_mm_to_inch_thousandths_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => wire__crate__api__bridge__elapsed_millis_impl(ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__bridge__exercise_display_impl(ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__bridge__intake_vocabulary_impl(ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__bridge__load_committed_instrument_impl(ptr, rust_vec_len, data_len),
-        18 => {
+        16 => wire__crate__api__bridge__elapsed_millis_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__bridge__evaluate_content_pack_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__bridge__exercise_display_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__bridge__intake_vocabulary_impl(ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__bridge__load_committed_instrument_impl(ptr, rust_vec_len, data_len),
+        21 => {
             wire__crate__api__bridge__load_committed_program_rule_impl(ptr, rust_vec_len, data_len)
         }
-        19 => wire__crate__api__bridge__observe_cancel_impl(ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__bridge__open_workout_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__bridge__prepare_adaptation_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__bridge__prepare_flare_followup_impl(ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__bridge__prepare_progress_summary_impl(ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__bridge__observe_cancel_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__bridge__open_workout_impl(ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__bridge__prepare_adaptation_impl(ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__bridge__prepare_flare_followup_impl(ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__bridge__prepare_progress_summary_impl(ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__bridge__recalled_sessions_impl(ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__bridge__verify_disable_list_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1595,6 +1801,16 @@ impl SseEncode for Vec<String> {
     }
 }
 
+impl SseEncode for Vec<Vec<u8>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <Vec<u8>>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<u8> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1611,6 +1827,16 @@ impl SseEncode for Vec<crate::api::bridge::SafetyAnswer> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::bridge::SafetyAnswer>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <i64>::sse_encode(value, serializer);
         }
     }
 }
