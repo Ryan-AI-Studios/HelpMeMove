@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:helpmemove/design/app_spacing.dart';
 import 'package:helpmemove/design/components/primary_button.dart';
@@ -11,6 +12,8 @@ import 'package:helpmemove/program/program_document.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 import 'package:helpmemove/workout/session_document.dart';
+import 'package:helpmemove/workout/spoken_cue.dart';
+import 'package:helpmemove/workout/spoken_cue_host.dart';
 
 /// Monotonic session clock. Production uses a stopwatch. Tests advance by hand.
 abstract class WorkoutClock {
@@ -91,11 +94,31 @@ class WorkoutUnavailable extends StatelessWidget {
 }
 
 class WorkoutFlow extends StatefulWidget {
-  const WorkoutFlow({super.key, this.store, this.previewDocument, this.clock});
+  const WorkoutFlow({
+    super.key,
+    this.store,
+    this.previewDocument,
+    this.clock,
+    this.cues,
+    this.spokenCues = false,
+    this.applyEvent,
+  });
 
   final ProfileStore? store;
   final String? previewDocument;
   final WorkoutClock? clock;
+  final SpokenCueHost? cues;
+
+  /// Test seam. Production leaves this null and applies the real manual event.
+  final WorkoutView Function(
+    String documentJson,
+    String eventJson,
+    int monotonicMillis,
+  )?
+  applyEvent;
+
+  /// Starts the spoken-cues switch. The default is off.
+  final bool spokenCues;
 
   @override
   State<WorkoutFlow> createState() => _WorkoutFlowState();
@@ -117,6 +140,12 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
   String _symptom = 'mild_discomfort';
   int _pain = 0;
   int _loadGeneration = 0;
+  late final SpokenCueHost _cues = widget.cues ?? FlutterSpokenCueHost();
+  late bool _spokenCues = widget.spokenCues;
+  SpokenAnnouncement? _announced;
+  bool _cueFrameQueued = false;
+  bool _interactive = true;
+  bool _awaitingLifecyclePause = false;
 
   @override
   void initState() {
@@ -134,13 +163,19 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
   void dispose() {
     _restTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(_cues.stop());
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _interactive = true;
       return;
+    }
+    if (state == AppLifecycleState.inactive) {
+      _interactive = false;
+      unawaited(_cues.stop());
     }
     if (state != AppLifecycleState.inactive &&
         state != AppLifecycleState.paused) {
@@ -150,12 +185,15 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
     final String? current = _session?.state;
     if (_applying || current == 'active' || current == 'resting') {
       _pausePending = true;
+      _awaitingLifecyclePause = true;
     }
     if (_reporting && (current == 'active' || current == 'resting')) {
+      _awaitingLifecyclePause = true;
       unawaited(_commitPain());
       return;
     }
     if (current == 'active' || current == 'resting') {
+      _awaitingLifecyclePause = true;
       unawaited(_apply('{"name":"pause"}'));
     }
   }
@@ -349,6 +387,9 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
 
   Future<void> _apply(String eventJson, {int? at}) async {
     if (_applying || _documentJson.isEmpty || _session == null) {
+      if (!_applying) {
+        _awaitingLifecyclePause = false;
+      }
       return;
     }
     _applying = true;
@@ -356,23 +397,28 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
       await _applyHeld(eventJson, at: at);
     } finally {
       _applying = false;
+      if (_awaitingLifecyclePause && _currentAnnouncement() == _announced) {
+        _awaitingLifecyclePause = false;
+      }
     }
   }
 
   Future<void> _applyHeld(String eventJson, {int? at}) async {
     final int now = at ?? _monotonic();
-    final WorkoutView view = applyWorkoutEvent(
+    final WorkoutView view = _applyEvent(
       documentJson: _documentJson,
       eventJson: eventJson,
       monotonicMillis: now,
     );
     if (view.outcome != 'ready' || view.documentJson.isEmpty) {
+      _awaitingLifecyclePause = false;
       return;
     }
     final LocalSession next;
     try {
       next = LocalSession.decode(view.documentJson);
     } catch (_) {
+      _awaitingLifecyclePause = false;
       return;
     }
     final bool terminal = next.outcome != null;
@@ -389,6 +435,7 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
         }
       } catch (_) {
         _failStorage();
+        _awaitingLifecyclePause = false;
         return;
       }
     }
@@ -397,7 +444,7 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
     if (_pausePending &&
         !terminal &&
         (published.state == 'active' || published.state == 'resting')) {
-      final WorkoutView paused = applyWorkoutEvent(
+      final WorkoutView paused = _applyEvent(
         documentJson: publishedJson,
         eventJson: '{"name":"pause"}',
         monotonicMillis: published.monotonicMs,
@@ -418,11 +465,13 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
           await store.saveWorkoutDraft(publishedJson);
         } catch (_) {
           _failStorage();
+          _awaitingLifecyclePause = false;
           return;
         }
       }
     }
     if (!mounted) {
+      _awaitingLifecyclePause = false;
       return;
     }
     if (published.state != 'active' && published.state != 'resting') {
@@ -508,8 +557,113 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
     return session.exercises.isEmpty ? null : session.exercises.last;
   }
 
+  SpokenAnnouncement? _currentAnnouncement() {
+    final LocalSession? session = _session;
+    if (!_ready || session == null) {
+      return null;
+    }
+    return spokenAnnouncementFor(reporting: _reporting, state: session.state);
+  }
+
+  void _scheduleCue() {
+    if (_cueFrameQueued) {
+      return;
+    }
+    if (_currentAnnouncement() == _announced) {
+      _settleLifecycleSuppression();
+      return;
+    }
+    _cueFrameQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cueFrameQueued = false;
+      if (!mounted) {
+        return;
+      }
+      final SpokenAnnouncement? latest = _currentAnnouncement();
+      if (latest == _announced) {
+        _settleLifecycleSuppression();
+        return;
+      }
+      final SpokenAnnouncement? previous = _announced;
+      _announced = latest;
+      final bool suppressLifecycle = _awaitingLifecyclePause;
+      _settleLifecycleSuppression();
+      if (previous != null) {
+        unawaited(_cues.stop());
+      }
+      if (latest == null) {
+        return;
+      }
+      unawaited(_cueHaptic());
+      if (_spokenCues && _interactive && !suppressLifecycle) {
+        unawaited(_cues.speak(spokenCueText(latest)));
+      }
+    });
+  }
+
+  /// An intermediate caption must not drop a lifecycle pause that is still
+  /// waiting to publish.
+  void _settleLifecycleSuppression() {
+    if (!_pausePending && !_applying) {
+      _awaitingLifecyclePause = false;
+    }
+  }
+
+  WorkoutView _applyEvent({
+    required String documentJson,
+    required String eventJson,
+    required int monotonicMillis,
+  }) {
+    final WorkoutView Function(String, String, int)? apply = widget.applyEvent;
+    if (apply == null) {
+      return applyWorkoutEvent(
+        documentJson: documentJson,
+        eventJson: eventJson,
+        monotonicMillis: monotonicMillis,
+      );
+    }
+    return apply(documentJson, eventJson, monotonicMillis);
+  }
+
+  Future<void> _cueHaptic() async {
+    try {
+      await HapticFeedback.lightImpact();
+    } catch (_) {
+      return;
+    }
+  }
+
+  List<Widget> _withSpokenCueSwitch(List<Widget> children) {
+    return <Widget>[
+      ...children,
+      const SizedBox(height: AppSpacing.space16),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Spoken cues'),
+        value: _spokenCues,
+        onChanged: (bool value) {
+          setState(() {
+            _spokenCues = value;
+          });
+          if (!value) {
+            unawaited(_cues.stop());
+          }
+        },
+      ),
+    ];
+  }
+
+  Widget _announcementTitle(SpokenAnnouncement announcement) {
+    return Text(
+      spokenCueText(announcement),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    _scheduleCue();
     if (!_ready) {
       return const Scaffold(body: Center(child: Text('Loading session')));
     }
@@ -634,7 +788,7 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
         : _display(exercise.exerciseId);
     final int setNumber = (exercise?.setIndex ?? 0) + 1;
     final int repNumber = (exercise?.repsDone ?? 0) + 1;
-    return <Widget>[
+    return _withSpokenCueSwitch(<Widget>[
       Text(display?.name ?? ''),
       const SizedBox(height: AppSpacing.space16),
       Text('Set $setNumber of ${exercise?.sets ?? 0}'),
@@ -667,12 +821,12 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
         label: 'Skip',
         onPressed: () => unawaited(_apply('{"name":"skip"}')),
       ),
-    ];
+    ]);
   }
 
   List<Widget> _resting() {
-    return <Widget>[
-      const Text('Rest'),
+    return _withSpokenCueSwitch(<Widget>[
+      _announcementTitle(SpokenAnnouncement.rest),
       const SizedBox(height: AppSpacing.space16),
       Text('${_remainingSeconds()}'),
       const SizedBox(height: AppSpacing.space24),
@@ -680,7 +834,7 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
         label: 'Skip rest',
         onPressed: () => unawaited(_skipRest()),
       ),
-    ];
+    ]);
   }
 
   int _remainingSeconds() {
@@ -696,8 +850,8 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
   }
 
   List<Widget> _paused(LocalSession session) {
-    return <Widget>[
-      const Text('Session paused'),
+    return _withSpokenCueSwitch(<Widget>[
+      _announcementTitle(SpokenAnnouncement.sessionPaused),
       const SizedBox(height: AppSpacing.space16),
       Text(_elapsedLabel(session.elapsedMs)),
       const SizedBox(height: AppSpacing.space24),
@@ -720,7 +874,7 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
         label: 'End session',
         onPressed: () => unawaited(_apply('{"name":"end_session"}')),
       ),
-    ];
+    ]);
   }
 
   List<Widget> _painChildren(LocalSession session) {
@@ -738,8 +892,8 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
       ('Weakness / instability', 'weakness'),
     ];
     final bool stored = session.state == 'pain_check' && !_reporting;
-    return <Widget>[
-      const Text('Exercise paused'),
+    return _withSpokenCueSwitch(<Widget>[
+      _announcementTitle(SpokenAnnouncement.exercisePaused),
       const SizedBox(height: AppSpacing.space16),
       for (final (String label, String token) in symptoms) ...<Widget>[
         _choice(
@@ -785,7 +939,7 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
         label: 'End session',
         onPressed: () => unawaited(_endPain()),
       ),
-    ];
+    ]);
   }
 
   Widget _choice({
