@@ -85,6 +85,17 @@ pub enum ContentError {
     InvalidSession,
     SessionClosed,
     ClockWentBackwards,
+    InvalidKey,
+    InvalidSignature,
+    InvalidManifest,
+    IncompatibleEngine,
+    PathEscape,
+    HashMismatch,
+    Rollback,
+    Recalled,
+    PackSynthetic,
+    PackClock,
+    Stale,
 }
 
 impl ContentError {
@@ -130,6 +141,17 @@ impl ContentError {
             Self::InvalidSession => "invalid-session".to_owned(),
             Self::SessionClosed => "session-closed".to_owned(),
             Self::ClockWentBackwards => "clock-went-backwards".to_owned(),
+            Self::InvalidKey => "invalid-key".to_owned(),
+            Self::InvalidSignature => "invalid-signature".to_owned(),
+            Self::InvalidManifest => "invalid-manifest".to_owned(),
+            Self::IncompatibleEngine => "incompatible-engine".to_owned(),
+            Self::PathEscape => "path-escape".to_owned(),
+            Self::HashMismatch => "hash-mismatch".to_owned(),
+            Self::Rollback => "rollback".to_owned(),
+            Self::Recalled => "recalled".to_owned(),
+            Self::PackSynthetic => "synthetic-violation".to_owned(),
+            Self::PackClock => "clock".to_owned(),
+            Self::Stale => "stale".to_owned(),
         }
     }
 }

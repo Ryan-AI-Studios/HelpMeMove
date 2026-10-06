@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "pack_id": "syn-shoulder-pack",
+  "pack_version": 1,
+  "engine_compat": "helpmemove-bridge-1",
+  "rule_set_ids": ["syn-program-core"],
+  "exercise_ids": ["syn-shoulder-isometric"],
+  "files": [
+    {
+      "path": "../exercises/syn-shoulder-isometric.json",
+      "sha256": "8f744eb1dea45bc6ae94458677f6965bd971dfa5ea9bad4054e45fd66ff11330"
+    }
+  ]
+}

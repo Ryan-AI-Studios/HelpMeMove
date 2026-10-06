@@ -165,6 +165,52 @@ ProgressView prepareProgressSummary({required String entriesJson}) => RustLib
     .api
     .crateApiBridgePrepareProgressSummary(entriesJson: entriesJson);
 
+String committedDisableList() =>
+    RustLib.instance.api.crateApiBridgeCommittedDisableList();
+
+String committedDisableListSig() =>
+    RustLib.instance.api.crateApiBridgeCommittedDisableListSig();
+
+String verifyDisableList({
+  required String json,
+  required String signatureHex,
+}) => RustLib.instance.api.crateApiBridgeVerifyDisableList(
+  json: json,
+  signatureHex: signatureHex,
+);
+
+List<String> recalledSessions({
+  required List<String> documents,
+  required String disableListJson,
+}) => RustLib.instance.api.crateApiBridgeRecalledSessions(
+  documents: documents,
+  disableListJson: disableListJson,
+);
+
+String evaluateContentPack({
+  required String manifestJson,
+  required String signatureHex,
+  required List<String> filePaths,
+  required List<Uint8List> fileContents,
+  required int floorVersion,
+  required String disableListJson,
+  required String disableListSigHex,
+  required PlatformInt64 nowMs,
+  required PlatformInt64 lastVerifiedAtMs,
+  PlatformInt64? maxOfflineAgeMs,
+}) => RustLib.instance.api.crateApiBridgeEvaluateContentPack(
+  manifestJson: manifestJson,
+  signatureHex: signatureHex,
+  filePaths: filePaths,
+  fileContents: fileContents,
+  floorVersion: floorVersion,
+  disableListJson: disableListJson,
+  disableListSigHex: disableListSigHex,
+  nowMs: nowMs,
+  lastVerifiedAtMs: lastVerifiedAtMs,
+  maxOfflineAgeMs: maxOfflineAgeMs,
+);
+
 class AdaptationView {
   final String outcome;
   final String withholdCode;
