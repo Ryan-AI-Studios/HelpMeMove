@@ -39,6 +39,8 @@ dependencies:
   path_provider: 2.1.6
   supabase_flutter: 2.18.0
   crypto: 3.0.7
+  movement_vision:
+    path: ../../packages/movement_vision
 
 dev_dependencies:
   flutter_test:

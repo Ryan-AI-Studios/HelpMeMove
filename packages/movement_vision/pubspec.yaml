@@ -1,0 +1,21 @@
+name: movement_vision
+description: On-device pose capture boundary. Live capture is unavailable.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.13.0 <4.0.0"
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: app.helpmemove.movement_vision
+        pluginClass: MovementVisionPlugin
+      ios:
+        pluginClass: MovementVisionPlugin

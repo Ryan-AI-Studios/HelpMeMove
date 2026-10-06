@@ -7,6 +7,7 @@ import 'package:helpmemove/account/account_controller.dart';
 import 'package:helpmemove/src/rust/frb_generated.dart';
 import 'package:helpmemove/storage/profile_key_store.dart';
 import 'package:helpmemove/storage/profile_store.dart';
+import 'package:helpmemove/vision/movement_vision_session.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const String _actorA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -690,6 +691,37 @@ void main() {
       await _expectCleanupFailureRestores(failWrite: false);
     },
   );
+
+  test('keep locked releases the installed pose session', () async {
+    final ProfileStore store = openStore();
+    final AccountController account = AccountController(store: store);
+    await store.createProfile();
+    await account.presentActor(_actorA);
+    account.beginBind();
+    await account.confirmBind();
+
+    final MovementVisionSession session = MovementVisionSession(
+      stop: () async {},
+    );
+    MovementVisionSession.install(session);
+    await session.accept(
+      x: List<double>.filled(33, 0.5),
+      y: List<double>.filled(33, 0.5),
+      z: List<double>.filled(33, 0.0),
+      visibility: List<double>.filled(33, 1.0),
+      presence: List<double>.filled(33, 1.0),
+      timestampUnixMs: 8,
+      rotationDegrees: 0,
+      mirrored: false,
+    );
+    expect(session.frame, isNotNull);
+
+    await account.keepLocked();
+
+    expect(MovementVisionSession.installed, isNull);
+    expect(session.frame, isNull);
+    expect(session.dropCount, 0);
+  });
 }
 
 Future<void> _expectCleanupFailureRestores({required bool failWrite}) async {

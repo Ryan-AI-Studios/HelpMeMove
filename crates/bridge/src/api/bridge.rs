@@ -10,9 +10,10 @@ use helpmemove_content::{
     render_starting_program, summarize_progress, verify_disable_list as verify_disable_list_bytes,
 };
 use helpmemove_domain::{
-    BRIDGE_VERSION, Confidence, DomainError, DomainInstant, Laterality, SubjectId,
-    elapsed_millis as domain_elapsed_millis, length_mm_to_inch_thousandths,
-    observe_cancel as domain_observe_cancel, require_version as domain_require_version,
+    BRIDGE_VERSION, Confidence, DomainError, DomainInstant, Laterality,
+    PoseFrame as DomainPoseFrame, SubjectId, elapsed_millis as domain_elapsed_millis,
+    length_mm_to_inch_thousandths, normalize_pose_frame, observe_cancel as domain_observe_cancel,
+    require_version as domain_require_version,
 };
 use helpmemove_safety::{
     ActiveIssue, Classification, DeniedReason, Eligibility, Escalation, SafetyError,
@@ -54,6 +55,7 @@ pub enum BridgeError {
     InvalidRating,
     InvalidInstrument,
     InvalidProgram,
+    InvalidPoseFrame,
 }
 
 impl BridgeError {
@@ -73,6 +75,7 @@ impl BridgeError {
             Self::InvalidRating => "invalid-rating",
             Self::InvalidInstrument => "invalid-instrument",
             Self::InvalidProgram => "invalid-program",
+            Self::InvalidPoseFrame => "invalid-pose-frame",
         }
     }
 }
@@ -87,6 +90,7 @@ impl From<DomainError> for BridgeError {
             DomainError::ClockWentBackwards => Self::ClockWentBackwards,
             DomainError::VersionMismatch => Self::VersionMismatch,
             DomainError::Cancelled => Self::Cancelled,
+            DomainError::InvalidPoseFrame => Self::InvalidPoseFrame,
         }
     }
 }
@@ -153,6 +157,61 @@ pub fn accept_laterality(raw: String) -> Result<String, BridgeError> {
 #[flutter_rust_bridge::frb(sync)]
 pub fn accept_confidence(value: f64) -> Result<f64, BridgeError> {
     Ok(Confidence::parse(value)?.value())
+}
+
+/// One landmark. `z` has no angle meaning.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PosePoint {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub visibility: f64,
+    pub presence: f64,
+}
+
+/// Thirty-three landmarks and the caller timestamp. No image bytes.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PoseFrame {
+    pub timestamp_unix_ms: i64,
+    pub points: Vec<PosePoint>,
+}
+
+#[flutter_rust_bridge::frb(sync)]
+#[allow(clippy::too_many_arguments)]
+pub fn accept_pose_frame(
+    x: Vec<f64>,
+    y: Vec<f64>,
+    z: Vec<f64>,
+    visibility: Vec<f64>,
+    presence: Vec<f64>,
+    timestamp_unix_ms: i64,
+    rotation_degrees: i32,
+    mirrored: bool,
+) -> Result<PoseFrame, BridgeError> {
+    let frame: DomainPoseFrame = normalize_pose_frame(
+        &x,
+        &y,
+        &z,
+        &visibility,
+        &presence,
+        timestamp_unix_ms,
+        rotation_degrees,
+        mirrored,
+    )?;
+    Ok(PoseFrame {
+        timestamp_unix_ms: frame.timestamp_unix_ms,
+        points: frame
+            .points
+            .into_iter()
+            .map(|point| PosePoint {
+                x: point.x,
+                y: point.y,
+                z: point.z,
+                visibility: point.visibility,
+                presence: point.presence,
+            })
+            .collect(),
+    })
 }
 
 #[flutter_rust_bridge::frb(sync)]

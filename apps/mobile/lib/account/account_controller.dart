@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:helpmemove/account/account_auth.dart';
 import 'package:helpmemove/storage/profile_key_store.dart';
 import 'package:helpmemove/storage/profile_store.dart';
+import 'package:helpmemove/vision/movement_vision_session.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum AccountPhase {
@@ -709,6 +710,7 @@ class AccountController extends ChangeNotifier {
   }
 
   void _dropWork() {
+    MovementVisionSession.releaseInstalled();
     epoch += 1;
     final List<AccountSubscription> copy = List<AccountSubscription>.of(
       _subscriptions,

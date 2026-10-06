@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1333471971;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1004663505;
 
 // Section: executor
 
@@ -162,6 +162,52 @@ fn wire__crate__api__bridge__accept_laterality_impl(
             deserializer.end();
             transform_result_sse::<_, crate::api::bridge::BridgeError>((move || {
                 let output_ok = crate::api::bridge::accept_laterality(api_raw)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__bridge__accept_pose_frame_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "accept_pose_frame",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_x = <Vec<f64>>::sse_decode(&mut deserializer);
+            let api_y = <Vec<f64>>::sse_decode(&mut deserializer);
+            let api_z = <Vec<f64>>::sse_decode(&mut deserializer);
+            let api_visibility = <Vec<f64>>::sse_decode(&mut deserializer);
+            let api_presence = <Vec<f64>>::sse_decode(&mut deserializer);
+            let api_timestamp_unix_ms = <i64>::sse_decode(&mut deserializer);
+            let api_rotation_degrees = <i32>::sse_decode(&mut deserializer);
+            let api_mirrored = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, crate::api::bridge::BridgeError>((move || {
+                let output_ok = crate::api::bridge::accept_pose_frame(
+                    api_x,
+                    api_y,
+                    api_z,
+                    api_visibility,
+                    api_presence,
+                    api_timestamp_unix_ms,
+                    api_rotation_degrees,
+                    api_mirrored,
+                )?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -1090,6 +1136,7 @@ impl SseDecode for crate::api::bridge::BridgeError {
             10 => crate::api::bridge::BridgeError::InvalidRating,
             11 => crate::api::bridge::BridgeError::InvalidInstrument,
             12 => crate::api::bridge::BridgeError::InvalidProgram,
+            13 => crate::api::bridge::BridgeError::InvalidPoseFrame,
             _ => unreachable!("Invalid variant for BridgeError: {}", inner),
         };
     }
@@ -1182,6 +1229,30 @@ impl SseDecode for Vec<Vec<u8>> {
     }
 }
 
+impl SseDecode for Vec<crate::api::bridge::PosePoint> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::bridge::PosePoint>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<f64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<f64>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<u8> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1214,6 +1285,36 @@ impl SseDecode for Option<i64> {
         } else {
             return None;
         }
+    }
+}
+
+impl SseDecode for crate::api::bridge::PoseFrame {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_timestampUnixMs = <i64>::sse_decode(deserializer);
+        let mut var_points = <Vec<crate::api::bridge::PosePoint>>::sse_decode(deserializer);
+        return crate::api::bridge::PoseFrame {
+            timestamp_unix_ms: var_timestampUnixMs,
+            points: var_points,
+        };
+    }
+}
+
+impl SseDecode for crate::api::bridge::PosePoint {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_x = <f64>::sse_decode(deserializer);
+        let mut var_y = <f64>::sse_decode(deserializer);
+        let mut var_z = <f64>::sse_decode(deserializer);
+        let mut var_visibility = <f64>::sse_decode(deserializer);
+        let mut var_presence = <f64>::sse_decode(deserializer);
+        return crate::api::bridge::PosePoint {
+            x: var_x,
+            y: var_y,
+            z: var_z,
+            visibility: var_visibility,
+            presence: var_presence,
+        };
     }
 }
 
@@ -1347,40 +1448,41 @@ fn pde_ffi_dispatcher_sync_impl(
         2 => wire__crate__api__bridge__accept_equipment_impl(ptr, rust_vec_len, data_len),
         3 => wire__crate__api__bridge__accept_goal_impl(ptr, rust_vec_len, data_len),
         4 => wire__crate__api__bridge__accept_laterality_impl(ptr, rust_vec_len, data_len),
-        5 => wire__crate__api__bridge__accept_rating_impl(ptr, rust_vec_len, data_len),
-        6 => wire__crate__api__bridge__accept_region_impl(ptr, rust_vec_len, data_len),
-        7 => wire__crate__api__bridge__accept_subject_impl(ptr, rust_vec_len, data_len),
-        8 => wire__crate__api__bridge__apply_workout_event_impl(ptr, rust_vec_len, data_len),
-        9 => wire__crate__api__bridge__assessment_vocabulary_impl(ptr, rust_vec_len, data_len),
-        10 => wire__crate__api__bridge__bridge_version_impl(ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__bridge__classify_committed_rule_impl(ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__bridge__committed_disable_list_impl(ptr, rust_vec_len, data_len),
-        13 => {
+        5 => wire__crate__api__bridge__accept_pose_frame_impl(ptr, rust_vec_len, data_len),
+        6 => wire__crate__api__bridge__accept_rating_impl(ptr, rust_vec_len, data_len),
+        7 => wire__crate__api__bridge__accept_region_impl(ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__bridge__accept_subject_impl(ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__bridge__apply_workout_event_impl(ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__bridge__assessment_vocabulary_impl(ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__bridge__bridge_version_impl(ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__bridge__classify_committed_rule_impl(ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__bridge__committed_disable_list_impl(ptr, rust_vec_len, data_len),
+        14 => {
             wire__crate__api__bridge__committed_disable_list_sig_impl(ptr, rust_vec_len, data_len)
         }
-        14 => wire__crate__api__bridge__compose_starting_plan_impl(ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__bridge__convert_length_mm_to_inch_thousandths_impl(
+        15 => wire__crate__api__bridge__compose_starting_plan_impl(ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__bridge__convert_length_mm_to_inch_thousandths_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__api__bridge__elapsed_millis_impl(ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__bridge__evaluate_content_pack_impl(ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__bridge__exercise_display_impl(ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__bridge__intake_vocabulary_impl(ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__bridge__load_committed_instrument_impl(ptr, rust_vec_len, data_len),
-        21 => {
+        17 => wire__crate__api__bridge__elapsed_millis_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__bridge__evaluate_content_pack_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__bridge__exercise_display_impl(ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__bridge__intake_vocabulary_impl(ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__bridge__load_committed_instrument_impl(ptr, rust_vec_len, data_len),
+        22 => {
             wire__crate__api__bridge__load_committed_program_rule_impl(ptr, rust_vec_len, data_len)
         }
-        22 => wire__crate__api__bridge__observe_cancel_impl(ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__bridge__open_workout_impl(ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__bridge__prepare_adaptation_impl(ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__bridge__prepare_flare_followup_impl(ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__bridge__prepare_progress_summary_impl(ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
-        28 => wire__crate__api__bridge__recalled_sessions_impl(ptr, rust_vec_len, data_len),
-        29 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
-        30 => wire__crate__api__bridge__verify_disable_list_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__bridge__observe_cancel_impl(ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__bridge__open_workout_impl(ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__bridge__prepare_adaptation_impl(ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__bridge__prepare_flare_followup_impl(ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__bridge__prepare_progress_summary_impl(ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__bridge__probe_contained_panic_impl(ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__bridge__recalled_sessions_impl(ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__bridge__require_version_impl(ptr, rust_vec_len, data_len),
+        31 => wire__crate__api__bridge__verify_disable_list_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1464,6 +1566,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::bridge::BridgeError {
             Self::InvalidRating => 10.into_dart(),
             Self::InvalidInstrument => 11.into_dart(),
             Self::InvalidProgram => 12.into_dart(),
+            Self::InvalidPoseFrame => 13.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -1539,6 +1642,45 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::bridge::IntakeVocabulary>
     for crate::api::bridge::IntakeVocabulary
 {
     fn into_into_dart(self) -> crate::api::bridge::IntakeVocabulary {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::bridge::PoseFrame {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.timestamp_unix_ms.into_into_dart().into_dart(),
+            self.points.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::bridge::PoseFrame {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::bridge::PoseFrame>
+    for crate::api::bridge::PoseFrame
+{
+    fn into_into_dart(self) -> crate::api::bridge::PoseFrame {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::bridge::PosePoint {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.x.into_into_dart().into_dart(),
+            self.y.into_into_dart().into_dart(),
+            self.z.into_into_dart().into_dart(),
+            self.visibility.into_into_dart().into_dart(),
+            self.presence.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::bridge::PosePoint {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::bridge::PosePoint>
+    for crate::api::bridge::PosePoint
+{
+    fn into_into_dart(self) -> crate::api::bridge::PosePoint {
         self
     }
 }
@@ -1734,6 +1876,7 @@ impl SseEncode for crate::api::bridge::BridgeError {
                 crate::api::bridge::BridgeError::InvalidRating => 10,
                 crate::api::bridge::BridgeError::InvalidInstrument => 11,
                 crate::api::bridge::BridgeError::InvalidProgram => 12,
+                crate::api::bridge::BridgeError::InvalidPoseFrame => 13,
                 _ => {
                     unimplemented!("");
                 }
@@ -1811,6 +1954,26 @@ impl SseEncode for Vec<Vec<u8>> {
     }
 }
 
+impl SseEncode for Vec<crate::api::bridge::PosePoint> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::bridge::PosePoint>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<f64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <f64>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<u8> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1838,6 +2001,25 @@ impl SseEncode for Option<i64> {
         if let Some(value) = self {
             <i64>::sse_encode(value, serializer);
         }
+    }
+}
+
+impl SseEncode for crate::api::bridge::PoseFrame {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i64>::sse_encode(self.timestamp_unix_ms, serializer);
+        <Vec<crate::api::bridge::PosePoint>>::sse_encode(self.points, serializer);
+    }
+}
+
+impl SseEncode for crate::api::bridge::PosePoint {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <f64>::sse_encode(self.x, serializer);
+        <f64>::sse_encode(self.y, serializer);
+        <f64>::sse_encode(self.z, serializer);
+        <f64>::sse_encode(self.visibility, serializer);
+        <f64>::sse_encode(self.presence, serializer);
     }
 }
 

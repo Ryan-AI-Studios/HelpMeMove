@@ -581,6 +581,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  movement_vision:
+    dependency: "direct main"
+    description:
+      path: "../../packages/movement_vision"
+      relative: true
+    source: path
+    version: "0.0.1"
   native_toolchain_c:
     dependency: transitive
     description:
