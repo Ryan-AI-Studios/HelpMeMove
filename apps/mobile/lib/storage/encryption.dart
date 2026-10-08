@@ -11,12 +11,16 @@ void applyEncryptionSetup(Database database, String keyHex) {
   }
   database.execute('PRAGMA key = "x\'$keyHex\'"');
   final ResultSet rows = database.select('PRAGMA cipher');
-  if (rows.isEmpty) {
-    throw const StorageCipherUnavailable();
-  }
-  final Object? cipher = rows.first.columnAt(0);
-  if (cipher == null || cipher.toString().isEmpty) {
-    throw const StorageCipherUnavailable();
-  }
+  rejectEmptyCipher(
+    hasRow: rows.isNotEmpty,
+    cipher: rows.isEmpty ? null : rows.first.columnAt(0),
+  );
   database.execute('PRAGMA secure_delete = ON');
+}
+
+/// Refuses a build that did not report a cipher. Release builds strip `assert`.
+void rejectEmptyCipher({required bool hasRow, required Object? cipher}) {
+  if (!hasRow || cipher == null || cipher.toString().isEmpty) {
+    throw const StorageCipherUnavailable();
+  }
 }

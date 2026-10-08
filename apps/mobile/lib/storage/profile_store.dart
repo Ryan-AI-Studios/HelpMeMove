@@ -106,6 +106,42 @@ class ProfileStore {
   /// Tests override this to occupy the workout write queue.
   Future<void> onWorkoutQueueEntered() async {}
 
+  /// Tests throw from here to prove a checkpoint error still closes the file.
+  Future<void> Function()? onBeforeCheckpoint;
+
+  /// Tests record when a profile file begins to open.
+  void Function()? onOpenStarted;
+
+  /// Tests record when a database connection has finished closing.
+  void Function()? onDatabaseClosed;
+
+  int _unpublishedOpens = 0;
+
+  /// Connections created but not yet published or closed.
+  int get unpublishedOpens => _unpublishedOpens;
+
+  Future<void>? _lifecycleQueue;
+
+  Future<T> _lifecycle<T>(Future<T> Function() action) async {
+    if (Zone.current[#helpmemoveProfileLifecycle] == true) {
+      return action();
+    }
+    final Completer<void> turn = Completer<void>();
+    final Future<void>? earlier = _lifecycleQueue;
+    _lifecycleQueue = turn.future;
+    if (earlier != null) {
+      await earlier;
+    }
+    try {
+      return await runZoned(
+        action,
+        zoneValues: <Object?, Object?>{#helpmemoveProfileLifecycle: true},
+      );
+    } finally {
+      turn.complete();
+    }
+  }
+
   Future<T> _queuedWorkout<T>(Future<T> Function() action) async {
     final Completer<void> turn = Completer<void>();
     final Future<void>? earlier = _workoutTurn?.future;
@@ -123,7 +159,9 @@ class ProfileStore {
     }
   }
 
-  Future<String> openActive() async {
+  Future<String> openActive() => _lifecycle(_openActive);
+
+  Future<String> _openActive() async {
     try {
       final String? active = await keys.read(activeProfileItem);
       if (active == null || active.isEmpty) {
@@ -154,7 +192,9 @@ class ProfileStore {
     }
   }
 
-  Future<String> createProfile() async {
+  Future<String> createProfile() => _lifecycle(_createProfile);
+
+  Future<String> _createProfile() async {
     await _closeCurrent();
     final String subjectId = _newSubjectId();
     final String keyHex = _newKeyHex();
@@ -164,7 +204,11 @@ class ProfileStore {
     return subjectId;
   }
 
-  Future<void> switchTo(String raw, {bool Function()? stillCurrent}) async {
+  Future<void> switchTo(String raw, {bool Function()? stillCurrent}) {
+    return _lifecycle(() => _switchTo(raw, stillCurrent: stillCurrent));
+  }
+
+  Future<void> _switchTo(String raw, {bool Function()? stillCurrent}) async {
     final String subjectId = acceptSubject(raw: raw);
     final String? keyHex = await keys.read(profileKeyItem(subjectId));
     if (stillCurrent != null && !stillCurrent()) {
@@ -185,7 +229,9 @@ class ProfileStore {
     await keys.write(activeProfileItem, subjectId);
   }
 
-  Future<String> resetActive() async {
+  Future<String> resetActive() => _lifecycle(_resetActive);
+
+  Future<String> _resetActive() async {
     final String? active = await keys.read(activeProfileItem);
     await _closeCurrent();
     if (active != null && active.isNotEmpty) {
@@ -204,7 +250,7 @@ class ProfileStore {
     await _requireDatabase().checkpoint();
   }
 
-  Future<void> close() => _closeCurrent();
+  Future<void> close() => _lifecycle(_closeCurrent);
 
   String? get activeSubjectId => _activeSubjectId;
 
@@ -319,13 +365,19 @@ class ProfileStore {
 
   /// Closes the open database and clears the active pointer.
   /// The profile key and files stay on disk.
-  Future<void> lockOpenProfile() async {
+  Future<void> lockOpenProfile() => _lifecycle(_lockOpenProfile);
+
+  Future<void> _lockOpenProfile() async {
     await _closeCurrent();
     await keys.delete(activeProfileItem);
   }
 
   /// Deletes one subject's key and directory. Other subjects stay.
-  Future<void> deleteSubjectFiles(String raw) async {
+  Future<void> deleteSubjectFiles(String raw) {
+    return _lifecycle(() => _deleteSubjectFiles(raw));
+  }
+
+  Future<void> _deleteSubjectFiles(String raw) async {
     final String subjectId = acceptSubject(raw: raw);
     if (_activeSubjectId == subjectId) {
       await _closeCurrent();
@@ -1106,10 +1158,13 @@ class ProfileStore {
   Future<void> _openExisting(String subjectId, String keyHex) async {
     final File file = _databaseFile(subjectId);
     file.parent.createSync(recursive: true);
+    await _excludeProfile(file.parent.path);
+    onOpenStarted?.call();
     final ProfileDatabase database = ProfileDatabase.open(
       file: file,
       keyHex: keyHex,
     );
+    _unpublishedOpens += 1;
     try {
       final List<LocalProfile> profiles = await database
           .select(database.localProfiles)
@@ -1132,13 +1187,39 @@ class ProfileStore {
             ))
             .write(LocalProfilesCompanion(lastActiveAtMs: Value<int>(now)));
       }
+      await _excludeProfile(file.parent.path);
       _database = database;
       _activeSubjectId = subjectId;
     } catch (error, stackTrace) {
       await database.close();
+      onDatabaseClosed?.call();
       Error.throwWithStackTrace(_surfaceStorageError(error), stackTrace);
+    } finally {
+      _unpublishedOpens -= 1;
     }
-    await excludeFromBackup(file.parent.path);
+  }
+
+  Future<void> _excludeProfile(String path) async {
+    try {
+      await excludeFromBackup(path);
+    } on StorageCipherUnavailable {
+      rethrow;
+    } on StorageSchemaException {
+      rethrow;
+    } on StorageKeyLoss {
+      rethrow;
+    } on StorageIoException {
+      rethrow;
+    } on SqliteException {
+      rethrow;
+    } on FileSystemException {
+      rethrow;
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        const StorageIoException('backup exclusion failed'),
+        stackTrace,
+      );
+    }
   }
 
   Future<void> _insertProbe(
@@ -1166,8 +1247,24 @@ class ProfileStore {
     if (database == null) {
       return;
     }
-    await database.checkpoint();
-    await database.close();
+    Object? failure;
+    StackTrace? failureStack;
+    try {
+      final Future<void> Function()? beforeCheckpoint = onBeforeCheckpoint;
+      if (beforeCheckpoint != null) {
+        await beforeCheckpoint();
+      }
+      await database.checkpoint();
+    } catch (error, stackTrace) {
+      failure = error;
+      failureStack = stackTrace;
+    } finally {
+      await database.close();
+      onDatabaseClosed?.call();
+    }
+    if (failure != null && failureStack != null) {
+      Error.throwWithStackTrace(failure, failureStack);
+    }
   }
 
   ProfileDatabase _requireDatabase() {

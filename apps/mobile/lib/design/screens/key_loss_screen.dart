@@ -22,26 +22,29 @@ class KeyLossScreen extends StatelessWidget {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete local data?'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'This deletes the local data stored on this device. It cannot be undone.',
-              ),
-              const SizedBox(height: AppSpacing.space16),
-              TertiaryButton(
-                label: 'Cancel',
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-              ),
-              const SizedBox(height: AppSpacing.space8),
-              DestructiveButton(
-                label: 'Delete local data',
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-              ),
-            ],
+        return RepaintBoundary(
+          key: const Key('storage-confirm-capture'),
+          child: AlertDialog(
+            title: const Text('Delete local data?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'This deletes the local data stored on this device. It cannot be undone.',
+                ),
+                const SizedBox(height: AppSpacing.space16),
+                TertiaryButton(
+                  label: 'Cancel',
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                ),
+                const SizedBox(height: AppSpacing.space8),
+                DestructiveButton(
+                  label: 'Delete local data',
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                ),
+              ],
+            ),
           ),
         );
       },
