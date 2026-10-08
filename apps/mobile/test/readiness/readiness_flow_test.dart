@@ -211,7 +211,14 @@ void main() {
     final String programJson = await io(tester, program);
     final String workout = completedWorkout(programJson);
     final ProfileStore store = await io(tester, () => seed(workout: workout));
-    await pumpRouter(tester, store);
+    await pumpRouter(
+      tester,
+      store,
+      theme:
+          Platform.environment['HMM_UI_EVIDENCE'] == _maintainEvidenceDirectory
+          ? _maintainCaptureTheme()
+          : null,
+    );
     await until(tester, find.text('How are you feeling today?'));
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
@@ -880,6 +887,14 @@ void main() {
 
 const String _maintainEvidenceDirectory =
     r'C:\dev\HelpMeMove\Conductor\0034-GeneralFitnessAndMaintenance\ui-evidence';
+
+ThemeData _maintainCaptureTheme() {
+  final ThemeData theme = AppTheme.light();
+  return theme.copyWith(
+    textTheme: theme.textTheme.apply(fontFamily: 'Segoe UI'),
+    primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'Segoe UI'),
+  );
+}
 
 Future<void> _captureMaintainHome(WidgetTester tester) async {
   final String? seen = Platform.environment['HMM_UI_EVIDENCE'];

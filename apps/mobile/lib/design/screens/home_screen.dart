@@ -451,199 +451,204 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RepaintBoundary(
           key: const Key('home-capture'),
-          child: Column(
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: colors.divider)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.space8,
-                    vertical: AppSpacing.space4,
+          child: ColoredBox(
+            color: colors.surface,
+            child: Column(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: colors.divider)),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.space8,
-                          vertical: AppSpacing.space8,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.space8,
+                      vertical: AppSpacing.space4,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.space8,
+                            vertical: AppSpacing.space8,
+                          ),
+                          child: Text('HelpMeMove'),
                         ),
-                        child: Text('HelpMeMove'),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TertiaryButton(
-                          label: 'Foundations',
-                          onPressed: () => context.go('/foundations'),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TertiaryButton(
+                            label: 'Foundations',
+                            onPressed: () => context.go('/foundations'),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.space20),
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (_clearedCheck) ...[
-                              const Text(
-                                'The saved check could not be read. It was cleared.',
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (_recallNotice.isNotEmpty) ...[
-                              Text(_recallNotice),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (_moveNotice.isNotEmpty) ...[
-                              Text(_moveNotice),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (_fitnessWithheld) ...[
-                              const Text(fitnessWithheldSentence),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (_showWithheld) ...[
-                              const Text('No change was saved.'),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady &&
-                                _workout.isNotEmpty) ...[
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.space20),
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_clearedCheck) ...[
+                                const Text(
+                                  'The saved check could not be read. It was cleared.',
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (_recallNotice.isNotEmpty) ...[
+                                Text(_recallNotice),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (_moveNotice.isNotEmpty) ...[
+                                Text(_moveNotice),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (_fitnessWithheld) ...[
+                                const Text(fitnessWithheldSentence),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (_showWithheld) ...[
+                                const Text('No change was saved.'),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady &&
+                                  _workout.isNotEmpty) ...[
+                                PrimaryButton(
+                                  label: _workout == 'resume'
+                                      ? 'Resume workout'
+                                      : 'Start workout',
+                                  onPressed: () => context.go('/focus/workout'),
+                                ),
+                                const SizedBox(height: AppSpacing.space12),
+                                SecondaryButton(
+                                  label: 'Position with camera',
+                                  onPressed: () =>
+                                      context.go('/focus/camera-guidance'),
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady &&
+                                  _showCheckIn) ...[
+                                PrimaryButton(
+                                  label: 'How are you feeling today?',
+                                  onPressed: () =>
+                                      context.go('/focus/readiness'),
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady &&
+                                  _showFlareCheckIn) ...[
+                                PrimaryButton(
+                                  label: 'Check in on the last session',
+                                  onPressed: () =>
+                                      context.go('/focus/flare-followup'),
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (_showCleared) ...[
+                                const Text(
+                                  'The saved workout could not be read. It was cleared.',
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady) ...[
+                                PrimaryButton(
+                                  label: _hasDraft
+                                      ? 'Continue intake'
+                                      : 'Describe a limit',
+                                  onPressed: () {
+                                    final String step = _hasDraft
+                                        ? _resumeStep
+                                        : 'intent';
+                                    context.go('/focus/intake?step=$step');
+                                  },
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady) ...[
+                                PrimaryButton(
+                                  label: 'See local progress',
+                                  onPressed: () =>
+                                      context.go('/focus/progress'),
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady) ...[
+                                PrimaryButton(
+                                  label: 'Privacy and appearance',
+                                  onPressed: () => context.go('/focus/privacy'),
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady) ...[
+                                PrimaryButton(
+                                  label: 'Report a problem',
+                                  onPressed: () => context.go('/focus/report'),
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
+                              if (widget.liveStore != null &&
+                                  !widget.blockedNow &&
+                                  _entryReady) ...[
+                                PrimaryButton(
+                                  label: 'Account',
+                                  onPressed: () => context.go('/focus/account'),
+                                ),
+                                const SizedBox(height: AppSpacing.space24),
+                              ],
                               PrimaryButton(
-                                label: _workout == 'resume'
-                                    ? 'Resume workout'
-                                    : 'Start workout',
-                                onPressed: () => context.go('/focus/workout'),
-                              ),
-                              const SizedBox(height: AppSpacing.space12),
-                              SecondaryButton(
-                                label: 'Position with camera',
-                                onPressed: () =>
-                                    context.go('/focus/camera-guidance'),
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady &&
-                                _showCheckIn) ...[
-                              PrimaryButton(
-                                label: 'How are you feeling today?',
-                                onPressed: () => context.go('/focus/readiness'),
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady &&
-                                _showFlareCheckIn) ...[
-                              PrimaryButton(
-                                label: 'Check in on the last session',
-                                onPressed: () =>
-                                    context.go('/focus/flare-followup'),
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (_showCleared) ...[
-                              const Text(
-                                'The saved workout could not be read. It was cleared.',
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady) ...[
-                              PrimaryButton(
-                                label: _hasDraft
-                                    ? 'Continue intake'
-                                    : 'Describe a limit',
+                                label: 'Scaffold check',
                                 onPressed: () {
-                                  final String step = _hasDraft
-                                      ? _resumeStep
-                                      : 'intent';
-                                  context.go('/focus/intake?step=$step');
+                                  setState(() {
+                                    _scaffoldCompleted = true;
+                                  });
                                 },
                               ),
+                              if (_scaffoldCompleted) ...[
+                                const SizedBox(height: AppSpacing.space24),
+                                const Text(
+                                  'Scaffold check completed',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                               const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady) ...[
                               PrimaryButton(
-                                label: 'See local progress',
-                                onPressed: () => context.go('/focus/progress'),
+                                label: 'Bridge check',
+                                onPressed: _runBridgeCheck,
                               ),
-                              const SizedBox(height: AppSpacing.space24),
+                              if (bridgeResult != null) ...[
+                                const SizedBox(height: AppSpacing.space24),
+                                Text(bridgeResult, textAlign: TextAlign.center),
+                              ],
                             ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady) ...[
-                              PrimaryButton(
-                                label: 'Privacy and appearance',
-                                onPressed: () => context.go('/focus/privacy'),
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady) ...[
-                              PrimaryButton(
-                                label: 'Report a problem',
-                                onPressed: () => context.go('/focus/report'),
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            if (widget.liveStore != null &&
-                                !widget.blockedNow &&
-                                _entryReady) ...[
-                              PrimaryButton(
-                                label: 'Account',
-                                onPressed: () => context.go('/focus/account'),
-                              ),
-                              const SizedBox(height: AppSpacing.space24),
-                            ],
-                            PrimaryButton(
-                              label: 'Scaffold check',
-                              onPressed: () {
-                                setState(() {
-                                  _scaffoldCompleted = true;
-                                });
-                              },
-                            ),
-                            if (_scaffoldCompleted) ...[
-                              const SizedBox(height: AppSpacing.space24),
-                              const Text(
-                                'Scaffold check completed',
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                            const SizedBox(height: AppSpacing.space24),
-                            PrimaryButton(
-                              label: 'Bridge check',
-                              onPressed: _runBridgeCheck,
-                            ),
-                            if (bridgeResult != null) ...[
-                              const SizedBox(height: AppSpacing.space24),
-                              Text(bridgeResult, textAlign: TextAlign.center),
-                            ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
