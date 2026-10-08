@@ -5,6 +5,8 @@ class AdaptationDocumentException implements Exception {
 }
 
 const String maintainReason = "Today's check keeps the same exercises.";
+const String fitnessWithheldSentence =
+    'This synthetic plan is not a general fitness program.';
 const String pauseReason =
     "Today's check says to wait. The exercises stay the same.";
 

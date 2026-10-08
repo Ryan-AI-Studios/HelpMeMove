@@ -21,6 +21,7 @@ class _MoveChoice {
     this.flareCheckIn = false,
     this.notice = '',
     this.clearedCheck = false,
+    this.fitnessWithheld = false,
   });
 
   final String workout;
@@ -28,6 +29,7 @@ class _MoveChoice {
   final bool flareCheckIn;
   final String notice;
   final bool clearedCheck;
+  final bool fitnessWithheld;
 }
 
 class HomeScreen extends StatefulWidget {
@@ -69,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showCheckIn = false;
   bool _showFlareCheckIn = false;
   bool _clearedCheck = false;
+  bool _fitnessWithheld = false;
   String _moveNotice = '';
   String _recallNotice = '';
   GoRouter? _router;
@@ -185,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _entryReady = true;
         _recallNotice = recall;
+        _fitnessWithheld = false;
       });
       return;
     }
@@ -203,6 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var checkIn = false;
     var flareCheckIn = false;
     var clearedCheck = false;
+    var fitnessWithheld = false;
     var notice = '';
     try {
       final String? raw = await store.loadWorkoutDraft();
@@ -236,6 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
         checkIn = choice.checkIn;
         flareCheckIn = choice.flareCheckIn;
         clearedCheck = choice.clearedCheck;
+        fitnessWithheld = choice.fitnessWithheld;
         notice = choice.notice;
       }
     }
@@ -252,6 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _showCheckIn = checkIn;
       _showFlareCheckIn = flareCheckIn;
       _clearedCheck = clearedCheck;
+      _fitnessWithheld = fitnessWithheld;
       _moveNotice = notice;
       _recallNotice = recall;
     });
@@ -365,7 +372,11 @@ class _HomeScreenState extends State<HomeScreen> {
   ) async {
     final String? raw = await store.loadFlareFollowup(sessionId);
     if (raw == null) {
-      return _MoveChoice(flareCheckIn: true, notice: readinessReason);
+      return _MoveChoice(
+        flareCheckIn: true,
+        notice: readinessReason,
+        fitnessWithheld: true,
+      );
     }
     try {
       final StoredFlareFollowup followup = StoredFlareFollowup.decode(raw);
@@ -373,7 +384,11 @@ class _HomeScreenState extends State<HomeScreen> {
         throw const AdaptationDocumentException();
       }
       if (followup.action == 'keep_program') {
-        return _MoveChoice(workout: 'start', notice: followup.reason);
+        return _MoveChoice(
+          workout: 'start',
+          notice: followup.reason,
+          fitnessWithheld: true,
+        );
       }
       if (followup.action == 'pause_today') {
         return _MoveChoice(notice: followup.reason);
@@ -385,6 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
         flareCheckIn: true,
         notice: readinessReason,
         clearedCheck: true,
+        fitnessWithheld: true,
       );
     }
   }
@@ -489,6 +505,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                             if (_moveNotice.isNotEmpty) ...[
                               Text(_moveNotice),
+                              const SizedBox(height: AppSpacing.space24),
+                            ],
+                            if (_fitnessWithheld) ...[
+                              const Text(fitnessWithheldSentence),
                               const SizedBox(height: AppSpacing.space24),
                             ],
                             if (_showWithheld) ...[

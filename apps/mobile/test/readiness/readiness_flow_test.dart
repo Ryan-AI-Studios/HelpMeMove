@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:helpmemove/design/app_theme.dart';
 import 'package:helpmemove/design/router.dart';
@@ -11,12 +14,35 @@ import 'package:helpmemove/src/rust/frb_generated.dart';
 import 'package:helpmemove/storage/profile_key_store.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 
+bool _captureFontReady = false;
+
 void main() {
   late Directory temp;
   ProfileStore? live;
 
   setUpAll(() async {
     await RustLib.init();
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final String? seen = Platform.environment['HMM_UI_EVIDENCE'];
+    if (seen == null || seen.isEmpty || seen != _maintainEvidenceDirectory) {
+      return;
+    }
+    final List<File> fonts = <File>[
+      File(r'C:\Windows\Fonts\segoeui.ttf'),
+      File(r'C:\Windows\Fonts\segoeuib.ttf'),
+    ];
+    expect(
+      fonts.every((File file) => file.existsSync()),
+      isTrue,
+      reason: 'Segoe UI capture fonts are missing',
+    );
+    final FontLoader loader = FontLoader('Segoe UI');
+    for (final File file in fonts) {
+      final Uint8List bytes = await file.readAsBytes();
+      loader.addFont(Future<ByteData>.value(ByteData.sublistView(bytes)));
+    }
+    await loader.load();
+    _captureFontReady = true;
   });
 
   setUp(() {
@@ -189,6 +215,12 @@ void main() {
     await until(tester, find.text('How are you feeling today?'));
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Resume workout'), findsNothing);
+    expect(find.text(fitnessWithheldSentence), findsNothing);
+    final String? storedBefore = await io(
+      tester,
+      () => store.loadProgramRecord(),
+    );
+    expect(storedBefore, programJson);
 
     await tester.tap(find.text('How are you feeling today?'));
     await until(tester, find.text('Low soreness'));
@@ -198,16 +230,24 @@ void main() {
     await tester.tap(find.text('Low soreness'));
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text(maintainReason));
+    expect(find.text(fitnessWithheldSentence), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Check in on the last session'), findsOneWidget);
+    expect(await io(tester, () => store.loadProgramRecord()), storedBefore);
+    await _captureMaintainHome(tester);
     expect(find.text('Foundations'), findsWidgets);
     expect(find.text('Back'), findsNothing);
     expect(find.text('How are you feeling today?'), findsNothing);
     await tester.tap(find.text('Check in on the last session'));
     await until(tester, find.text('Settled'));
     await tester.tap(find.text('Settled'));
-    await until(tester, find.text(maintainReason));
-    expect(find.text('Start workout'), findsOneWidget);
+    await until(tester, find.text('Start workout'));
+    expect(find.text(maintainReason), findsOneWidget);
+    await tester.tap(find.text('Back'));
+    await until(tester, find.text('Start workout'));
+    expect(find.text('HelpMeMove'), findsOneWidget);
+    expect(find.text(maintainReason), findsOneWidget);
+    expect(find.text(fitnessWithheldSentence), findsOneWidget);
     await tester.tap(find.text('Start workout'));
     await until(tester, find.text("Today's session"));
     expect(find.text('HelpMeMove'), findsNothing);
@@ -224,6 +264,7 @@ void main() {
     await tester.tap(find.text('High soreness'));
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text(pauseReason));
+    expect(find.text(fitnessWithheldSentence), findsNothing);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Check in on the last session'), findsNothing);
     expect(find.text('Back'), findsNothing);
@@ -536,6 +577,7 @@ void main() {
     await pumpRouter(tester, store);
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text(maintainReason));
+    expect(find.text(fitnessWithheldSentence), findsOneWidget);
     expect(find.text('Start workout'), findsOneWidget);
     expect(find.text('Check in on the last session'), findsNothing);
   });
@@ -625,6 +667,7 @@ void main() {
     await pumpRouter(tester, store);
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text(pauseReason));
+    expect(find.text(fitnessWithheldSentence), findsNothing);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Check in on the last session'), findsNothing);
   });
@@ -636,10 +679,12 @@ void main() {
     await until(tester, find.text('Worse today'));
     await tester.tap(find.text('Worse today'));
     await until(tester, find.text(pauseReason));
+    expect(find.text(fitnessWithheldSentence), findsNothing);
     expect(find.text('Start workout'), findsNothing);
     await tester.tap(find.text('Back'));
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text(pauseReason));
+    expect(find.text(fitnessWithheldSentence), findsNothing);
     expect(find.text('Start workout'), findsNothing);
     expect(find.text('Check in on the last session'), findsNothing);
   });
@@ -663,6 +708,7 @@ void main() {
       find.text('The saved check could not be read. It was cleared.'),
     );
     expect(find.text(maintainReason), findsOneWidget);
+    expect(find.text(fitnessWithheldSentence), findsOneWidget);
     expect(find.text('Check in on the last session'), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
     expect(
@@ -734,6 +780,8 @@ void main() {
     await until(tester, find.text('HelpMeMove'));
     await until(tester, find.text('Check in on the last session'));
     expect(find.text('No change was saved.'), findsOneWidget);
+    expect(find.text(fitnessWithheldSentence), findsOneWidget);
+    expect(find.text(maintainReason), findsOneWidget);
     expect(find.text('Start workout'), findsNothing);
   });
 
@@ -818,4 +866,53 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Settled'), findsNothing);
   });
+
+  testWidgets('a home with no stored session hides the fitness sentence', (
+    tester,
+  ) async {
+    final ProfileStore store = openStore();
+    await io(tester, () => store.createProfile());
+    await pumpRouter(tester, store);
+    await until(tester, find.text('HelpMeMove'));
+    expect(find.text(fitnessWithheldSentence), findsNothing);
+  });
+}
+
+const String _maintainEvidenceDirectory =
+    r'C:\dev\HelpMeMove\Conductor\0034-GeneralFitnessAndMaintenance\ui-evidence';
+
+Future<void> _captureMaintainHome(WidgetTester tester) async {
+  final String? seen = Platform.environment['HMM_UI_EVIDENCE'];
+  if (seen == null || seen.isEmpty || seen != _maintainEvidenceDirectory) {
+    return;
+  }
+  final String directory = seen;
+  expect(_captureFontReady, isTrue, reason: 'capture font was not loaded');
+  await tester.pump();
+  final RenderRepaintBoundary boundary = tester.renderObject(
+    find.byKey(const Key('home-capture')),
+  );
+  ui.Image? image;
+  try {
+    image = await tester.runAsync<ui.Image>(
+      () => boundary.toImage(pixelRatio: 1).timeout(const Duration(seconds: 5)),
+    );
+    expect(image, isNotNull);
+    final ui.Image captured = image!;
+    final ByteData? data = await tester.runAsync<ByteData?>(
+      () => captured
+          .toByteData(format: ui.ImageByteFormat.png)
+          .timeout(const Duration(seconds: 5)),
+    );
+    expect(data, isNotNull);
+    Directory(directory).createSync(recursive: true);
+    final File file = File(
+      '$directory${Platform.pathSeparator}home-maintain-light.png',
+    );
+    file.writeAsBytesSync(data!.buffer.asUint8List());
+    expect(file.existsSync(), isTrue);
+    expect(file.lengthSync(), greaterThan(0));
+  } finally {
+    image?.dispose();
+  }
 }
