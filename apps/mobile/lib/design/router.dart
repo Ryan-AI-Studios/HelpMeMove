@@ -339,14 +339,12 @@ void _follow(
   Future<String> Function() action,
   _IntakeAccess access,
 ) {
+  final GoRouter router = GoRouter.of(context);
   unawaited(
     action().then((String next) {
       access.blocked = next != '/';
-      if (!context.mounted) {
-        return;
-      }
-      if (GoRouterState.of(context).uri.path != next) {
-        context.go(next);
+      if (router.state.uri.path != next) {
+        router.go(next);
       }
     }),
   );

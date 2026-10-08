@@ -1,15 +1,29 @@
+import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:helpmemove/design/components/destructive_button.dart';
+import 'package:helpmemove/design/components/primary_button.dart';
 import 'package:helpmemove/design/router.dart';
 import 'package:helpmemove/main.dart';
 
 const String _evidenceDirectory =
     r'C:\dev\HelpMeMove\conductor\0005-EncryptedLocalProfilesAndRecovery\ui-evidence';
+
+bool _captureFontReady = false;
+
+ThemeData _platformFont(ThemeData theme) {
+  if (!_captureFontReady) {
+    return theme;
+  }
+  return theme.copyWith(
+    textTheme: theme.textTheme.apply(fontFamily: 'Segoe UI'),
+  );
+}
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -28,18 +42,30 @@ Future<void> _pump(
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
   await tester.pumpWidget(
-    HelpMeMoveApp(initialLocation: initialLocation, recovery: recovery),
+    HelpMeMoveApp(
+      initialLocation: initialLocation,
+      recovery: recovery,
+      adaptTheme: _platformFont,
+    ),
   );
   await tester.pump();
 }
 
-Future<void> _capture(WidgetTester tester, String name) async {
+Future<void> _capture(
+  WidgetTester tester,
+  String name, {
+  Key key = const Key('storage-capture'),
+  bool requirePhoneSize = true,
+}) async {
+  if (!_captureFontReady) {
+    return;
+  }
   final RenderRepaintBoundary boundary = tester
-      .renderObject<RenderRepaintBoundary>(
-        find.byKey(const Key('storage-capture')),
-      );
-  expect(boundary.size.width, greaterThan(300));
-  expect(boundary.size.height, greaterThan(700));
+      .renderObject<RenderRepaintBoundary>(find.byKey(key));
+  expect(boundary.size.width, greaterThan(200));
+  if (requirePhoneSize) {
+    expect(boundary.size.height, greaterThan(700));
+  }
   final ui.Image image = await boundary.toImage(pixelRatio: 1);
   expect(image.width, boundary.size.width.round());
   expect(image.height, boundary.size.height.round());
@@ -53,6 +79,24 @@ Future<void> _capture(WidgetTester tester, String name) async {
 }
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final List<File> fonts = <File>[
+      File(r'C:\Windows\Fonts\segoeui.ttf'),
+      File(r'C:\Windows\Fonts\segoeuib.ttf'),
+    ];
+    if (fonts.any((File file) => !file.existsSync())) {
+      return;
+    }
+    final FontLoader loader = FontLoader('Segoe UI');
+    for (final File file in fonts) {
+      final Uint8List bytes = await file.readAsBytes();
+      loader.addFont(Future<ByteData>.value(ByteData.sublistView(bytes)));
+    }
+    await loader.load();
+    _captureFontReady = true;
+  });
+
   testWidgets('storage failure hides the shell and retries home', (
     tester,
   ) async {
@@ -137,6 +181,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Delete local data?'), findsOneWidget);
+    await _capture(
+      tester,
+      'key-loss-confirm-390.png',
+      key: const Key('storage-confirm-capture'),
+      requirePhoneSize: false,
+    );
     await tester.tap(find.text('Cancel'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -169,29 +219,60 @@ void main() {
         onReset: () async => '/key-loss',
       ),
     );
+    final Finder retry = find.widgetWithText(PrimaryButton, 'Retry');
+    final Finder reset = find.widgetWithText(
+      DestructiveButton,
+      'Reset local data',
+    );
+    await tester.ensureVisible(retry);
+    await tester.pump();
     await _capture(tester, 'key-loss-light-390-scale-2.png');
-    await tester.ensureVisible(find.text('Retry'));
+    expect(tester.getRect(retry).top, greaterThanOrEqualTo(0));
+    expect(tester.getRect(retry).bottom, lessThanOrEqualTo(size.height));
+    await tester.ensureVisible(reset);
     await tester.pump();
-    expect(tester.getRect(find.text('Retry')).height, greaterThan(0));
-    expect(
-      tester.getRect(find.text('Retry')).bottom,
-      lessThanOrEqualTo(size.height),
+    await _capture(tester, 'key-loss-light-390-scale-2-reset.png');
+    expect(tester.getRect(reset).top, greaterThanOrEqualTo(0));
+    expect(tester.getRect(reset).bottom, lessThanOrEqualTo(size.height));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a retry that fails after reset still leaves storage failure', (
+    tester,
+  ) async {
+    final Completer<void> resetHold = Completer<void>();
+    final Completer<void> retryHold = Completer<void>();
+    await _pump(
+      tester,
+      size: const Size(390, 844),
+      textScale: 1,
+      initialLocation: '/key-loss',
+      recovery: StorageRecovery(
+        onRetry: () async {
+          await retryHold.future;
+          return '/storage-failure';
+        },
+        onReset: () async {
+          await resetHold.future;
+          return '/';
+        },
+      ),
     );
-    expect(tester.getRect(find.text('Retry')).top, greaterThanOrEqualTo(0));
-    await tester.ensureVisible(find.text('Reset local data'));
+    await tester.tap(find.text('Reset local data'));
     await tester.pump();
-    expect(
-      tester.getRect(find.text('Reset local data')).height,
-      greaterThan(0),
-    );
-    expect(
-      tester.getRect(find.text('Reset local data')).bottom,
-      lessThanOrEqualTo(size.height),
-    );
-    expect(
-      tester.getRect(find.text('Reset local data')).top,
-      greaterThanOrEqualTo(0),
-    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Delete local data'));
+    await tester.pump();
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    resetHold.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Scaffold check'), findsOneWidget);
+    retryHold.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Storage is unavailable'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -10,6 +11,7 @@ import 'package:helpmemove/src/rust/api/bridge.dart';
 import 'package:helpmemove/src/rust/frb_generated.dart';
 import 'package:helpmemove/storage/encryption.dart';
 import 'package:helpmemove/storage/profile_database.dart';
+import 'package:helpmemove/storage/storage_controller.dart';
 import 'package:helpmemove/storage/profile_key_store.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 import 'package:helpmemove/storage/storage_exception.dart';
@@ -121,12 +123,14 @@ void main() {
     expect(await store.eventPayloads(), <String>[storageProbePayload]);
   });
 
-  test('a thrown transaction leaves no partial event', () async {
+  test('a thrown transaction leaves no partial event after reopen', () async {
     final ProfileStore store = openStore();
-    await store.createProfile();
+    final String subjectId = await store.createProfile();
     expect(await store.eventPayloads(), hasLength(1));
     await store.interruptProbeWrite();
-    expect(await store.eventPayloads(), hasLength(1));
+    await store.close();
+    await store.switchTo(subjectId);
+    expect(await store.eventPayloads(), <String>[storageProbePayload]);
   });
 
   test('user version 99 fails closed and keeps the probe', () async {
@@ -1521,6 +1525,265 @@ void main() {
       throwsA(isA<SqliteException>()),
     );
   });
+
+  test(
+    'a checkpoint failure closes the database before the next open',
+    () async {
+      final ProfileStore store = openStore();
+      final String first = await store.createProfile();
+      final File firstFile = store.openDatabaseFile!;
+      final List<String> order = <String>[];
+      store.onBeforeCheckpoint = () async {
+        order.add('checkpoint');
+        throw const StorageIoException('checkpoint failed');
+      };
+      store.onDatabaseClosed = () {
+        order.add('closed');
+      };
+      store.onOpenStarted = () {
+        order.add('open');
+      };
+      await expectLater(store.close(), throwsA(isA<StorageIoException>()));
+      expect(order, <String>['checkpoint', 'closed']);
+      expect(store.hasOpenDatabase, isFalse);
+      store.onBeforeCheckpoint = null;
+      await store.switchTo(first);
+      expect(order, <String>['checkpoint', 'closed', 'open']);
+      expect(store.hasOpenDatabase, isTrue);
+      expect(store.openDatabaseFile!.path, firstFile.path);
+      expect(await store.eventPayloads(), contains(storageProbePayload));
+    },
+  );
+
+  test('close finishes before the next profile opens', () async {
+    final ProfileStore store = openStore();
+    final List<String> order = <String>[];
+    await store.createProfile();
+    store.onBeforeCheckpoint = () async {
+      order.add('checkpoint');
+    };
+    store.onDatabaseClosed = () {
+      order.add('closed');
+    };
+    store.onOpenStarted = () {
+      order.add('open');
+    };
+    await store.createProfile();
+    expect(order, <String>['checkpoint', 'closed', 'open']);
+  });
+
+  test('a second open waits until the first connection is published', () async {
+    final Completer<void> hold = Completer<void>();
+    var held = false;
+    final ProfileStore store = ProfileStore(
+      keys: MemoryProfileKeyStore(),
+      supportDirectory: temp,
+      clock: () => DateTime.utc(2026, 1, 2, 3, 4, 5),
+      random: Random(7),
+      excludeFromBackup: (String path) async {
+        final bool hasDatabase = Directory(path).listSync().any(
+          (FileSystemEntity entity) => entity.path.endsWith('helpmemove.db'),
+        );
+        if (hasDatabase && !held) {
+          held = true;
+          await hold.future;
+        }
+      },
+    );
+    live = store;
+    final Future<String> first = store.createProfile();
+    while (!held) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    final Future<String> second = store.createProfile();
+    await Future<void>.delayed(Duration.zero);
+    expect(store.unpublishedOpens, 1);
+    hold.complete();
+    await first;
+    await second;
+    expect(store.unpublishedOpens, 0);
+    expect(store.hasOpenDatabase, isTrue);
+    expect(
+      temp
+          .listSync(recursive: true)
+          .where(
+            (FileSystemEntity entity) => entity.path.endsWith('helpmemove.db'),
+          ),
+      hasLength(2),
+    );
+  });
+
+  test(
+    'backup exclusion runs before the database file exists and again after',
+    () async {
+      final List<String> phases = <String>[];
+      final ProfileStore store = ProfileStore(
+        keys: MemoryProfileKeyStore(),
+        supportDirectory: temp,
+        clock: () => DateTime.utc(2026, 1, 2, 3, 4, 5),
+        random: Random(7),
+        excludeFromBackup: (String path) async {
+          final bool hasDatabase = Directory(path).listSync().any(
+            (FileSystemEntity entity) => entity.path.endsWith('helpmemove.db'),
+          );
+          phases.add(hasDatabase ? 'after-file' : 'before-file');
+        },
+      );
+      live = store;
+      await store.createProfile();
+      expect(phases, <String>['before-file', 'after-file']);
+    },
+  );
+
+  test(
+    'a failed backup exclusion closes the database and routes to recovery',
+    () async {
+      var calls = 0;
+      final ProfileStore store = ProfileStore(
+        keys: MemoryProfileKeyStore(),
+        supportDirectory: temp,
+        clock: () => DateTime.utc(2026, 1, 2, 3, 4, 5),
+        random: Random(7),
+        excludeFromBackup: (String path) async {
+          calls += 1;
+          if (calls >= 4) {
+            throw StateError('exclude failed');
+          }
+        },
+      );
+      live = store;
+      await store.createProfile();
+      expect(store.hasOpenDatabase, isTrue);
+      await store.close();
+      expect(await store.openActive(), '/storage-failure');
+      expect(store.hasOpenDatabase, isFalse);
+      final StorageController controller = StorageController(
+        buildStore: () async => store,
+      );
+      expect(await controller.open(), '/storage-failure');
+    },
+  );
+
+  test(
+    'the controller routes a cipher failure and a startup io failure',
+    () async {
+      final StorageController cipher = StorageController(
+        buildStore: () async {
+          return _CipherFailureStore(
+            keys: MemoryProfileKeyStore(),
+            supportDirectory: temp,
+            clock: () => DateTime.utc(2026, 1, 2),
+            random: Random(1),
+            excludeFromBackup: (String path) async {},
+          );
+        },
+      );
+      expect(await cipher.open(), '/storage-failure');
+      final StorageController io = StorageController(
+        buildStore: () async {
+          return ProfileStore(
+            keys: _ThrowingKeyStore(),
+            supportDirectory: temp,
+            clock: () => DateTime.utc(2026, 1, 2),
+            random: Random(1),
+            excludeFromBackup: (String path) async {},
+          );
+        },
+      );
+      expect(await io.open(), '/storage-failure');
+    },
+  );
+
+  test('concurrent controller opens build one store', () async {
+    final Completer<void> hold = Completer<void>();
+    var builds = 0;
+    final ProfileStore store = openStore();
+    final StorageController controller = StorageController(
+      buildStore: () async {
+        builds += 1;
+        await hold.future;
+        return store;
+      },
+    );
+    final Future<String> first = controller.open();
+    final Future<String> second = controller.open();
+    expect(identical(first, second), isTrue);
+    await Future<void>.delayed(Duration.zero);
+    expect(builds, 1);
+    hold.complete();
+    expect(await first, '/');
+    expect(await second, '/');
+    expect(builds, 1);
+    expect(controller.store, same(store));
+  });
+
+  test('a second retry shares the open and closes once', () async {
+    final ProfileStore store = openStore();
+    await store.createProfile();
+    final Completer<void> hold = Completer<void>();
+    var closes = 0;
+    store.onBeforeCheckpoint = () async {
+      await hold.future;
+    };
+    store.onDatabaseClosed = () {
+      closes += 1;
+    };
+    final StorageController controller = StorageController(
+      buildStore: () async => store,
+    );
+    final Future<String> first = controller.open();
+    final Future<String> second = controller.open();
+    expect(identical(first, second), isTrue);
+    hold.complete();
+    expect(await first, '/');
+    expect(closes, 1);
+    expect(store.hasOpenDatabase, isTrue);
+    expect(await store.eventPayloads(), contains(storageProbePayload));
+  });
+
+  test('an empty cipher result is refused', () {
+    expect(
+      () => rejectEmptyCipher(hasRow: false, cipher: null),
+      throwsA(isA<StorageCipherUnavailable>()),
+    );
+    expect(
+      () => rejectEmptyCipher(hasRow: true, cipher: ''),
+      throwsA(isA<StorageCipherUnavailable>()),
+    );
+    expect(
+      () => rejectEmptyCipher(hasRow: true, cipher: null),
+      throwsA(isA<StorageCipherUnavailable>()),
+    );
+    rejectEmptyCipher(hasRow: true, cipher: 'sqlcipher');
+  });
+}
+
+class _CipherFailureStore extends ProfileStore {
+  _CipherFailureStore({
+    required super.keys,
+    required super.supportDirectory,
+    required super.clock,
+    required super.random,
+    required super.excludeFromBackup,
+  });
+
+  @override
+  Future<String> openActive() async {
+    throw const StorageCipherUnavailable();
+  }
+}
+
+class _ThrowingKeyStore implements ProfileKeyStore {
+  @override
+  Future<String?> read(String item) async {
+    throw const FileSystemException('key store unavailable');
+  }
+
+  @override
+  Future<void> write(String item, String value) async {}
+
+  @override
+  Future<void> delete(String item) async {}
 }
 
 const String _validProgram =

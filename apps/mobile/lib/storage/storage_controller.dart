@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -13,6 +14,22 @@ class StorageController {
 
   final Future<ProfileStore> Function() buildStore;
   ProfileStore? _store;
+  Future<void>? _queue;
+  Future<String>? _inflightOpen;
+
+  Future<T> _queued<T>(Future<T> Function() action) async {
+    final Completer<void> turn = Completer<void>();
+    final Future<void>? earlier = _queue;
+    _queue = turn.future;
+    if (earlier != null) {
+      await earlier;
+    }
+    try {
+      return await action();
+    } finally {
+      turn.complete();
+    }
+  }
 
   ProfileStore? get store => _store;
 
@@ -31,7 +48,22 @@ class StorageController {
     );
   }
 
-  Future<String> open() async {
+  Future<String> open() {
+    final Future<String>? inflight = _inflightOpen;
+    if (inflight != null) {
+      return inflight;
+    }
+    final Future<String> current = _queued(_open);
+    _inflightOpen = current;
+    current.whenComplete(() {
+      if (identical(_inflightOpen, current)) {
+        _inflightOpen = null;
+      }
+    });
+    return current;
+  }
+
+  Future<String> _open() async {
     try {
       _store ??= await buildStore();
       return await _store!.openActive();
@@ -42,10 +74,12 @@ class StorageController {
     }
   }
 
-  Future<String> reset() async {
+  Future<String> reset() => _queued(_reset);
+
+  Future<String> _reset() async {
     final ProfileStore? store = _store;
     if (store == null) {
-      return open();
+      return _open();
     }
     try {
       return await store.resetActive();

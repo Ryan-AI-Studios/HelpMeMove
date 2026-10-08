@@ -36,6 +36,7 @@ class HelpMeMoveApp extends StatefulWidget {
     this.previewSafetyView,
     this.previewProgram,
     this.previewSession,
+    this.adaptTheme,
   });
 
   final String initialLocation;
@@ -51,6 +52,10 @@ class HelpMeMoveApp extends StatefulWidget {
 
   /// Test-only session document. Production leaves this null.
   final String? previewSession;
+
+  /// Test-only theme adjustment, used so captures can load a real font.
+  /// Production leaves this null.
+  final ThemeData Function(ThemeData theme)? adaptTheme;
 
   @override
   State<HelpMeMoveApp> createState() => _HelpMeMoveAppState();
@@ -124,12 +129,14 @@ class _HelpMeMoveAppState extends State<HelpMeMoveApp> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData Function(ThemeData theme) adapt =
+        widget.adaptTheme ?? (ThemeData theme) => theme;
     return MaterialApp.router(
       title: 'HelpMeMove',
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      highContrastTheme: AppTheme.highContrastLight(),
-      highContrastDarkTheme: AppTheme.highContrastDark(),
+      theme: adapt(AppTheme.light()),
+      darkTheme: adapt(AppTheme.dark()),
+      highContrastTheme: adapt(AppTheme.highContrastLight()),
+      highContrastDarkTheme: adapt(AppTheme.highContrastDark()),
       themeMode: _themeMode,
       routerConfig: _router,
     );
