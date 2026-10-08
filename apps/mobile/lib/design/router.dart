@@ -125,6 +125,7 @@ GoRouter buildHelpMeMoveRouter({
                       return IntakeFlow(
                         store: profile,
                         initialStep: step,
+                        holdCheck: state.uri.queryParameters['hold'] == '1',
                         onContinue: () {
                           movement.allow();
                           context.go('/focus/assessment?step=intro');
