@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:helpmemove/design/app_theme.dart';
 import 'package:helpmemove/design/router.dart';
@@ -13,12 +16,28 @@ import 'package:helpmemove/storage/profile_store.dart';
 import 'package:helpmemove/storage/storage_exception.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+const Key _captureKey = Key('privacy-ready-capture');
+
+bool _captureFontReady = false;
+
+ThemeData _captureTheme() {
+  final ThemeData theme = AppTheme.light();
+  if (!_captureFontReady) {
+    return theme;
+  }
+  return theme.copyWith(
+    textTheme: theme.textTheme.apply(fontFamily: 'Segoe UI'),
+  );
+}
+
 void main() {
   late Directory temp;
   ProfileStore? live;
 
   setUpAll(() async {
     await RustLib.init();
+    TestWidgetsFlutterBinding.ensureInitialized();
+    await _loadCaptureFont();
   });
 
   setUp(() {
@@ -91,16 +110,19 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(
-      MaterialApp.router(
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        highContrastTheme: AppTheme.highContrastLight(),
-        highContrastDarkTheme: AppTheme.highContrastDark(),
-        routerConfig: buildHelpMeMoveRouter(
-          initialLocation: initialLocation,
-          store: store,
-          storageBlocked: storageBlocked,
-          movementGateOpen: movementGateOpen,
+      RepaintBoundary(
+        key: _captureKey,
+        child: MaterialApp.router(
+          theme: _captureTheme(),
+          darkTheme: AppTheme.dark(),
+          highContrastTheme: AppTheme.highContrastLight(),
+          highContrastDarkTheme: AppTheme.highContrastDark(),
+          routerConfig: buildHelpMeMoveRouter(
+            initialLocation: initialLocation,
+            store: store,
+            storageBlocked: storageBlocked,
+            movementGateOpen: movementGateOpen,
+          ),
         ),
       ),
     );
@@ -182,6 +204,8 @@ void main() {
     expect(find.text('The profile database is encrypted.'), findsOneWidget);
     expect(find.text('Cloud sync is not connected.'), findsOneWidget);
     expect(find.text('No AI coach is active.'), findsOneWidget);
+    expect(find.text('Analytics are not in this build.'), findsOneWidget);
+    expect(find.text('Crash reports are not in this build.'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('System'), findsOneWidget);
     expect(find.text('Light'), findsOneWidget);
@@ -190,8 +214,21 @@ void main() {
     expect(find.textContaining('Export'), findsNothing);
     expect(find.textContaining('Delete'), findsNothing);
     expect(find.textContaining('account'), findsNothing);
+    expect(
+      top(tester, 'No AI coach is active.'),
+      lessThan(top(tester, 'Analytics are not in this build.')),
+    );
+    expect(
+      top(tester, 'Analytics are not in this build.'),
+      lessThan(top(tester, 'Crash reports are not in this build.')),
+    );
+    expect(
+      top(tester, 'Crash reports are not in this build.'),
+      lessThan(top(tester, 'Appearance')),
+    );
     expectChoice(tester, 'system');
     expect(await io(tester, store.loadAppearanceChoice), isNull);
+    await _capture(tester, 'privacy-ready-390x844.png');
     await tester.tap(find.text('Back'));
     await until(tester, find.text('See local progress'));
     expect(find.text('Privacy and appearance'), findsOneWidget);
@@ -461,6 +498,8 @@ void main() {
     await pumpRouter(tester, null, initialLocation: '/focus/privacy');
     await until(tester, find.text('Home'));
     expect(find.text('Privacy and appearance'), findsNothing);
+    expect(find.text('Analytics are not in this build.'), findsNothing);
+    expect(find.text('Crash reports are not in this build.'), findsNothing);
 
     final ProfileStore store = openStore();
     await io(tester, store.createProfile);
@@ -473,9 +512,11 @@ void main() {
     await until(tester, find.text('Home'));
     expect(find.text('This profile stays on this device.'), findsNothing);
     expect(find.text('Privacy and appearance'), findsNothing);
+    expect(find.text('Analytics are not in this build.'), findsNothing);
+    expect(find.text('Crash reports are not in this build.'), findsNothing);
   });
 
-  testWidgets('large text keeps the four sentences reachable', (tester) async {
+  testWidgets('large text keeps the six sentences reachable', (tester) async {
     final ProfileStore store = openStore();
     await io(tester, store.createProfile);
     await pumpRouter(
@@ -491,6 +532,8 @@ void main() {
       'The profile database is encrypted.',
       'Cloud sync is not connected.',
       'No AI coach is active.',
+      'Analytics are not in this build.',
+      'Crash reports are not in this build.',
     ]) {
       await tester.scrollUntilVisible(
         find.text(sentence),
@@ -518,10 +561,65 @@ void main() {
     );
     await until(tester, find.text('Privacy and appearance'));
     expect(find.text('No AI coach is active.'), findsOneWidget);
+    expect(find.text('Analytics are not in this build.'), findsOneWidget);
+    expect(find.text('Crash reports are not in this build.'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
     expectChoice(tester, 'system');
     expect(tester.takeException(), isNull);
   });
+}
+
+Future<void> _loadCaptureFont() async {
+  final List<File> fonts = <File>[
+    File(r'C:\Windows\Fonts\segoeui.ttf'),
+    File(r'C:\Windows\Fonts\segoeuib.ttf'),
+  ];
+  if (fonts.any((File file) => !file.existsSync())) {
+    return;
+  }
+  final FontLoader loader = FontLoader('Segoe UI');
+  for (final File file in fonts) {
+    final Uint8List bytes = await file.readAsBytes();
+    loader.addFont(Future<ByteData>.value(ByteData.sublistView(bytes)));
+  }
+  await loader.load();
+  _captureFontReady = true;
+}
+
+Future<void> _capture(WidgetTester tester, String name) async {
+  final String? directory = Platform.environment['HMM_UI_EVIDENCE'];
+  if (directory == null || directory.isEmpty) {
+    return;
+  }
+  expect(_captureFontReady, isTrue, reason: 'capture font was not loaded');
+  await tester.pump();
+  final RenderRepaintBoundary boundary = tester.renderObject(
+    find.byKey(_captureKey),
+  );
+  ui.Image? image;
+  try {
+    image = await tester.runAsync<ui.Image>(
+      () => boundary.toImage(pixelRatio: 1).timeout(const Duration(seconds: 5)),
+    );
+    if (image == null) {
+      return;
+    }
+    final ui.Image captured = image;
+    final ByteData? data = await tester.runAsync<ByteData?>(
+      () => captured
+          .toByteData(format: ui.ImageByteFormat.png)
+          .timeout(const Duration(seconds: 5)),
+    );
+    if (data == null) {
+      return;
+    }
+    Directory(directory).createSync(recursive: true);
+    final File file = File('$directory/$name');
+    file.writeAsBytesSync(data.buffer.asUint8List());
+    expect(file.existsSync(), isTrue, reason: file.path);
+  } finally {
+    image?.dispose();
+  }
 }
 
 class DelayedAppearanceStore extends ProfileStore {

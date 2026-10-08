@@ -1167,6 +1167,8 @@ void main() {
     _expectMarkerAbsent(directory, 'The profile database is encrypted.');
     _expectMarkerAbsent(directory, 'Cloud sync is not connected.');
     _expectMarkerAbsent(directory, 'No AI coach is active.');
+    _expectMarkerAbsent(directory, 'Analytics are not in this build.');
+    _expectMarkerAbsent(directory, 'Crash reports are not in this build.');
     _expectMarkerAbsent(directory, 'Privacy and appearance');
     _expectMarkerAbsent(directory, 'The saved appearance could not be read.');
     expect(await store.loadAppearanceChoice(), 'dark');
