@@ -158,6 +158,10 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         const SizedBox(height: AppSpacing.space24),
         const Text('No AI coach is active.'),
         const SizedBox(height: AppSpacing.space24),
+        const Text('Analytics are not in this build.'),
+        const SizedBox(height: AppSpacing.space24),
+        const Text('Crash reports are not in this build.'),
+        const SizedBox(height: AppSpacing.space24),
         const Text('Appearance'),
         const SizedBox(height: AppSpacing.space24),
         RadioGroup<String>(
