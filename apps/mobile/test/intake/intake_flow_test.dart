@@ -8,6 +8,7 @@ import 'package:helpmemove/design/app_theme.dart';
 import 'package:helpmemove/design/components/pain_slider.dart';
 import 'package:helpmemove/design/router.dart';
 import 'package:helpmemove/intake/intake_draft.dart';
+import 'package:helpmemove/intake/intake_flow.dart';
 import 'package:helpmemove/intake/intake_outcome.dart';
 import 'package:helpmemove/main.dart';
 import 'package:helpmemove/src/rust/api/bridge.dart';
@@ -268,6 +269,45 @@ void main() {
     expect(raw.contains('Ordinary exercise generation stays off'), isFalse);
   });
 
+  testWidgets(
+    'a held check step shows the clinician sentence before classification',
+    (tester) async {
+      final ProfileStore store = openStore();
+      await tester.runAsync(() async {
+        await store.openActive();
+        await store.saveDraft(
+          LocalIntakeDraft(
+            intent: 'not_sure',
+            noticeId: 'syn-notice-1',
+            schemaAck: 'yes',
+            goals: <String>['control'],
+            equipment: <String>['chair'],
+            areas: const <IntakeArea>[
+              IntakeArea(region: 'arm', laterality: 'bilateral'),
+            ],
+            severity: 9,
+            step: 'check',
+          ).encode(),
+        );
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          home: IntakeFlow(store: store, initialStep: 'check', holdCheck: true),
+        ),
+      );
+      await _until(
+        tester,
+        find.text('The clinician question list is not available.'),
+      );
+      expect(
+        find.text(
+          'The synthetic rule did not match a triage row. Ordinary exercise generation stays off.',
+        ),
+        findsNothing,
+      );
+    },
+  );
+
   testWidgets('the user path stores an unmatched view without the note', (
     tester,
   ) async {
@@ -306,16 +346,20 @@ void main() {
     await tester.pump();
     expect(find.text('9 out of 10'), findsOneWidget);
     await _continue(tester);
+    await _until(
+      tester,
+      find.text('The clinician question list is not available.'),
+    );
     expect(
       find.text('The clinician question list is not available.'),
       findsOneWidget,
     );
     await _continue(tester);
-    expect(
+    await _until(
+      tester,
       find.text(
         'The synthetic rule did not match a triage row. Ordinary exercise generation stays off.',
       ),
-      findsOneWidget,
     );
     expect(find.text('No emergency number is configured.'), findsOneWidget);
     expect(find.text('Check movement'), findsNothing);

@@ -39,12 +39,17 @@ class IntakeFlow extends StatefulWidget {
     super.key,
     required this.store,
     required this.initialStep,
+    this.holdCheck = false,
     this.onContinue,
     this.previewSafetyView,
   });
 
   final ProfileStore store;
   final String initialStep;
+
+  /// The step just arrived from severity. Show the clinician sentence.
+  /// A resumed check step leaves this false and classifies during load.
+  final bool holdCheck;
   final VoidCallback? onContinue;
 
   /// Test-only constructed view. Production leaves this null and classifies.
@@ -106,7 +111,7 @@ class _IntakeFlowState extends State<IntakeFlow> {
       _vocabulary = vocabulary;
       _noteController.text = _controller.draft.note;
       _loadFailed = false;
-      if (_step == 'check') {
+      if (_step == 'check' && !widget.holdCheck) {
         _hasAssessmentDraft = await _assessmentDraftExists();
         final SafetyView? preview = widget.previewSafetyView;
         if (preview != null) {
@@ -179,7 +184,10 @@ class _IntakeFlowState extends State<IntakeFlow> {
       return;
     }
     if (next != null) {
-      context.go('/focus/intake?step=$next');
+      final String location = next == 'check'
+          ? '/focus/intake?step=check&hold=1'
+          : '/focus/intake?step=$next';
+      context.go(location);
     }
     if (mounted) {
       setState(() {
