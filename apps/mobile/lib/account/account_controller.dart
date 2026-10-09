@@ -485,6 +485,7 @@ class AccountController extends ChangeNotifier {
       try {
         await store.markCopyAccepted(subject);
       } on Object {
+        // openCopyPreview does not clear an acceptance already on this device.
         if (!copyAccepted) {
           store.clearCopyAccepted(subject);
         }
@@ -493,6 +494,7 @@ class AccountController extends ChangeNotifier {
       if (operation != _copyOperation ||
           !copyPreview ||
           !_copyContextMatches()) {
+        // openCopyPreview does not clear an acceptance already on this device.
         if (!copyAccepted) {
           store.clearCopyAccepted(subject);
         }

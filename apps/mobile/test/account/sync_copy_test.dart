@@ -844,6 +844,49 @@ void main() {
     },
   );
 
+  test('a failed second confirmation keeps the existing acceptance', () async {
+    var failBackup = false;
+    final ProfileStore store = openStore(
+      excludeFromBackup: (String path) async {
+        if (failBackup) {
+          throw StateError('backup exclusion failed');
+        }
+      },
+    );
+    await store.createProfile();
+    await store.saveProgramRecord(_program);
+    final AccountController account = AccountController(
+      store: store,
+      sendCopy: ({
+        required String entity,
+        required String eventId,
+        required String documentText,
+        required String documentSha256,
+      }) async => 'confirmed',
+      sessionReady: () => false,
+    );
+    await account.presentActor(_actorA);
+    account.beginBind();
+    await account.confirmBind();
+    await account.bringItOver();
+    final String subject = store.activeSubjectId!;
+    expect(account.copyAccepted, isTrue);
+    expect(store.isCopyAccepted(subject), isTrue);
+    account.openCopyPreview();
+    expect(account.copyPreview, isTrue);
+    expect(account.copyAccepted, isTrue);
+    failBackup = true;
+    await account.bringItOver();
+    expect(account.copyAccepted, isTrue);
+    expect(account.copyPreview, isTrue);
+    expect(store.isCopyAccepted(subject), isTrue);
+    expect(store.onOutboxEnqueued, isNotNull);
+    await account.presentActor(_actorA);
+    expect(account.copyAccepted, isTrue);
+    expect(account.copyPreview, isFalse);
+    expect(store.isCopyAccepted(subject), isTrue);
+  });
+
   test('a missing document does not clear the interruption notice', () async {
     final ProfileStore store = openStore();
     await store.createProfile();
