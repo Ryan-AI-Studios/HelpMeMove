@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:helpmemove/account/account_controller.dart';
 import 'package:helpmemove/account/account_screen.dart';
+import 'package:helpmemove/account/phone_unlock.dart';
 import 'package:helpmemove/design/screens/focused_flow_screen.dart';
 import 'package:helpmemove/design/screens/foundations_screen.dart';
 import 'package:helpmemove/design/screens/home_screen.dart';
@@ -71,6 +72,7 @@ GoRouter buildHelpMeMoveRouter({
   String? previewAdaptation,
   bool movementGateOpen = false,
   void Function(String choice)? onAppearanceSaved,
+  PhoneUnlock? phoneUnlock,
 }) {
   final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
@@ -239,9 +241,14 @@ GoRouter buildHelpMeMoveRouter({
                       if (profile == null || access.blocked) {
                         return const WorkoutUnavailable();
                       }
+                      accountController ??= AccountController(
+                        store: profile,
+                        phoneUnlock: phoneUnlock,
+                      );
                       return PrivacyScreen(
                         store: profile,
                         onAppearanceSaved: onAppearanceSaved,
+                        controller: accountController,
                       );
                     },
                   ),
@@ -254,9 +261,13 @@ GoRouter buildHelpMeMoveRouter({
                       }
                       final ProfileStore? profile = readStore?.call() ?? store;
                       if (profile == null || access.blocked) {
+                        accountController?.closeAccountRoute();
                         return const WorkoutUnavailable();
                       }
-                      accountController ??= AccountController(store: profile);
+                      accountController ??= AccountController(
+                        store: profile,
+                        phoneUnlock: phoneUnlock,
+                      );
                       return AccountScreen(controller: accountController);
                     },
                   ),

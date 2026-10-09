@@ -94,6 +94,12 @@ void main() {
     return tester.getTopLeft(find.text(label)).dy;
   }
 
+  Future<void> tapVisible(WidgetTester tester, String label) async {
+    final Finder finder = find.text(label);
+    await tester.ensureVisible(finder);
+    await tester.tap(finder);
+  }
+
   Future<void> pumpRouter(
     WidgetTester tester,
     ProfileStore? store, {
@@ -206,13 +212,26 @@ void main() {
     expect(find.text('No AI coach is active.'), findsOneWidget);
     expect(find.text('Analytics are not in this build.'), findsOneWidget);
     expect(find.text('Crash reports are not in this build.'), findsOneWidget);
+    expect(find.text('Workout video is not stored.'), findsOneWidget);
+    expect(find.text('Health apps are not in this build.'), findsOneWidget);
+    expect(
+      find.text('The launch region for this build is the United States.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'The stated retention for this profile is 3 months. This build removes it only when you choose Remove it.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Prepare a copy on this phone'), findsOneWidget);
+    expect(find.text('Delete the profile on this phone'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('System'), findsOneWidget);
     expect(find.text('Light'), findsOneWidget);
     expect(find.text('Dark'), findsOneWidget);
     expect(find.text('Back'), findsOneWidget);
     expect(find.textContaining('Export'), findsNothing);
-    expect(find.textContaining('Delete'), findsNothing);
     expect(find.textContaining('account'), findsNothing);
     expect(
       top(tester, 'No AI coach is active.'),
@@ -224,12 +243,38 @@ void main() {
     );
     expect(
       top(tester, 'Crash reports are not in this build.'),
+      lessThan(top(tester, 'Workout video is not stored.')),
+    );
+    expect(
+      top(tester, 'Workout video is not stored.'),
+      lessThan(top(tester, 'Health apps are not in this build.')),
+    );
+    expect(
+      top(tester, 'Health apps are not in this build.'),
+      lessThan(
+        top(tester, 'The launch region for this build is the United States.'),
+      ),
+    );
+    expect(
+      top(tester, 'The launch region for this build is the United States.'),
+      lessThan(
+        top(
+          tester,
+          'The stated retention for this profile is 3 months. This build removes it only when you choose Remove it.',
+        ),
+      ),
+    );
+    expect(
+      top(
+        tester,
+        'The stated retention for this profile is 3 months. This build removes it only when you choose Remove it.',
+      ),
       lessThan(top(tester, 'Appearance')),
     );
     expectChoice(tester, 'system');
     expect(await io(tester, store.loadAppearanceChoice), isNull);
     await _capture(tester, 'privacy-ready-390x844.png');
-    await tester.tap(find.text('Back'));
+    await tapVisible(tester, 'Back');
     await until(tester, find.text('See local progress'));
     expect(find.text('Privacy and appearance'), findsOneWidget);
   });
@@ -249,7 +294,7 @@ void main() {
       ThemeMode.system,
     );
 
-    await tester.tap(find.text('Light'));
+    await tapVisible(tester, 'Light');
     await untilChoice(tester, 'light');
     await untilTheme(tester, ThemeMode.light);
     await tester.pump(const Duration(milliseconds: 300));
@@ -260,7 +305,7 @@ void main() {
       Brightness.light,
     );
 
-    await tester.tap(find.text('Dark'));
+    await tapVisible(tester, 'Dark');
     await untilChoice(tester, 'dark');
     await untilTheme(tester, ThemeMode.dark);
     await tester.pump(const Duration(milliseconds: 300));
@@ -274,7 +319,7 @@ void main() {
     expect(app.highContrastTheme, isNotNull);
     expect(app.highContrastDarkTheme, isNotNull);
 
-    await tester.tap(find.text('System'));
+    await tapVisible(tester, 'System');
     await untilChoice(tester, 'system');
     await untilTheme(tester, ThemeMode.system);
     expect(await io(tester, store.loadAppearanceChoice), 'system');
@@ -295,9 +340,9 @@ void main() {
     await io(tester, store.createProfile);
     await pumpApp(tester, store, initialLocation: '/focus/privacy');
     await until(tester, find.text('Light'));
-    await tester.tap(find.text('Light'));
+    await tapVisible(tester, 'Light');
     await tester.pump();
-    await tester.tap(find.text('Back'));
+    await tapVisible(tester, 'Back');
     await until(tester, find.text('See local progress'));
     expect(
       tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
@@ -357,7 +402,7 @@ void main() {
       tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
       ThemeMode.system,
     );
-    await tester.tap(find.text('Back'));
+    await tapVisible(tester, 'Back');
     await until(tester, find.text('HelpMeMove'));
     expect(await io(tester, store.storedChoice), 'dark');
   });
@@ -534,6 +579,12 @@ void main() {
       'No AI coach is active.',
       'Analytics are not in this build.',
       'Crash reports are not in this build.',
+      'Workout video is not stored.',
+      'Health apps are not in this build.',
+      'The launch region for this build is the United States.',
+      'The stated retention for this profile is 3 months. This build removes it only when you choose Remove it.',
+      'Prepare a copy on this phone',
+      'Delete the profile on this phone',
     ]) {
       await tester.scrollUntilVisible(
         find.text(sentence),

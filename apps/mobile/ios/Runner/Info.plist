@@ -57,6 +57,8 @@
 	<string>HelpMeMove shows a positioning preview on this device. Video is not saved.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>HelpMeMove does not record audio for this preview.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Confirm it is you before this profile is copied or removed.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

@@ -41,6 +41,7 @@ dependencies:
   crypto: 3.0.7
   camera: 0.12.1
   flutter_tts: 4.2.5
+  local_auth: 3.0.2
   movement_vision:
     path: ../../packages/movement_vision
 

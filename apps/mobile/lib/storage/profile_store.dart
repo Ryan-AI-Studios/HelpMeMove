@@ -74,6 +74,10 @@ class StoredProblemReport {
 
 const String activeProfileItem = 'active-profile';
 const String copyAcceptedName = 'sync-copy-accepted';
+const String _exportFileName = 'export.json';
+
+enum LocalRemoval { directoryRemained, replaced, notReplaced }
+
 const String _profileKeyPrefix = 'profile-key.';
 const String _programOutboxEntity = 'program_records';
 const String _workoutOutboxEntity = 'workout_records';
@@ -114,6 +118,12 @@ class ProfileStore {
 
   /// Tests record when a database connection has finished closing.
   void Function()? onDatabaseClosed;
+
+  /// Tests throw from here before `export.json` is written.
+  Future<void> Function(File file)? onBeforeExportWrite;
+
+  /// Tests throw from here after `export.json` exists and before backup exclusion.
+  Future<void> Function()? onExportFileCreated;
 
   int _unpublishedOpens = 0;
 
@@ -162,33 +172,53 @@ class ProfileStore {
   Future<String> openActive() => _lifecycle(_openActive);
 
   Future<String> _openActive() async {
+    String? accepted;
     try {
       final String? active = await keys.read(activeProfileItem);
       if (active == null || active.isEmpty) {
         await createProfile();
         return '/';
       }
-      acceptSubject(raw: active);
-      final String? keyHex = await keys.read(profileKeyItem(active));
+      accepted = acceptSubject(raw: active);
+      final String? keyHex = await keys.read(profileKeyItem(accepted));
       if (keyHex == null) {
         await _closeCurrent();
+        await _deleteExportQuiet(accepted);
         return '/key-loss';
       }
       await _closeCurrent();
-      await _openExisting(active, keyHex);
+      await _openExisting(accepted, keyHex);
+      await _deleteExportQuiet(accepted);
       return '/';
     } on StorageKeyLoss {
+      await _deleteExportQuiet(accepted);
       return '/key-loss';
     } on StorageCipherUnavailable {
+      await _deleteExportQuiet(accepted);
       return '/storage-failure';
     } on StorageSchemaException {
+      await _deleteExportQuiet(accepted);
       return '/storage-failure';
     } on StorageIoException {
+      await _deleteExportQuiet(accepted);
       return '/storage-failure';
     } on SqliteException {
+      await _deleteExportQuiet(accepted);
       return '/storage-failure';
     } on FileSystemException {
+      await _deleteExportQuiet(accepted);
       return '/storage-failure';
+    }
+  }
+
+  Future<void> _deleteExportQuiet(String? subjectId) async {
+    if (subjectId == null) {
+      return;
+    }
+    try {
+      await deleteExport(subjectId);
+    } on Object {
+      // A thrown delete must not change the route openActive returns.
     }
   }
 
@@ -390,6 +420,172 @@ class ProfileStore {
     final String? active = await keys.read(activeProfileItem);
     if (active == subjectId) {
       await keys.delete(activeProfileItem);
+    }
+  }
+
+  Future<void> writeExport() async {
+    final ProfileDatabase database = _requireDatabase();
+    final String subjectId = _requireActive();
+    final List<Map<String, Object>> records = <Map<String, Object>>[];
+    await database.transaction(() async {
+      final LocalProfile? profile =
+          await (database.select(database.localProfiles)..where(
+                (LocalProfiles table) => table.subjectId.equals(subjectId),
+              ))
+              .getSingleOrNull();
+      if (profile != null) {
+        records.add(<String, Object>{
+          'table': 'local_profiles',
+          'subject_id': profile.subjectId,
+          'created_at_ms': profile.createdAtMs,
+          'last_active_at_ms': profile.lastActiveAtMs,
+        });
+      }
+      final AssessmentRecord? assessment =
+          await (database.select(database.assessmentRecords)..where(
+                (AssessmentRecords table) => table.subjectId.equals(subjectId),
+              ))
+              .getSingleOrNull();
+      if (assessment != null) {
+        records.add(<String, Object>{
+          'table': 'assessment_records',
+          'updated_at_ms': assessment.updatedAtMs,
+          'document_json': assessment.documentJson,
+        });
+      }
+      final ProgramRecord? program =
+          await (database.select(database.programRecords)..where(
+                (ProgramRecords table) => table.subjectId.equals(subjectId),
+              ))
+              .getSingleOrNull();
+      if (program != null) {
+        records.add(<String, Object>{
+          'table': 'program_records',
+          'updated_at_ms': program.updatedAtMs,
+          'document_json': program.documentJson,
+        });
+      }
+      final List<WorkoutRecord> workouts =
+          await (database.select(database.workoutRecords)
+                ..where(
+                  (WorkoutRecords table) => table.subjectId.equals(subjectId),
+                )
+                ..orderBy(<OrderClauseGenerator<WorkoutRecords>>[
+                  (WorkoutRecords table) => OrderingTerm(
+                    expression: table.updatedAtMs,
+                    mode: OrderingMode.asc,
+                  ),
+                  (WorkoutRecords table) => OrderingTerm(
+                    expression: table.sessionId,
+                    mode: OrderingMode.asc,
+                  ),
+                ]))
+              .get();
+      for (final WorkoutRecord workout in workouts) {
+        records.add(<String, Object>{
+          'table': 'workout_records',
+          'session_id': workout.sessionId,
+          'updated_at_ms': workout.updatedAtMs,
+          'document_json': workout.documentJson,
+        });
+      }
+    });
+    final String encoded = jsonEncode(<String, Object>{
+      'subject_id': subjectId,
+      'records': records,
+    });
+    final Directory directory = _profileDirectory(subjectId);
+    final File file = _exportFile(subjectId);
+    var created = false;
+    try {
+      directory.createSync(recursive: true);
+      final Future<void> Function(File file)? beforeWrite = onBeforeExportWrite;
+      if (beforeWrite != null) {
+        await beforeWrite(file);
+      }
+      file.writeAsStringSync(encoded, flush: true);
+      created = true;
+      final Future<void> Function()? afterCreate = onExportFileCreated;
+      if (afterCreate != null) {
+        await afterCreate();
+      }
+      await excludeFromBackup(directory.path);
+    } on Object catch (error, stackTrace) {
+      if (created || file.existsSync()) {
+        _deleteExportFileSync(file);
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  Future<void> deleteExport([String? subjectId]) async {
+    try {
+      final String? target = subjectId ?? _activeSubjectId;
+      if (target == null) {
+        return;
+      }
+      final String safeTarget = acceptSubject(raw: target);
+      _deleteExportFileSync(_exportFile(safeTarget));
+    } on Object {
+      // A missing file or another file error completes without an error.
+    }
+  }
+
+  Future<LocalRemoval> removeSubjectDirectoryFirst(String subjectId) async {
+    final String safeSubject = acceptSubject(raw: subjectId);
+    final bool wasActive = safeSubject == _activeSubjectId;
+    if (wasActive) {
+      await _closeCurrent();
+    }
+    final Directory directory = _profileDirectory(safeSubject);
+    try {
+      if (directory.existsSync()) {
+        directory.deleteSync(recursive: true);
+      }
+    } on Object {
+      if (wasActive) {
+        try {
+          await reopenActive();
+        } on Object {
+          return LocalRemoval.directoryRemained;
+        }
+      }
+      return LocalRemoval.directoryRemained;
+    }
+    try {
+      await keys.delete(profileKeyItem(safeSubject));
+    } on Object {
+      // The directory is already gone. Still replace the profile.
+    }
+    try {
+      final String? active = await keys.read(activeProfileItem);
+      if (active == safeSubject) {
+        await keys.delete(activeProfileItem);
+      }
+    } on Object {
+      // The directory is already gone. Still replace the profile.
+    }
+    try {
+      await createProfile();
+      return LocalRemoval.replaced;
+    } on Object {
+      return LocalRemoval.notReplaced;
+    }
+  }
+
+  File _exportFile(String subjectId) {
+    return File(
+      '${_profileDirectory(subjectId).path}${Platform.pathSeparator}$_exportFileName',
+    );
+  }
+
+  void _deleteExportFileSync(File file) {
+    try {
+      if (file.existsSync()) {
+        file.deleteSync();
+      }
+    } on Object {
+      // The caller still reports the original failure.
     }
   }
 
