@@ -551,6 +551,42 @@ fn shorten_with_no_unfinished_exercise_is_invalid() {
 }
 
 #[test]
+fn the_maximum_set_index_completes_without_overflow() {
+    let library = fixtures();
+    let active = apply(
+        &apply(&open_golden(), r#"{"name":"ready"}"#, 1_000).expect("demo"),
+        r#"{"name":"ready"}"#,
+        1_000,
+    )
+    .expect("active");
+    let rendered = render_session(&active)
+        .expect("render")
+        .replace("\"set_index\":0", "\"set_index\":4294967295");
+    let parsed = parse_session(&rendered, &library).expect("parse");
+    let done = apply(&parsed, r#"{"name":"complete_rep"}"#, 1_001).expect("rep");
+    assert_eq!(done.state, SessionState::Completed);
+    assert_eq!(done.outcome.as_deref(), Some("completed"));
+}
+
+#[test]
+fn a_signed_clock_maximum_rejects_the_next_elapsed_tick() {
+    let library = fixtures();
+    let active = apply(
+        &apply(&open_golden(), r#"{"name":"ready"}"#, 1_000).expect("demo"),
+        r#"{"name":"ready"}"#,
+        1_000,
+    )
+    .expect("active");
+    let rendered = render_session(&active)
+        .expect("render")
+        .replace("\"elapsed_ms\":0", "\"elapsed_ms\":9223372036854775807");
+    let parsed = parse_session(&rendered, &library).expect("parse");
+    let result = apply(&parsed, r#"{"name":"complete_rep"}"#, 1_001);
+    assert_eq!(result.unwrap_err(), ContentError::InvalidSession);
+    assert_eq!(render_session(&parsed).expect("unchanged"), rendered);
+}
+
+#[test]
 fn parse_rejects_a_clock_above_u64() {
     let library = fixtures();
     let rendered = render_session(&open_golden()).expect("render");

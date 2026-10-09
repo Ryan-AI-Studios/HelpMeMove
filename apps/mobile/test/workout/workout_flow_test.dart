@@ -881,6 +881,152 @@ void main() {
     expect(await tester.runAsync(store.loadProgramRecord), program);
   });
 
+  test('a restored monotonic instant stays at the signed maximum', () {
+    const int maxClock = 9223372036854775807;
+    expect(addMonotonic(maxClock, 0), maxClock);
+    expect(addMonotonic(maxClock, 1), maxClock);
+    expect(addMonotonic(maxClock - 1, 1), maxClock);
+    expect(addMonotonic(maxClock - 1, 2), maxClock);
+    expect(addMonotonic(1000, 1), 1001);
+  });
+
+  testWidgets('a maximum monotonic draft can still pause', (
+    WidgetTester tester,
+  ) async {
+    final ProfileStore store = openStore();
+    final String program = File('test/program/green_shoulder_program.json')
+        .readAsStringSync()
+        .trim();
+    final String active = _activeDocument(
+      program,
+    ).replaceFirst('"monotonic_ms":1000', '"monotonic_ms":9223372036854775807');
+    await tester.runAsync(() async {
+      await store.createProfile();
+      await store.saveProgramRecord(program);
+      await store.saveWorkoutDraft(active);
+    });
+    final ManualWorkoutClock clock = ManualWorkoutClock();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: WorkoutFlow(store: store, clock: clock),
+      ),
+    );
+    await until(tester, find.text('Pause'));
+    clock.advance(1);
+    await tester.tap(find.text('Pause'));
+    await until(tester, find.text('Session paused'));
+    expect(tester.takeException(), isNull);
+    expect(await tester.runAsync(store.loadProgramRecord), program);
+    final String? draft = await tester.runAsync<String?>(
+      () async => store.loadWorkoutDraft(),
+    );
+    expect(draft, isNotNull);
+    expect(draft!, contains('"state":"paused"'));
+    expect(draft.contains('"monotonic_ms":9223372036854775807'), isTrue);
+  });
+
+  test('rest seconds round up without overflowing the signed maximum', () {
+    expect(restSecondsRemaining(0, 0), 0);
+    expect(restSecondsRemaining(1, 0), 1);
+    expect(restSecondsRemaining(999, 0), 1);
+    expect(restSecondsRemaining(1000, 0), 1);
+    expect(restSecondsRemaining(1001, 0), 2);
+    expect(restSecondsRemaining(9223372036854775807, 0), 9223372036854776);
+  });
+
+  testWidgets('a maximum rest deadline shows a nonnegative countdown', (
+    WidgetTester tester,
+  ) async {
+    final String resting = File('test/workout/opened_shoulder_session.json')
+        .readAsStringSync()
+        .trim()
+        .replaceFirst('"state":"preparing"', '"state":"resting"')
+        .replaceFirst(
+          '"rest_until_ms":null',
+          '"rest_until_ms":9223372036854775807',
+        )
+        .replaceFirst('"monotonic_ms":1000', '"monotonic_ms":0');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: WorkoutFlow(
+          previewDocument: resting,
+          clock: ManualWorkoutClock(),
+        ),
+      ),
+    );
+    await until(tester, find.text('9223372036854776'));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the maximum set index still saves the completed rep', (
+    WidgetTester tester,
+  ) async {
+    final ProfileStore store = openStore();
+    final String program = File('test/program/green_shoulder_program.json')
+        .readAsStringSync()
+        .trim();
+    final String active = _activeDocument(program)
+        .replaceFirst('"set_index":0', '"set_index":4294967295');
+    await tester.runAsync(() async {
+      await store.createProfile();
+      await store.saveProgramRecord(program);
+      await store.saveWorkoutDraft(active);
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: WorkoutFlow(store: store, clock: ManualWorkoutClock()),
+      ),
+    );
+    await until(tester, find.text('Rep 1 of 1'));
+    await tester.tap(find.text('Rep 1 of 1'));
+    await until(tester, find.text('Session saved'));
+    expect(tester.takeException(), isNull);
+    expect(await tester.runAsync(store.workoutRecordCount), 1);
+    expect(await tester.runAsync(store.loadWorkoutDraft), isNull);
+    expect(await tester.runAsync(store.loadProgramRecord), program);
+  });
+
+  testWidgets('a signed clock maximum keeps the draft and the program', (
+    WidgetTester tester,
+  ) async {
+    final ProfileStore store = openStore();
+    final String program = File('test/program/green_shoulder_program.json')
+        .readAsStringSync()
+        .trim();
+    final String active = _activeDocument(program)
+        .replaceFirst('"elapsed_ms":0', '"elapsed_ms":9223372036854775807');
+    await tester.runAsync(() async {
+      await store.createProfile();
+      await store.saveProgramRecord(program);
+      await store.saveWorkoutDraft(active);
+    });
+    final ManualWorkoutClock clock = ManualWorkoutClock();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: WorkoutFlow(store: store, clock: clock),
+      ),
+    );
+    await until(tester, find.text('Rep 1 of 1'));
+    clock.advance(1);
+    await tester.tap(find.text('Rep 1 of 1'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Rep 1 of 1'), findsOneWidget);
+    expect(find.text('Session saved'), findsNothing);
+    expect(
+      find.text('The saved workout could not be read. It was cleared.'),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+    expect(await tester.runAsync(store.loadWorkoutDraft), active);
+    expect(await tester.runAsync(store.workoutRecordCount), 0);
+    expect(await tester.runAsync(store.loadProgramRecord), program);
+  });
+
   testWidgets('a draft with an oversized set index is cleared', (
     WidgetTester tester,
   ) async {
@@ -1076,4 +1222,21 @@ class ThrowingWorkoutStore extends ProfileStore {
     }
     return super.loadWorkoutDraft();
   }
+}
+
+String _activeDocument(String program) {
+  final String demonstrating = applyWorkoutEvent(
+    documentJson: openWorkout(
+      programJson: program,
+      monotonicMillis: 1000,
+      sessionId: '11111111-1111-4111-8111-111111111111',
+    ).documentJson,
+    eventJson: '{"name":"ready"}',
+    monotonicMillis: 1000,
+  ).documentJson;
+  return applyWorkoutEvent(
+    documentJson: demonstrating,
+    eventJson: '{"name":"ready"}',
+    monotonicMillis: 1000,
+  ).documentJson;
 }

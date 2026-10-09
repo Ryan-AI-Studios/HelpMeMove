@@ -16,6 +16,36 @@ import 'package:helpmemove/workout/spoken_cue.dart';
 import 'package:helpmemove/workout/spoken_cue_host.dart';
 
 /// Monotonic session clock. Production uses a stopwatch. Tests advance by hand.
+const int signedClockMax = 9223372036854775807;
+
+int addMonotonic(int origin, int elapsed) {
+  if (elapsed <= 0) {
+    if (origin < 0) {
+      return 0;
+    }
+    return origin > signedClockMax ? signedClockMax : origin;
+  }
+  if (origin < 0) {
+    origin = 0;
+  }
+  if (elapsed > signedClockMax || origin > signedClockMax - elapsed) {
+    return signedClockMax;
+  }
+  return origin + elapsed;
+}
+
+int restSecondsRemaining(int until, int now) {
+  final int delta = until - now;
+  if (delta <= 0) {
+    return 0;
+  }
+  final int whole = delta ~/ 1000;
+  if (delta % 1000 == 0) {
+    return whole;
+  }
+  return whole + 1;
+}
+
 abstract class WorkoutClock {
   int get elapsedMilliseconds;
 
@@ -352,13 +382,18 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
     });
   }
 
-  int _monotonic() => _origin + _clock.elapsedMilliseconds;
+  int _monotonic() => addMonotonic(_origin, _clock.elapsedMilliseconds);
 
   void _syncOrigin(int documentMonotonic) {
     final int elapsed = _clock.elapsedMilliseconds;
-    if (_origin + elapsed < documentMonotonic) {
-      _origin = documentMonotonic - elapsed;
+    if (addMonotonic(_origin, elapsed) >= documentMonotonic) {
+      return;
     }
+    if (elapsed <= 0 || documentMonotonic <= elapsed) {
+      _origin = documentMonotonic < 0 ? 0 : documentMonotonic;
+      return;
+    }
+    _origin = documentMonotonic - elapsed;
   }
 
   void _followClock(LocalSession session) {
@@ -842,11 +877,7 @@ class _WorkoutFlowState extends State<WorkoutFlow> with WidgetsBindingObserver {
     if (until == null) {
       return 0;
     }
-    final int delta = until - _monotonic();
-    if (delta <= 0) {
-      return 0;
-    }
-    return (delta + 999) ~/ 1000;
+    return restSecondsRemaining(until, _monotonic());
   }
 
   List<Widget> _paused(LocalSession session) {

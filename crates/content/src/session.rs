@@ -256,17 +256,10 @@ pub fn apply_session_event(
     let mut next = session.clone();
     let frozen_ms = monotonic_ms - next.monotonic_ms;
     if next.state.counts_elapsed() {
-        next.elapsed_ms = next
-            .elapsed_ms
-            .checked_add(frozen_ms)
-            .ok_or(ContentError::InvalidSession)?;
+        next.elapsed_ms = add_signed_clock(next.elapsed_ms, frozen_ms)?;
     } else if let Some(until) = next.rest_until_ms {
         // Rest is a monotonic deadline. Time outside `resting` must not consume it.
-        next.rest_until_ms = Some(
-            until
-                .checked_add(frozen_ms)
-                .ok_or(ContentError::InvalidSession)?,
-        );
+        next.rest_until_ms = Some(add_signed_clock(until, frozen_ms)?);
     }
     next.monotonic_ms = monotonic_ms;
     dispatch(&mut next, event, monotonic_ms, eligible, library)?;
@@ -543,12 +536,9 @@ fn on_complete_rep(session: &mut Session, now: u64) -> Result<(), ContentError> 
     if exercise.reps_done < exercise.reps {
         return Ok(());
     }
-    if exercise.set_index + 1 < exercise.sets {
+    if has_another_set(exercise) {
         let pause_ms = u64::from(exercise.tempo.pause).saturating_mul(1000);
-        session.rest_until_ms = Some(
-            now.checked_add(pause_ms)
-                .ok_or(ContentError::InvalidSession)?,
-        );
+        session.rest_until_ms = Some(add_signed_clock(now, pause_ms)?);
         session.state = SessionState::Resting;
         return Ok(());
     }
@@ -568,10 +558,13 @@ fn on_tick(session: &mut Session, now: u64) -> Result<(), ContentError> {
     }
     let index = current_index(session).ok_or(ContentError::InvalidSession)?;
     let exercise = &mut session.exercises[index];
-    if exercise.set_index + 1 >= exercise.sets {
+    let Some(next_index) = exercise.set_index.checked_add(1) else {
+        return Err(ContentError::InvalidSession);
+    };
+    if next_index >= exercise.sets {
         return Err(ContentError::InvalidSession);
     }
-    exercise.set_index += 1;
+    exercise.set_index = next_index;
     exercise.reps_done = 0;
     session.rest_until_ms = None;
     session.state = SessionState::Active;
@@ -733,8 +726,24 @@ fn current_index(session: &Session) -> Option<usize> {
 }
 
 fn finished_row(exercise: &SessionExercise) -> bool {
-    exercise.skipped
-        || (exercise.reps_done >= exercise.reps && exercise.set_index + 1 >= exercise.sets)
+    exercise.skipped || (exercise.reps_done >= exercise.reps && !has_another_set(exercise))
+}
+
+fn has_another_set(exercise: &SessionExercise) -> bool {
+    match exercise.set_index.checked_add(1) {
+        Some(next) => next < exercise.sets,
+        None => false,
+    }
+}
+
+fn add_signed_clock(left: u64, right: u64) -> Result<u64, ContentError> {
+    let sum = left
+        .checked_add(right)
+        .ok_or(ContentError::InvalidSession)?;
+    if sum > i64::MAX as u64 {
+        return Err(ContentError::InvalidSession);
+    }
+    Ok(sum)
 }
 
 fn copy_exercise(row: &Value, library: &[Exercise]) -> Result<SessionExercise, ContentError> {
