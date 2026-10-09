@@ -283,19 +283,13 @@ void main() {
   test('a failed directory delete leaves the key', () async {
     final ProfileStore store = openStore();
     final String subjectId = await store.createProfile();
-    final File hold = File(
-      '${profileDirectory(subjectId).path}${Platform.pathSeparator}hold.txt',
+    store.onBeforeDirectoryDelete = () async {
+      throw StateError('directory locked');
+    };
+    final LocalRemoval removal = await store.removeSubjectDirectoryFirst(
+      subjectId,
     );
-    hold.writeAsStringSync('hold');
-    final RandomAccessFile locked = hold.openSync(mode: FileMode.write);
-    try {
-      final LocalRemoval removal = await store.removeSubjectDirectoryFirst(
-        subjectId,
-      );
-      expect(removal, LocalRemoval.directoryRemained);
-    } finally {
-      locked.closeSync();
-    }
+    expect(removal, LocalRemoval.directoryRemained);
     expect(await store.keys.read(profileKeyItem(subjectId)), isNotNull);
     expect(store.activeSubjectId, subjectId);
     expect(profileDirectory(subjectId).existsSync(), isTrue);
@@ -305,20 +299,14 @@ void main() {
     final _ReadFails keys = _ReadFails(MemoryProfileKeyStore());
     final ProfileStore store = openStore(keys: keys);
     final String subjectId = await store.createProfile();
-    final File hold = File(
-      '${profileDirectory(subjectId).path}${Platform.pathSeparator}hold.txt',
-    );
-    hold.writeAsStringSync('hold');
-    final RandomAccessFile locked = hold.openSync(mode: FileMode.write);
+    store.onBeforeDirectoryDelete = () async {
+      throw StateError('directory locked');
+    };
     keys.failReads = true;
-    try {
-      final LocalRemoval removal = await store.removeSubjectDirectoryFirst(
-        subjectId,
-      );
-      expect(removal, LocalRemoval.directoryRemained);
-    } finally {
-      locked.closeSync();
-    }
+    final LocalRemoval removal = await store.removeSubjectDirectoryFirst(
+      subjectId,
+    );
+    expect(removal, LocalRemoval.directoryRemained);
     expect(await keys.inner.read(profileKeyItem(subjectId)), isNotNull);
   });
 

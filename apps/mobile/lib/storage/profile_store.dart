@@ -119,6 +119,9 @@ class ProfileStore {
   /// Tests record when a database connection has finished closing.
   void Function()? onDatabaseClosed;
 
+  /// Tests throw from here before the subject directory is deleted.
+  Future<void> Function()? onBeforeDirectoryDelete;
+
   /// Tests throw from here before `export.json` is written.
   Future<void> Function(File file)? onBeforeExportWrite;
 
@@ -539,6 +542,10 @@ class ProfileStore {
     }
     final Directory directory = _profileDirectory(safeSubject);
     try {
+      final Future<void> Function()? beforeDelete = onBeforeDirectoryDelete;
+      if (beforeDelete != null) {
+        await beforeDelete();
+      }
       if (directory.existsSync()) {
         directory.deleteSync(recursive: true);
       }

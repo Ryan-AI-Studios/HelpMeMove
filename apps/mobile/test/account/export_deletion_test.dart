@@ -715,37 +715,29 @@ void main() {
       final String subjectId = await store.createProfile();
       await store.keys.write(AccountController.actorItem(_actor), subjectId);
       await store.keys.write(supabasePersistSessionKey, 'session-token');
-      final File hold = File(
-        '${temp.path}${Platform.pathSeparator}profiles'
-        '${Platform.pathSeparator}$subjectId'
-        '${Platform.pathSeparator}hold.txt',
-      );
-      hold.writeAsStringSync('hold');
-      final RandomAccessFile locked = hold.openSync(mode: FileMode.write);
+      store.onBeforeDirectoryDelete = () async {
+        throw StateError('directory locked');
+      };
       var rpcCalls = 0;
-      try {
-        AccountAuth.started = true;
-        final AccountController account = accountFor(
-          store,
-          sessionReady: () => true,
-          deleteRpc: () async {
-            rpcCalls += 1;
-            return 'deleted';
-          },
-        );
-        account.actorId = _actor;
-        account.accountRouteOpen = true;
-        await account.openDeletePreview();
-        await account.confirmDelete();
-        expect(account.deleteResult, DeleteResult.signInRemoved);
-        expect(await store.keys.read(profileKeyItem(subjectId)), isNotNull);
-        expect(rpcCalls, 1);
-        await account.retryLocalDelete();
-        expect(rpcCalls, 1);
-        expect(account.rpcCommitted, isTrue);
-      } finally {
-        locked.closeSync();
-      }
+      AccountAuth.started = true;
+      final AccountController account = accountFor(
+        store,
+        sessionReady: () => true,
+        deleteRpc: () async {
+          rpcCalls += 1;
+          return 'deleted';
+        },
+      );
+      account.actorId = _actor;
+      account.accountRouteOpen = true;
+      await account.openDeletePreview();
+      await account.confirmDelete();
+      expect(account.deleteResult, DeleteResult.signInRemoved);
+      expect(await store.keys.read(profileKeyItem(subjectId)), isNotNull);
+      expect(rpcCalls, 1);
+      await account.retryLocalDelete();
+      expect(rpcCalls, 1);
+      expect(account.rpcCommitted, isTrue);
     },
   );
 
