@@ -194,6 +194,7 @@ class AccountController extends ChangeNotifier {
   String? _copyActor;
   String? _copySubject;
   int _copyGeneration = 0;
+  int _copyOperation = 0;
   bool _deleteCancelled = false;
   bool _exportCancelled = false;
   bool _rpcCommitted = false;
@@ -449,6 +450,7 @@ class AccountController extends ChangeNotifier {
     if (copyPreview) {
       return;
     }
+    _copyOperation += 1;
     copyPreview = true;
     copyNotice = null;
     _captureCopyContext();
@@ -463,25 +465,37 @@ class AccountController extends ChangeNotifier {
       if (!_copyContextMatches()) {
         return;
       }
+      final int operation = _copyOperation;
       try {
         await store.sweepCopyOutbox();
       } on Object {
         return;
       }
-      if (!copyPreview || !_copyContextMatches()) {
+      if (operation != _copyOperation ||
+          !copyPreview ||
+          !_copyContextMatches()) {
         return;
       }
       final String? subject = store.activeSubjectId;
-      if (subject == null || !_copyContextMatches()) {
+      if (subject == null ||
+          operation != _copyOperation ||
+          !_copyContextMatches()) {
         return;
       }
       try {
         await store.markCopyAccepted(subject);
       } on Object {
+        if (!copyAccepted) {
+          store.clearCopyAccepted(subject);
+        }
         return;
       }
-      if (!copyPreview || !_copyContextMatches()) {
-        store.clearCopyAccepted(subject);
+      if (operation != _copyOperation ||
+          !copyPreview ||
+          !_copyContextMatches()) {
+        if (!copyAccepted) {
+          store.clearCopyAccepted(subject);
+        }
         return;
       }
       copyPreview = false;
@@ -493,6 +507,7 @@ class AccountController extends ChangeNotifier {
   }
 
   void cancelCopy() {
+    _copyOperation += 1;
     copyPreview = false;
     copyNotice = copyCancelNotice;
     notifyListeners();
@@ -599,6 +614,7 @@ class AccountController extends ChangeNotifier {
   }
 
   void _enterSignedInCopy() {
+    _copyOperation += 1;
     final String? subject = store.activeSubjectId;
     if (subject != null && store.isCopyAccepted(subject)) {
       copyPreview = false;

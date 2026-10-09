@@ -125,6 +125,9 @@ class ProfileStore {
   /// Tests throw from here before `export.json` is written.
   Future<void> Function(File file)? onBeforeExportWrite;
 
+  /// Tests hold or throw from here before a copy sweep writes outbox rows.
+  Future<void> Function()? onBeforeSweepCopy;
+
   /// Tests throw from here after `export.json` exists and before backup exclusion.
   Future<void> Function()? onExportFileCreated;
 
@@ -296,8 +299,19 @@ class ProfileStore {
   Future<void> markCopyAccepted(String subjectId) async {
     final Directory directory = _profileDirectory(subjectId);
     directory.createSync(recursive: true);
-    _copyAcceptedFile(subjectId).writeAsBytesSync(const <int>[]);
-    await excludeFromBackup(directory.path);
+    final File marker = _copyAcceptedFile(subjectId);
+    final bool existed = marker.existsSync();
+    if (!existed) {
+      marker.writeAsBytesSync(const <int>[]);
+    }
+    try {
+      await excludeFromBackup(directory.path);
+    } on Object {
+      if (!existed && marker.existsSync()) {
+        marker.deleteSync();
+      }
+      rethrow;
+    }
   }
 
   void clearCopyAccepted(String subjectId) {
@@ -381,6 +395,10 @@ class ProfileStore {
   }
 
   Future<void> sweepCopyOutbox() async {
+    final Future<void> Function()? beforeSweep = onBeforeSweepCopy;
+    if (beforeSweep != null) {
+      await beforeSweep();
+    }
     final ProfileDatabase database = _requireDatabase();
     final String subjectId = _requireActive();
     await database.transaction(() async {

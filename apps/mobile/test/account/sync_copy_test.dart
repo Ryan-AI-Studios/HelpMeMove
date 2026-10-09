@@ -546,6 +546,11 @@ void main() {
       expect(account.copyAccepted, isFalse);
       expect(sent, 0);
       expect(store.onOutboxEnqueued, isNull);
+      expect(store.isCopyAccepted(store.activeSubjectId!), isFalse);
+      await account.presentActor(_actorA);
+      expect(sent, 0);
+      expect(account.copyPreview, isTrue);
+      expect(store.onOutboxEnqueued, isNull);
     },
   );
 
@@ -679,6 +684,165 @@ void main() {
     expect(account.copyNotice, copyCancelNotice);
     expect(store.onOutboxEnqueued, isNull);
   });
+
+  test('reopening the preview does not revive a cancelled copy', () async {
+    final Completer<void> gate = Completer<void>();
+    var holdBackup = false;
+    var waiting = false;
+    var sent = 0;
+    final ProfileStore store = openStore(
+      excludeFromBackup: (String path) async {
+        if (!holdBackup) {
+          return;
+        }
+        waiting = true;
+        await gate.future;
+      },
+    );
+    await store.createProfile();
+    await store.saveProgramRecord(_program);
+    final AccountController account = AccountController(
+      store: store,
+      sendCopy:
+          ({
+            required String entity,
+            required String eventId,
+            required String documentText,
+            required String documentSha256,
+          }) async {
+            sent += 1;
+            return 'confirmed';
+          },
+      sessionReady: () => true,
+    );
+    await account.presentActor(_actorA);
+    account.beginBind();
+    await account.confirmBind();
+    final String subject = store.activeSubjectId!;
+    holdBackup = true;
+    final Future<void> copying = account.bringItOver();
+    var spins = 0;
+    while (!waiting && spins < 100) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      spins += 1;
+    }
+    expect(waiting, isTrue);
+    account.cancelCopy();
+    account.openCopyPreview();
+    expect(account.copyPreview, isTrue);
+    gate.complete();
+    await copying;
+    expect(sent, 0);
+    expect(store.isCopyAccepted(subject), isFalse);
+    expect(account.copyPreview, isTrue);
+    expect(store.onOutboxEnqueued, isNull);
+  });
+
+  test(
+    'a cancelled marker failure does not bind on the next sign-in',
+    () async {
+      final Completer<void> gate = Completer<void>();
+      var holdBackup = false;
+      var waiting = false;
+      var sent = 0;
+      final ProfileStore store = openStore(
+        excludeFromBackup: (String path) async {
+          if (!holdBackup) {
+            return;
+          }
+          waiting = true;
+          await gate.future;
+          throw StateError('backup exclusion failed');
+        },
+      );
+      await store.createProfile();
+      await store.saveProgramRecord(_program);
+      final AccountController account = AccountController(
+        store: store,
+        sendCopy:
+            ({
+              required String entity,
+              required String eventId,
+              required String documentText,
+              required String documentSha256,
+            }) async {
+              sent += 1;
+              return 'confirmed';
+            },
+        sessionReady: () => true,
+      );
+      await account.presentActor(_actorA);
+      account.beginBind();
+      await account.confirmBind();
+      final String subject = store.activeSubjectId!;
+      holdBackup = true;
+      final Future<void> copying = account.bringItOver();
+      var spins = 0;
+      while (!waiting && spins < 100) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        spins += 1;
+      }
+      expect(waiting, isTrue);
+      account.cancelCopy();
+      gate.complete();
+      await copying;
+      expect(sent, 0);
+      expect(store.isCopyAccepted(subject), isFalse);
+      await account.presentActor(_actorA);
+      expect(sent, 0);
+      expect(account.copyPreview, isTrue);
+      expect(store.onOutboxEnqueued, isNull);
+    },
+  );
+
+  test(
+    'cancelling during the sweep does not bind after the preview reopens',
+    () async {
+      final Completer<void> gate = Completer<void>();
+      var waiting = false;
+      var sent = 0;
+      final ProfileStore store = openStore();
+      await store.createProfile();
+      await store.saveProgramRecord(_program);
+      store.onBeforeSweepCopy = () async {
+        waiting = true;
+        await gate.future;
+      };
+      final AccountController account = AccountController(
+        store: store,
+        sendCopy:
+            ({
+              required String entity,
+              required String eventId,
+              required String documentText,
+              required String documentSha256,
+            }) async {
+              sent += 1;
+              return 'confirmed';
+            },
+        sessionReady: () => true,
+      );
+      await account.presentActor(_actorA);
+      account.beginBind();
+      await account.confirmBind();
+      final String subject = store.activeSubjectId!;
+      final Future<void> copying = account.bringItOver();
+      var spins = 0;
+      while (!waiting && spins < 100) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        spins += 1;
+      }
+      expect(waiting, isTrue);
+      account.cancelCopy();
+      account.openCopyPreview();
+      gate.complete();
+      await copying;
+      expect(sent, 0);
+      expect(store.isCopyAccepted(subject), isFalse);
+      expect(account.copyPreview, isTrue);
+      expect(store.onOutboxEnqueued, isNull);
+    },
+  );
 
   test('a missing document does not clear the interruption notice', () async {
     final ProfileStore store = openStore();
