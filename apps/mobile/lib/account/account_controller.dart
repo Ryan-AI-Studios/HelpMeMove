@@ -458,14 +458,16 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> bringItOver() async {
+    final int operation = _copyOperation;
     await _serialized(() async {
-      if (!copyPreview || phase != AccountPhase.signedIn) {
+      if (operation != _copyOperation ||
+          !copyPreview ||
+          phase != AccountPhase.signedIn) {
         return;
       }
       if (!_copyContextMatches()) {
         return;
       }
-      final int operation = _copyOperation;
       try {
         await store.sweepCopyOutbox();
       } on Object {

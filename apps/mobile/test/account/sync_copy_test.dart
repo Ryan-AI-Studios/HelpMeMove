@@ -844,6 +844,62 @@ void main() {
     },
   );
 
+  test('a queued confirmation does not adopt the reopened preview', () async {
+    final Completer<void> gate = Completer<void>();
+    var holdBackup = false;
+    var waiting = false;
+    var sent = 0;
+    final ProfileStore store = openStore(
+      excludeFromBackup: (String path) async {
+        if (!holdBackup) {
+          return;
+        }
+        waiting = true;
+        await gate.future;
+      },
+    );
+    await store.createProfile();
+    await store.saveProgramRecord(_program);
+    final AccountController account = AccountController(
+      store: store,
+      sendCopy:
+          ({
+            required String entity,
+            required String eventId,
+            required String documentText,
+            required String documentSha256,
+          }) async {
+            sent += 1;
+            return 'confirmed';
+          },
+      sessionReady: () => true,
+    );
+    await account.presentActor(_actorA);
+    account.beginBind();
+    await account.confirmBind();
+    final String subject = store.activeSubjectId!;
+    holdBackup = true;
+    final Future<void> first = account.bringItOver();
+    var spins = 0;
+    while (!waiting && spins < 100) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      spins += 1;
+    }
+    expect(waiting, isTrue);
+    final Future<void> second = account.bringItOver();
+    account.cancelCopy();
+    account.openCopyPreview();
+    expect(account.copyPreview, isTrue);
+    gate.complete();
+    await first;
+    await second;
+    expect(sent, 0);
+    expect(store.isCopyAccepted(subject), isFalse);
+    expect(account.copyAccepted, isFalse);
+    expect(account.copyPreview, isTrue);
+    expect(store.onOutboxEnqueued, isNull);
+  });
+
   test('a failed second confirmation keeps the existing acceptance', () async {
     var failBackup = false;
     final ProfileStore store = openStore(
