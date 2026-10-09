@@ -862,6 +862,45 @@ void main() {
     );
   });
 
+  testWidgets('a canceled retry still shows the unlock sentence', (
+    tester,
+  ) async {
+    final ProfileStore store = openStore();
+    await tester.runAsync(store.createProfile);
+    final _ScriptedUnlock unlock = _ScriptedUnlock()
+      ..decision = PhoneUnlockDecision.canceled;
+    final AccountController account = accountFor(store, phoneUnlock: unlock);
+    account.accountRouteOpen = true;
+    await account.openExportPreview();
+    account.phase = AccountPhase.exportResult;
+    account.exportResult = ExportResult.notSaved;
+    account.unlockGate = PhoneUnlockGate.ready;
+    await _pumpAccount(tester, account);
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(find.text('The file was not prepared.'), findsOneWidget);
+    expect(find.text('Nothing was saved or removed.'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+    expect(exportFile(store.activeSubjectId!).existsSync(), isFalse);
+
+    unlock.decision = PhoneUnlockDecision.unfinished;
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.stillHere;
+    account.exportResult = null;
+    account.unlockGate = PhoneUnlockGate.ready;
+    account.notifyListeners();
+    await tester.pump();
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(find.text('The profile is still on this phone.'), findsOneWidget);
+    expect(
+      find.text(
+        'The phone unlock check did not finish. Nothing was saved or removed.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('confirmInFlight and rpcDispatched hide the action buttons', (
     tester,
   ) async {

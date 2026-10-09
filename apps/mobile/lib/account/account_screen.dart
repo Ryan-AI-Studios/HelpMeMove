@@ -171,9 +171,12 @@ class AccountScreenState extends State<AccountScreen> {
       ExportResult.notSaved => 'The file was not prepared.',
       ExportResult.cancelled || null => 'No file was prepared.',
     };
+    final bool unlockBlocksRetry =
+        account.unlockGate == PhoneUnlockGate.unavailable;
     return <Widget>[
       Text(sentence),
-      if (result == ExportResult.notSaved)
+      ..._unlockOutcome(account),
+      if (result == ExportResult.notSaved && !unlockBlocksRetry)
         PrimaryButton(
           label: 'Try again',
           onPressed: () => unawaited(account.confirmExport()),
@@ -261,15 +264,40 @@ class AccountScreenState extends State<AccountScreen> {
         result == DeleteResult.stillHere ||
         result == DeleteResult.signInRemoved ||
         result == DeleteResult.notReplaced;
+    final bool unlockBlocksRetry =
+        account.unlockGate == PhoneUnlockGate.unavailable;
     return <Widget>[
       Text(sentence),
-      if (tryAgain)
+      ..._unlockOutcome(account),
+      if (tryAgain && !unlockBlocksRetry)
         PrimaryButton(
           label: 'Try again',
           onPressed: () => unawaited(_retryDelete(account)),
         ),
       PrimaryButton(label: 'Back', onPressed: () => _back(context, account)),
     ];
+  }
+
+  List<Widget> _unlockOutcome(AccountController account) {
+    switch (account.unlockGate) {
+      case PhoneUnlockGate.canceled:
+        return const <Widget>[Text('Nothing was saved or removed.')];
+      case PhoneUnlockGate.unfinished:
+        return const <Widget>[
+          Text(
+            'The phone unlock check did not finish. Nothing was saved or removed.',
+          ),
+        ];
+      case PhoneUnlockGate.unavailable:
+        return const <Widget>[
+          Text(
+            "This phone has no unlock check, so this action is unavailable.",
+          ),
+        ];
+      case PhoneUnlockGate.checking:
+      case PhoneUnlockGate.ready:
+        return const <Widget>[];
+    }
   }
 
   Future<void> _retryDelete(AccountController account) {
