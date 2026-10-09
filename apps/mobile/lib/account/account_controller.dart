@@ -938,10 +938,16 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> retryLocalDelete() {
+    if (confirmInFlight || deleteResult != DeleteResult.signInRemoved) {
+      return Future<void>.value();
+    }
+    confirmInFlight = true;
+    notifyListeners();
     return _serialized(() async {
-      confirmInFlight = true;
-      notifyListeners();
       try {
+        if (deleteResult != DeleteResult.signInRemoved) {
+          return;
+        }
         final String? subject = _previewSubject;
         if (subject == null) {
           return;
@@ -973,10 +979,16 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> retryCreateProfile() {
+    if (confirmInFlight || deleteResult != DeleteResult.notReplaced) {
+      return Future<void>.value();
+    }
+    confirmInFlight = true;
+    notifyListeners();
     return _serialized(() async {
-      confirmInFlight = true;
-      notifyListeners();
       try {
+        if (deleteResult != DeleteResult.notReplaced) {
+          return;
+        }
         try {
           await store.createProfile();
           if (!accountRouteOpen) {

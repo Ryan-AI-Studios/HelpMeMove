@@ -934,6 +934,34 @@ void main() {
     expect(account.deleteResult, DeleteResult.removed);
   });
 
+  test('a second recovery retry does not create another profile', () async {
+    final _HoldCreateStore store = _HoldCreateStore(
+      keys: MemoryProfileKeyStore(),
+      supportDirectory: temp,
+      clock: () => DateTime.utc(2026, 10, 8),
+      random: Random(7),
+      excludeFromBackup: (String path) async {},
+    );
+    live = store;
+    await store.createProfile();
+    final AccountController account = accountFor(store);
+    account.accountRouteOpen = true;
+    await account.openDeletePreview();
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.notReplaced;
+    store.hold = Completer<void>();
+    final Future<void> first = account.retryCreateProfile();
+    await Future<void>.delayed(Duration.zero);
+    expect(account.confirmInFlight, isTrue);
+    final Future<void> second = account.retryCreateProfile();
+    store.hold!.complete();
+    await first;
+    await second;
+    expect(store.retryCreates, 1);
+    expect(account.deleteResult, DeleteResult.removed);
+    expect(account.confirmInFlight, isFalse);
+  });
+
   testWidgets('confirmInFlight and rpcDispatched hide the action buttons', (
     tester,
   ) async {
@@ -956,6 +984,14 @@ void main() {
     expect(find.text('Removing this profile.'), findsOneWidget);
     expect(find.text('Remove it'), findsNothing);
     expect(find.text('Not now'), findsNothing);
+
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.notReplaced;
+    account.notifyListeners();
+    await tester.pump();
+    expect(find.text('Try again'), findsNothing);
+    expect(find.text('Removing this profile.'), findsOneWidget);
+    expect(find.text('Back'), findsOneWidget);
   });
 
   testWidgets('results use the spec sentences and Back', (tester) async {
@@ -1292,6 +1328,29 @@ class _FailCreateStore extends ProfileStore {
   Future<String> createProfile() {
     if (failCreate) {
       throw const StorageIoException('create failed');
+    }
+    return super.createProfile();
+  }
+}
+
+class _HoldCreateStore extends ProfileStore {
+  _HoldCreateStore({
+    required super.keys,
+    required super.supportDirectory,
+    required super.clock,
+    required super.random,
+    required super.excludeFromBackup,
+  });
+
+  Completer<void>? hold;
+  int retryCreates = 0;
+
+  @override
+  Future<String> createProfile() async {
+    final Completer<void>? gate = hold;
+    if (gate != null) {
+      retryCreates += 1;
+      await gate.future;
     }
     return super.createProfile();
   }

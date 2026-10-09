@@ -176,7 +176,11 @@ class AccountScreenState extends State<AccountScreen> {
     return <Widget>[
       Text(sentence),
       ..._unlockOutcome(account),
-      if (result == ExportResult.notSaved && !unlockBlocksRetry)
+      if (account.confirmInFlight)
+        const Text('Preparing the file on this phone.'),
+      if (result == ExportResult.notSaved &&
+          !unlockBlocksRetry &&
+          !account.confirmInFlight)
         PrimaryButton(
           label: 'Try again',
           onPressed: () => unawaited(account.confirmExport()),
@@ -269,7 +273,8 @@ class AccountScreenState extends State<AccountScreen> {
     return <Widget>[
       Text(sentence),
       ..._unlockOutcome(account),
-      if (tryAgain && !unlockBlocksRetry)
+      if (account.confirmInFlight) const Text('Removing this profile.'),
+      if (tryAgain && !unlockBlocksRetry && !account.confirmInFlight)
         PrimaryButton(
           label: 'Try again',
           onPressed: () => unawaited(_retryDelete(account)),
