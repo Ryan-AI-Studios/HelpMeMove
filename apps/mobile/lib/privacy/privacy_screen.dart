@@ -4,16 +4,23 @@ import 'package:drift/isolate.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sqlite3/sqlite3.dart' hide Row;
+import 'package:helpmemove/account/account_controller.dart';
 import 'package:helpmemove/design/app_spacing.dart';
 import 'package:helpmemove/design/components/primary_button.dart';
 import 'package:helpmemove/storage/profile_store.dart';
 import 'package:helpmemove/storage/storage_exception.dart';
 
 class PrivacyScreen extends StatefulWidget {
-  const PrivacyScreen({super.key, required this.store, this.onAppearanceSaved});
+  const PrivacyScreen({
+    super.key,
+    required this.store,
+    this.onAppearanceSaved,
+    this.controller,
+  });
 
   final ProfileStore store;
   final void Function(String choice)? onAppearanceSaved;
+  final AccountController? controller;
 
   @override
   State<PrivacyScreen> createState() => _PrivacyScreenState();
@@ -162,6 +169,16 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         const SizedBox(height: AppSpacing.space24),
         const Text('Crash reports are not in this build.'),
         const SizedBox(height: AppSpacing.space24),
+        const Text('Workout video is not stored.'),
+        const SizedBox(height: AppSpacing.space24),
+        const Text('Health apps are not in this build.'),
+        const SizedBox(height: AppSpacing.space24),
+        const Text('The launch region for this build is the United States.'),
+        const SizedBox(height: AppSpacing.space24),
+        const Text(
+          'The stated retention for this profile is 3 months. This build removes it only when you choose Remove it.',
+        ),
+        const SizedBox(height: AppSpacing.space24),
         const Text('Appearance'),
         const SizedBox(height: AppSpacing.space24),
         RadioGroup<String>(
@@ -180,6 +197,32 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
             ],
           ),
         ),
+        if (widget.controller != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.space24),
+          PrimaryButton(
+            label: 'Prepare a copy on this phone',
+            onPressed: () {
+              final AccountController? controller = widget.controller;
+              if (controller == null) {
+                return;
+              }
+              unawaited(controller.openExportPreview());
+              context.go('/focus/account');
+            },
+          ),
+          const SizedBox(height: AppSpacing.space24),
+          PrimaryButton(
+            label: 'Delete the profile on this phone',
+            onPressed: () {
+              final AccountController? controller = widget.controller;
+              if (controller == null) {
+                return;
+              }
+              unawaited(controller.openDeletePreview());
+              context.go('/focus/account');
+            },
+          ),
+        ],
         const SizedBox(height: AppSpacing.space24),
         PrimaryButton(label: 'Back', onPressed: () => context.go('/')),
       ],

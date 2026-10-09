@@ -551,7 +551,8 @@ void main() {
 
   test('router still constructs AccountController with the profile store', () {
     final String source = File('lib/design/router.dart').readAsStringSync();
-    expect(source.contains('AccountController(store: profile)'), isTrue);
+    expect(source.contains('store: profile'), isTrue);
+    expect(source.contains('phoneUnlock: phoneUnlock'), isTrue);
   });
 
   test('requestReauth does not drop copy state', () async {

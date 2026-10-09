@@ -54,7 +54,7 @@ import UIKit
     var rootValues = URLResourceValues()
     rootValues.isExcludedFromBackup = true
     try root.setResourceValues(rootValues)
-    let names = ["helpmemove.db", "helpmemove.db-wal", "helpmemove.db-shm", "sync-copy-accepted"]
+    let names = ["helpmemove.db", "helpmemove.db-wal", "helpmemove.db-shm", "sync-copy-accepted", "export.json"]
     for name in names {
       let child = URL(fileURLWithPath: path).appendingPathComponent(name)
       if FileManager.default.fileExists(atPath: child.path) {
