@@ -300,6 +300,27 @@ class ProfileStore {
     await excludeFromBackup(directory.path);
   }
 
+  void clearCopyAccepted(String subjectId) {
+    final File marker = _copyAcceptedFile(subjectId);
+    if (marker.existsSync()) {
+      marker.deleteSync();
+    }
+  }
+
+  Future<bool> hasPendingOutbox(String subjectId) async {
+    final ProfileDatabase database = _requireDatabase();
+    final SyncOutboxData? row =
+        await (database.select(database.syncOutbox)
+              ..where(
+                (SyncOutbox table) =>
+                    table.subjectId.equals(subjectId) &
+                    table.state.equals(_outboxPending),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
+  }
+
   Future<List<SyncOutboxPendingItem>> loadPendingOutbox(
     String subjectId,
   ) async {

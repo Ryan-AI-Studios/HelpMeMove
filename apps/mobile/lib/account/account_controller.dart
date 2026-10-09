@@ -165,6 +165,18 @@ class AccountController extends ChangeNotifier {
   bool accountRouteOpen = false;
   PhoneUnlockGate unlockGate = PhoneUnlockGate.ready;
   int get generation => _generation;
+
+  int _advanceGeneration() {
+    _generation += 1;
+    _releaseCopyWorker();
+    return _generation;
+  }
+
+  void _releaseCopyWorker() {
+    _copyWorker?.cancel();
+    store.onOutboxEnqueued = null;
+  }
+
   bool get isSessionPresent => sessionReady();
   bool get rpcCommitted => _rpcCommitted;
   bool get namesSignInRemoval => _previewActor != null && isSessionPresent;
@@ -217,7 +229,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> presentActor(String actor) {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     return _serialized(() async {
       if (generation != _generation) {
         return;
@@ -259,7 +271,7 @@ class AccountController extends ChangeNotifier {
 
   /// Leaves the actor unbound. Nothing is written.
   void cancelBind() {
-    _generation += 1;
+    _advanceGeneration();
     phase = AccountPhase.signedOut;
     notifyListeners();
   }
@@ -301,7 +313,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> keepLocked() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     return _serialized(() async {
       _dropWork();
       copyNotice = null;
@@ -323,7 +335,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> removeLocal() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     final String? actor = actorId;
     final String? subject = store.activeSubjectId;
     return _serialized(() async {
@@ -360,7 +372,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> expire() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     return _serialized(() async {
       if (generation != _generation) {
         return;
@@ -378,7 +390,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> removeAccess() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     final String? actor = actorId;
     return _serialized(() async {
       if (generation != _generation) {
@@ -456,6 +468,9 @@ class AccountController extends ChangeNotifier {
       } on Object {
         return;
       }
+      if (!copyPreview || !_copyContextMatches()) {
+        return;
+      }
       final String? subject = store.activeSubjectId;
       if (subject == null || !_copyContextMatches()) {
         return;
@@ -463,6 +478,10 @@ class AccountController extends ChangeNotifier {
       try {
         await store.markCopyAccepted(subject);
       } on Object {
+        return;
+      }
+      if (!copyPreview || !_copyContextMatches()) {
+        store.clearCopyAccepted(subject);
         return;
       }
       copyPreview = false;
@@ -646,13 +665,13 @@ class AccountController extends ChangeNotifier {
       if (subject == null) {
         return;
       }
-      final List<SyncOutboxPendingItem> pending = await store.loadPendingOutbox(
-        subject,
-      );
       if (!sessionReady()) {
         if (_postCheck(actor, subject, capturedGeneration)) {
-          copyNotice = pending.isEmpty ? null : copyInterruptedNotice;
-          notifyListeners();
+          final bool pendingRow = await store.hasPendingOutbox(subject);
+          if (_postCheck(actor, subject, capturedGeneration)) {
+            copyNotice = pendingRow ? copyInterruptedNotice : null;
+            notifyListeners();
+          }
         }
         return;
       }
@@ -670,9 +689,11 @@ class AccountController extends ChangeNotifier {
       if (!_postCheck(actor, subject, capturedGeneration)) {
         return;
       }
-      final List<SyncOutboxPendingItem> remaining = await store
-          .loadPendingOutbox(subject);
-      if (remaining.isEmpty) {
+      final bool pendingRow = await store.hasPendingOutbox(subject);
+      if (!_postCheck(actor, subject, capturedGeneration)) {
+        return;
+      }
+      if (!pendingRow) {
         copyNotice = null;
         notifyListeners();
       }
