@@ -920,6 +920,18 @@ void main() {
     expect(account.exportResult, ExportResult.saved);
     expect(account.unlockGate, PhoneUnlockGate.ready);
     expect(exportFile(subjectId).existsSync(), isTrue);
+
+    unlock.decision = PhoneUnlockDecision.canceled;
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.stillHere;
+    await account.confirmDelete();
+    expect(account.unlockGate, PhoneUnlockGate.canceled);
+    expect(account.deleteResult, DeleteResult.stillHere);
+
+    unlock.decision = PhoneUnlockDecision.confirmed;
+    await account.confirmDelete();
+    expect(account.unlockGate, PhoneUnlockGate.ready);
+    expect(account.deleteResult, DeleteResult.removed);
   });
 
   testWidgets('confirmInFlight and rpcDispatched hide the action buttons', (
