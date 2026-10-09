@@ -741,6 +741,77 @@ void main() {
     },
   );
 
+  test('a checkpoint failure during deletion leaves the profile and can be retried', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    store.onBeforeCheckpoint = () async {
+      throw const StorageIoException('checkpoint failed');
+    };
+    final AccountController account = accountFor(store);
+    account.accountRouteOpen = true;
+    await account.openDeletePreview();
+    await account.confirmDelete();
+    expect(account.deleteResult, DeleteResult.stillHere);
+    expect(account.confirmInFlight, isFalse);
+    expect(store.activeSubjectId, subjectId);
+    expect(
+      Directory(
+        '${temp.path}${Platform.pathSeparator}profiles'
+        '${Platform.pathSeparator}$subjectId',
+      ).existsSync(),
+      isTrue,
+    );
+    expect(await store.keys.read(profileKeyItem(subjectId)), isNotNull);
+
+    store.onBeforeCheckpoint = null;
+    await account.confirmDelete();
+    expect(account.deleteResult, DeleteResult.removed);
+    expect(
+      Directory(
+        '${temp.path}${Platform.pathSeparator}profiles'
+        '${Platform.pathSeparator}$subjectId',
+      ).existsSync(),
+      isFalse,
+    );
+  });
+
+  test(
+    'a checkpoint failure after a committed RPC does not call the RPC again',
+    () async {
+      final ProfileStore store = openStore();
+      final String subjectId = await store.createProfile();
+      await store.keys.write(AccountController.actorItem(_actor), subjectId);
+      await store.keys.write(supabasePersistSessionKey, 'session-token');
+      store.onBeforeCheckpoint = () async {
+        throw const StorageIoException('checkpoint failed');
+      };
+      var rpcCalls = 0;
+      AccountAuth.started = true;
+      final AccountController account = accountFor(
+        store,
+        sessionReady: () => true,
+        deleteRpc: () async {
+          rpcCalls += 1;
+          return 'deleted';
+        },
+      );
+      account.actorId = _actor;
+      account.accountRouteOpen = true;
+      await account.openDeletePreview();
+      await account.confirmDelete();
+      expect(account.deleteResult, DeleteResult.signInRemoved);
+      expect(account.confirmInFlight, isFalse);
+      expect(store.activeSubjectId, subjectId);
+      expect(rpcCalls, 1);
+      expect(await store.keys.read(profileKeyItem(subjectId)), isNotNull);
+
+      store.onBeforeCheckpoint = null;
+      await account.retryLocalDelete();
+      expect(rpcCalls, 1);
+      expect(account.deleteResult, DeleteResult.removedWithSignIn);
+    },
+  );
+
   test(
     'dismissResult restores the captured phase and clears both results',
     () async {
@@ -862,6 +933,106 @@ void main() {
     );
   });
 
+  testWidgets('a canceled retry still shows the unlock sentence', (
+    tester,
+  ) async {
+    final ProfileStore store = openStore();
+    await tester.runAsync(store.createProfile);
+    final _ScriptedUnlock unlock = _ScriptedUnlock()
+      ..decision = PhoneUnlockDecision.canceled;
+    final AccountController account = accountFor(store, phoneUnlock: unlock);
+    account.accountRouteOpen = true;
+    await account.openExportPreview();
+    account.phase = AccountPhase.exportResult;
+    account.exportResult = ExportResult.notSaved;
+    account.unlockGate = PhoneUnlockGate.ready;
+    await _pumpAccount(tester, account);
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(find.text('The file was not prepared.'), findsOneWidget);
+    expect(find.text('Nothing was saved or removed.'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+    expect(exportFile(store.activeSubjectId!).existsSync(), isFalse);
+
+    unlock.decision = PhoneUnlockDecision.unfinished;
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.stillHere;
+    account.exportResult = null;
+    account.unlockGate = PhoneUnlockGate.ready;
+    account.notifyListeners();
+    await tester.pump();
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(find.text('The profile is still on this phone.'), findsOneWidget);
+    expect(
+      find.text(
+        'The phone unlock check did not finish. Nothing was saved or removed.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  test('a confirmed retry clears a canceled unlock sentence', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    final _ScriptedUnlock unlock = _ScriptedUnlock()
+      ..decision = PhoneUnlockDecision.canceled;
+    final AccountController account = accountFor(store, phoneUnlock: unlock);
+    account.accountRouteOpen = true;
+    await account.openExportPreview();
+    account.phase = AccountPhase.exportResult;
+    account.exportResult = ExportResult.notSaved;
+    await account.confirmExport();
+    expect(account.unlockGate, PhoneUnlockGate.canceled);
+    expect(exportFile(subjectId).existsSync(), isFalse);
+
+    unlock.decision = PhoneUnlockDecision.confirmed;
+    await account.confirmExport();
+    expect(account.exportResult, ExportResult.saved);
+    expect(account.unlockGate, PhoneUnlockGate.ready);
+    expect(exportFile(subjectId).existsSync(), isTrue);
+
+    unlock.decision = PhoneUnlockDecision.canceled;
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.stillHere;
+    await account.confirmDelete();
+    expect(account.unlockGate, PhoneUnlockGate.canceled);
+    expect(account.deleteResult, DeleteResult.stillHere);
+
+    unlock.decision = PhoneUnlockDecision.confirmed;
+    await account.confirmDelete();
+    expect(account.unlockGate, PhoneUnlockGate.ready);
+    expect(account.deleteResult, DeleteResult.removed);
+  });
+
+  test('a second recovery retry does not create another profile', () async {
+    final _HoldCreateStore store = _HoldCreateStore(
+      keys: MemoryProfileKeyStore(),
+      supportDirectory: temp,
+      clock: () => DateTime.utc(2026, 10, 8),
+      random: Random(7),
+      excludeFromBackup: (String path) async {},
+    );
+    live = store;
+    await store.createProfile();
+    final AccountController account = accountFor(store);
+    account.accountRouteOpen = true;
+    await account.openDeletePreview();
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.notReplaced;
+    store.hold = Completer<void>();
+    final Future<void> first = account.retryCreateProfile();
+    await Future<void>.delayed(Duration.zero);
+    expect(account.confirmInFlight, isTrue);
+    final Future<void> second = account.retryCreateProfile();
+    store.hold!.complete();
+    await first;
+    await second;
+    expect(store.retryCreates, 1);
+    expect(account.deleteResult, DeleteResult.removed);
+    expect(account.confirmInFlight, isFalse);
+  });
+
   testWidgets('confirmInFlight and rpcDispatched hide the action buttons', (
     tester,
   ) async {
@@ -884,6 +1055,14 @@ void main() {
     expect(find.text('Removing this profile.'), findsOneWidget);
     expect(find.text('Remove it'), findsNothing);
     expect(find.text('Not now'), findsNothing);
+
+    account.phase = AccountPhase.deleteResult;
+    account.deleteResult = DeleteResult.notReplaced;
+    account.notifyListeners();
+    await tester.pump();
+    expect(find.text('Try again'), findsNothing);
+    expect(find.text('Removing this profile.'), findsOneWidget);
+    expect(find.text('Back'), findsOneWidget);
   });
 
   testWidgets('results use the spec sentences and Back', (tester) async {
@@ -1220,6 +1399,29 @@ class _FailCreateStore extends ProfileStore {
   Future<String> createProfile() {
     if (failCreate) {
       throw const StorageIoException('create failed');
+    }
+    return super.createProfile();
+  }
+}
+
+class _HoldCreateStore extends ProfileStore {
+  _HoldCreateStore({
+    required super.keys,
+    required super.supportDirectory,
+    required super.clock,
+    required super.random,
+    required super.excludeFromBackup,
+  });
+
+  Completer<void>? hold;
+  int retryCreates = 0;
+
+  @override
+  Future<String> createProfile() async {
+    final Completer<void>? gate = hold;
+    if (gate != null) {
+      retryCreates += 1;
+      await gate.future;
     }
     return super.createProfile();
   }

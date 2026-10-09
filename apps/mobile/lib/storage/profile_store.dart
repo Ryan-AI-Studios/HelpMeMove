@@ -538,7 +538,16 @@ class ProfileStore {
     final String safeSubject = acceptSubject(raw: subjectId);
     final bool wasActive = safeSubject == _activeSubjectId;
     if (wasActive) {
-      await _closeCurrent();
+      try {
+        await _closeCurrent();
+      } on Object {
+        try {
+          await reopenActive();
+        } on Object {
+          // The directory and key stay even when the profile cannot reopen.
+        }
+        return LocalRemoval.directoryRemained;
+      }
     }
     final Directory directory = _profileDirectory(safeSubject);
     try {
