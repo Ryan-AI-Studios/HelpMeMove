@@ -901,6 +901,27 @@ void main() {
     );
   });
 
+  test('a confirmed retry clears a canceled unlock sentence', () async {
+    final ProfileStore store = openStore();
+    final String subjectId = await store.createProfile();
+    final _ScriptedUnlock unlock = _ScriptedUnlock()
+      ..decision = PhoneUnlockDecision.canceled;
+    final AccountController account = accountFor(store, phoneUnlock: unlock);
+    account.accountRouteOpen = true;
+    await account.openExportPreview();
+    account.phase = AccountPhase.exportResult;
+    account.exportResult = ExportResult.notSaved;
+    await account.confirmExport();
+    expect(account.unlockGate, PhoneUnlockGate.canceled);
+    expect(exportFile(subjectId).existsSync(), isFalse);
+
+    unlock.decision = PhoneUnlockDecision.confirmed;
+    await account.confirmExport();
+    expect(account.exportResult, ExportResult.saved);
+    expect(account.unlockGate, PhoneUnlockGate.ready);
+    expect(exportFile(subjectId).existsSync(), isTrue);
+  });
+
   testWidgets('confirmInFlight and rpcDispatched hide the action buttons', (
     tester,
   ) async {

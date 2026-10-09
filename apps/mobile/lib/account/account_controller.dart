@@ -895,6 +895,7 @@ class AccountController extends ChangeNotifier {
         _showUnlockDecision(decision);
         return;
       }
+      unlockGate = PhoneUnlockGate.ready;
       await _serialized(_confirmExportBody);
     } finally {
       confirmInFlight = false;
@@ -926,6 +927,7 @@ class AccountController extends ChangeNotifier {
         _showUnlockDecision(decision);
         return;
       }
+      unlockGate = PhoneUnlockGate.ready;
       await _serialized(_confirmDeleteBody);
     } finally {
       confirmInFlight = false;
