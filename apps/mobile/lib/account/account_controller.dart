@@ -232,33 +232,38 @@ class AccountController extends ChangeNotifier {
   Future<void> presentActor(String actor) {
     final int generation = _advanceGeneration();
     return _serialized(() async {
-      if (generation != _generation) {
-        return;
+      try {
+        if (generation != _generation) {
+          return;
+        }
+        final String? subject = await keys.read(actorItem(actor));
+        if (generation != _generation) {
+          return;
+        }
+        actorId = actor;
+        if (subject == null || subject.isEmpty) {
+          _dropWork();
+          copyPreview = false;
+          copyAccepted = false;
+          copyNotice = null;
+          cloudAccess = false;
+          phase = AccountPhase.signedOut;
+          notifyListeners();
+          return;
+        }
+        if (store.activeSubjectId == subject) {
+          cloudAccess = true;
+          phase = AccountPhase.signedIn;
+          _enterSignedInCopy();
+          notifyListeners();
+          return;
+        }
+        final String? previous = store.activeSubjectId;
+        await _switchToBoundSubject(subject, generation, actor, previous);
+      } on Object {
+        _restoreAcceptedCopy(generation);
+        rethrow;
       }
-      final String? subject = await keys.read(actorItem(actor));
-      if (generation != _generation) {
-        return;
-      }
-      actorId = actor;
-      if (subject == null || subject.isEmpty) {
-        _dropWork();
-        copyPreview = false;
-        copyAccepted = false;
-        copyNotice = null;
-        cloudAccess = false;
-        phase = AccountPhase.signedOut;
-        notifyListeners();
-        return;
-      }
-      if (store.activeSubjectId == subject) {
-        cloudAccess = true;
-        phase = AccountPhase.signedIn;
-        _enterSignedInCopy();
-        notifyListeners();
-        return;
-      }
-      final String? previous = store.activeSubjectId;
-      await _switchToBoundSubject(subject, generation, actor, previous);
     });
   }
 
@@ -463,9 +468,11 @@ class AccountController extends ChangeNotifier {
       if (operation != _copyOperation ||
           !copyPreview ||
           phase != AccountPhase.signedIn) {
+        await _abandonUnacceptedCopy();
         return;
       }
       if (!_copyContextMatches()) {
+        await _abandonUnacceptedCopy();
         return;
       }
       try {
@@ -476,12 +483,14 @@ class AccountController extends ChangeNotifier {
       if (operation != _copyOperation ||
           !copyPreview ||
           !_copyContextMatches()) {
+        await _abandonUnacceptedCopy();
         return;
       }
       final String? subject = store.activeSubjectId;
       if (subject == null ||
           operation != _copyOperation ||
           !_copyContextMatches()) {
+        await _abandonUnacceptedCopy();
         return;
       }
       try {
@@ -497,9 +506,7 @@ class AccountController extends ChangeNotifier {
           !copyPreview ||
           !_copyContextMatches()) {
         // openCopyPreview does not clear an acceptance already on this device.
-        if (!copyAccepted) {
-          store.clearCopyAccepted(subject);
-        }
+        await _abandonUnacceptedCopy();
         return;
       }
       copyPreview = false;
@@ -615,6 +622,32 @@ class AccountController extends ChangeNotifier {
     phase = AccountPhase.signedIn;
     _enterSignedInCopy();
     notifyListeners();
+  }
+
+  void _restoreAcceptedCopy(int generation) {
+    if (generation != _generation || phase != AccountPhase.signedIn) {
+      return;
+    }
+    final String? subject = store.activeSubjectId;
+    if (subject == null || !store.isCopyAccepted(subject)) {
+      return;
+    }
+    copyPreview = false;
+    copyAccepted = true;
+    _bindCopyWorker();
+    notifyListeners();
+  }
+
+  Future<void> _abandonUnacceptedCopy() async {
+    if (copyAccepted) {
+      return;
+    }
+    final String? subject = _copySubject;
+    if (subject == null || store.activeSubjectId != subject) {
+      return;
+    }
+    store.clearCopyAccepted(subject);
+    await store.dropPendingOutbox(subject);
   }
 
   void _enterSignedInCopy() {

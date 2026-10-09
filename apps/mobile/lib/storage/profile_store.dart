@@ -74,6 +74,7 @@ class StoredProblemReport {
 
 const String activeProfileItem = 'active-profile';
 const String copyAcceptedName = 'sync-copy-accepted';
+const String copyDeclinedName = 'sync-copy-declined';
 const String _exportFileName = 'export.json';
 
 enum LocalRemoval { directoryRemained, replaced, notReplaced }
@@ -127,6 +128,9 @@ class ProfileStore {
 
   /// Tests hold or throw from here before a copy sweep writes outbox rows.
   Future<void> Function()? onBeforeSweepCopy;
+
+  /// Tests throw from here when a copy acceptance marker is deleted.
+  void Function()? onDeleteCopyMarker;
 
   /// Tests throw from here after `export.json` exists and before backup exclusion.
   Future<void> Function()? onExportFileCreated;
@@ -293,6 +297,9 @@ class ProfileStore {
   bool get hasOpenDatabase => _database != null;
 
   bool isCopyAccepted(String subjectId) {
+    if (_copyDeclinedFile(subjectId).existsSync()) {
+      return false;
+    }
     return _copyAcceptedFile(subjectId).existsSync();
   }
 
@@ -307,18 +314,39 @@ class ProfileStore {
     try {
       await excludeFromBackup(directory.path);
     } on Object {
-      if (!existed && marker.existsSync()) {
-        marker.deleteSync();
+      if (!existed) {
+        try {
+          _deleteCopyMarker(marker);
+        } on Object {
+          _writeCopyDeclined(subjectId);
+        }
       }
       rethrow;
     }
+    _forgetCopyDeclined(subjectId);
   }
 
   void clearCopyAccepted(String subjectId) {
+    _writeCopyDeclined(subjectId);
     final File marker = _copyAcceptedFile(subjectId);
-    if (marker.existsSync()) {
-      marker.deleteSync();
+    if (!marker.existsSync()) {
+      return;
     }
+    try {
+      _deleteCopyMarker(marker);
+    } on Object {
+      // The declined file keeps a leftover marker from counting as acceptance.
+    }
+  }
+
+  Future<void> dropPendingOutbox(String subjectId) async {
+    final ProfileDatabase database = _requireDatabase();
+    await (database.delete(database.syncOutbox)..where(
+          (SyncOutbox table) =>
+              table.subjectId.equals(subjectId) &
+              table.state.equals(_outboxPending),
+        ))
+        .go();
   }
 
   Future<bool> hasPendingOutbox(String subjectId) async {
@@ -1597,6 +1625,36 @@ class ProfileStore {
     return File(
       '${_profileDirectory(subjectId).path}${Platform.pathSeparator}$copyAcceptedName',
     );
+  }
+
+  File _copyDeclinedFile(String subjectId) {
+    return File(
+      '${_profileDirectory(subjectId).path}${Platform.pathSeparator}$copyDeclinedName',
+    );
+  }
+
+  void _writeCopyDeclined(String subjectId) {
+    final Directory directory = _profileDirectory(subjectId);
+    directory.createSync(recursive: true);
+    final File declined = _copyDeclinedFile(subjectId);
+    if (!declined.existsSync()) {
+      declined.writeAsBytesSync(const <int>[]);
+    }
+  }
+
+  void _forgetCopyDeclined(String subjectId) {
+    final File declined = _copyDeclinedFile(subjectId);
+    if (!declined.existsSync()) {
+      return;
+    }
+    declined.deleteSync();
+  }
+
+  void _deleteCopyMarker(File marker) {
+    onDeleteCopyMarker?.call();
+    if (marker.existsSync()) {
+      marker.deleteSync();
+    }
   }
 
   String _sha256Text(String text) {
