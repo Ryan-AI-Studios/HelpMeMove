@@ -742,6 +742,80 @@ void main() {
   );
 
   test(
+    'a checkpoint failure during deletion leaves the profile and can be retried',
+    () async {
+      final ProfileStore store = openStore();
+      final String subjectId = await store.createProfile();
+      store.onBeforeCheckpoint = () async {
+        throw const StorageIoException('checkpoint failed');
+      };
+      final AccountController account = accountFor(store);
+      account.accountRouteOpen = true;
+      await account.openDeletePreview();
+      await account.confirmDelete();
+      expect(account.deleteResult, DeleteResult.stillHere);
+      expect(account.confirmInFlight, isFalse);
+      expect(store.activeSubjectId, subjectId);
+      expect(
+        Directory(
+          '${temp.path}${Platform.pathSeparator}profiles'
+          '${Platform.pathSeparator}$subjectId',
+        ).existsSync(),
+        isTrue,
+      );
+      expect(await store.keys.read(profileKeyItem(subjectId)), isNotNull);
+
+      store.onBeforeCheckpoint = null;
+      await account.confirmDelete();
+      expect(account.deleteResult, DeleteResult.removed);
+      expect(
+        Directory(
+          '${temp.path}${Platform.pathSeparator}profiles'
+          '${Platform.pathSeparator}$subjectId',
+        ).existsSync(),
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'a checkpoint failure after a committed RPC does not call the RPC again',
+    () async {
+      final ProfileStore store = openStore();
+      final String subjectId = await store.createProfile();
+      await store.keys.write(AccountController.actorItem(_actor), subjectId);
+      await store.keys.write(supabasePersistSessionKey, 'session-token');
+      store.onBeforeCheckpoint = () async {
+        throw const StorageIoException('checkpoint failed');
+      };
+      var rpcCalls = 0;
+      AccountAuth.started = true;
+      final AccountController account = accountFor(
+        store,
+        sessionReady: () => true,
+        deleteRpc: () async {
+          rpcCalls += 1;
+          return 'deleted';
+        },
+      );
+      account.actorId = _actor;
+      account.accountRouteOpen = true;
+      await account.openDeletePreview();
+      await account.confirmDelete();
+      expect(account.deleteResult, DeleteResult.signInRemoved);
+      expect(account.confirmInFlight, isFalse);
+      expect(store.activeSubjectId, subjectId);
+      expect(rpcCalls, 1);
+      expect(await store.keys.read(profileKeyItem(subjectId)), isNotNull);
+
+      store.onBeforeCheckpoint = null;
+      await account.retryLocalDelete();
+      expect(rpcCalls, 1);
+      expect(account.deleteResult, DeleteResult.removedWithSignIn);
+    },
+  );
+
+  test(
     'dismissResult restores the captured phase and clears both results',
     () async {
       final ProfileStore store = openStore();
