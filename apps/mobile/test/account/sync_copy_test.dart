@@ -1062,6 +1062,74 @@ void main() {
   });
 
   test(
+    'a failed read for another actor does not send the open profile',
+    () async {
+      var ready = false;
+      var sent = 0;
+      final _HoldKeys keys = _HoldKeys(MemoryProfileKeyStore());
+      final ProfileStore store = ProfileStore(
+        keys: keys,
+        supportDirectory: temp,
+        clock: () => DateTime.utc(2026, 10, 5),
+        random: Random(7),
+        excludeFromBackup: (String path) async {},
+      );
+      live = store;
+      await store.createProfile();
+      await store.saveProgramRecord(_program);
+      final AccountController account = AccountController(
+        store: store,
+        sendCopy:
+            ({
+              required String entity,
+              required String eventId,
+              required String documentText,
+              required String documentSha256,
+            }) async {
+              sent += 1;
+              return 'confirmed';
+            },
+        sessionReady: () => ready,
+      );
+      await account.presentActor(_actorA);
+      account.beginBind();
+      await account.confirmBind();
+      await account.bringItOver();
+      final String subject = store.activeSubjectId!;
+      final List<String> pending = (await store.loadPendingOutbox(subject))
+          .map(
+            (SyncOutboxPendingItem item) =>
+                '${item.eventId}:${item.documentSha256}',
+          )
+          .toList();
+      expect(pending, isNotEmpty);
+      expect(store.onOutboxEnqueued, isNotNull);
+      keys.failNextRead = true;
+      await expectLater(
+        account.presentActor('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+        throwsA(isA<StateError>()),
+      );
+      expect(sent, 0);
+      expect(account.actorId, _actorA);
+      expect(store.onOutboxEnqueued, isNull);
+      await store.saveProgramRecord(_program);
+      ready = true;
+      await account.retryCopy();
+      expect(sent, 0);
+      expect(store.onOutboxEnqueued, isNull);
+      expect(
+        (await store.loadPendingOutbox(subject))
+            .map(
+              (SyncOutboxPendingItem item) =>
+                  '${item.eventId}:${item.documentSha256}',
+            )
+            .toList(),
+        pending,
+      );
+    },
+  );
+
+  test(
     'a generation advance releases the copy worker before its body',
     () async {
       Future<void> release(

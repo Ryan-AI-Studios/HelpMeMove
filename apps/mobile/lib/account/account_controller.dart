@@ -231,6 +231,7 @@ class AccountController extends ChangeNotifier {
 
   Future<void> presentActor(String actor) {
     final int generation = _advanceGeneration();
+    final String? previousActor = actorId;
     return _serialized(() async {
       try {
         if (generation != _generation) {
@@ -261,7 +262,7 @@ class AccountController extends ChangeNotifier {
         final String? previous = store.activeSubjectId;
         await _switchToBoundSubject(subject, generation, actor, previous);
       } on Object {
-        _restoreAcceptedCopy(generation);
+        _restoreAcceptedCopy(generation, previousActor, actor);
         rethrow;
       }
     });
@@ -624,8 +625,16 @@ class AccountController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _restoreAcceptedCopy(int generation) {
-    if (generation != _generation || phase != AccountPhase.signedIn) {
+  void _restoreAcceptedCopy(
+    int generation,
+    String? previousActor,
+    String requestedActor,
+  ) {
+    if (generation != _generation ||
+        phase != AccountPhase.signedIn ||
+        previousActor == null ||
+        previousActor != requestedActor ||
+        actorId != previousActor) {
       return;
     }
     final String? subject = store.activeSubjectId;
