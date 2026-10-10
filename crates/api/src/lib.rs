@@ -10,8 +10,10 @@ use axum::Router;
 use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
+
+mod coach;
 
 pub const PROBE_OPERATION: &str = "probe";
 
@@ -153,6 +155,7 @@ pub fn router(map: ActorMap) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/ownership/probe", get(probe))
+        .route("/coach/explain", post(coach::explain))
         .with_state(map)
 }
 

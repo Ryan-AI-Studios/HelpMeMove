@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:helpmemove/account/account_controller.dart';
 import 'package:helpmemove/account/account_screen.dart';
 import 'package:helpmemove/account/phone_unlock.dart';
+import 'package:helpmemove/coach/explain_screen.dart';
 import 'package:helpmemove/design/screens/focused_flow_screen.dart';
 import 'package:helpmemove/design/screens/foundations_screen.dart';
 import 'package:helpmemove/design/screens/home_screen.dart';
@@ -297,6 +298,13 @@ GoRouter buildHelpMeMoveRouter({
                         store: profile,
                         previewDocument: previewAdaptation,
                       );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'explain',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const ExplainScreen();
                     },
                   ),
                 ],

@@ -76,6 +76,11 @@ class _FoundationsScreenState extends State<FoundationsScreen> {
                 onPressed: () => context.go('/focus'),
               ),
               const SizedBox(height: AppSpacing.space12),
+              TertiaryButton(
+                label: 'Explain a selection',
+                onPressed: () => context.go('/focus/explain'),
+              ),
+              const SizedBox(height: AppSpacing.space12),
               DestructiveButton(
                 label: 'Remove sample',
                 onPressed: () {
