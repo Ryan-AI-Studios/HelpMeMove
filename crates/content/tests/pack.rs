@@ -38,8 +38,9 @@ fn repo_disable_list() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../content/packs/syn-disable-list.json")
 }
 
-fn write_hex_sig(path: &Path, bytes: &[u8]) {
-    fs::write(path, encode_lower_hex(bytes)).expect("write sig");
+fn read_committed_signature(path: &Path) -> [u8; 64] {
+    let hex = fs::read_to_string(path).expect("sig");
+    parse_signature_hex(hex.trim()).expect("hex")
 }
 
 type PackFiles = Vec<(String, Vec<u8>)>;
@@ -47,16 +48,7 @@ type PackFiles = Vec<(String, Vec<u8>)>;
 fn load_pack(name: &str) -> (Vec<u8>, [u8; 64], PackFiles) {
     let dir = fixtures().join(name);
     let manifest = fs::read(dir.join("manifest.json")).expect("manifest");
-    let sig_path = dir.join("manifest.sig");
-    let signature = if name.ends_with("bad-sig") {
-        let zeros = [0_u8; 64];
-        write_hex_sig(&sig_path, &zeros);
-        zeros
-    } else {
-        let bytes = sign(&manifest);
-        write_hex_sig(&sig_path, &bytes);
-        bytes
-    };
+    let signature = read_committed_signature(&dir.join("manifest.sig"));
     let files = if name.ends_with("escape") {
         let bytes = fs::read(dir.join("exercises/syn-shoulder-isometric.json")).expect("exercise");
         vec![("../exercises/syn-shoulder-isometric.json".to_owned(), bytes)]
@@ -138,12 +130,18 @@ fn fixture_key_matches_seed() {
 }
 
 #[test]
-fn writes_committed_disable_list_signature() {
+fn committed_disable_list_verifies() {
     let json = fs::read(repo_disable_list()).expect("disable list");
-    write_hex_sig(&repo_disable_list().with_extension("sig"), &sign(&json));
-    let hex = fs::read_to_string(repo_disable_list().with_extension("sig")).expect("sig");
-    let bytes = parse_signature_hex(hex.trim()).expect("hex");
-    verify_disable_list(&json, &bytes, &FIXTURE_PACK_VERIFYING_KEY).expect("verify");
+    let signature = read_committed_signature(&repo_disable_list().with_extension("sig"));
+    verify_disable_list(&json, &signature, &FIXTURE_PACK_VERIFYING_KEY).expect("verify");
+}
+
+#[test]
+fn v2_fixture_accepts_above_v1() {
+    assert_eq!(
+        decide("syn-shoulder-pack-v2", 2, &empty_list(), 10, 10, None),
+        PackDecision::Accept
+    );
 }
 
 #[test]
