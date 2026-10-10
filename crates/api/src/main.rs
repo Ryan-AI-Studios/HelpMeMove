@@ -8,6 +8,6 @@ fn main() -> Result<(), std::io::Error> {
 }
 
 async fn serve() -> Result<(), std::io::Error> {
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8787").await?;
     axum::serve(listener, helpmemove_api::app()).await
 }

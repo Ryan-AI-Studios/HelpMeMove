@@ -12,6 +12,12 @@ allow = [
     "BSD-3-Clause",
     "Unicode-3.0",
     "Unicode-DFS-2016",
+    # Track 0030 pins reqwest 0.13.5 with feature rustls. That feature
+    # builds aws-lc (ISC, and MIT-0 inside aws-lc-sys) and the CA bundle
+    # webpki-root-certs (CDLA-Permissive-2.0).
+    "ISC",
+    "MIT-0",
+    "CDLA-Permissive-2.0",
 ]
 confidence-threshold = 0.8
 
