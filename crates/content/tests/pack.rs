@@ -130,6 +130,52 @@ fn fixture_key_matches_seed() {
 }
 
 #[test]
+fn signature_files_match_their_compiled_bytes() {
+    let packs: [(&str, &[u8]); 6] = [
+        (
+            "syn-shoulder-pack-v1",
+            include_bytes!("fixtures/packs/syn-shoulder-pack-v1/manifest.sig"),
+        ),
+        (
+            "syn-shoulder-pack-v2",
+            include_bytes!("fixtures/packs/syn-shoulder-pack-v2/manifest.sig"),
+        ),
+        (
+            "syn-shoulder-pack-hash",
+            include_bytes!("fixtures/packs/syn-shoulder-pack-hash/manifest.sig"),
+        ),
+        (
+            "syn-shoulder-pack-escape",
+            include_bytes!("fixtures/packs/syn-shoulder-pack-escape/manifest.sig"),
+        ),
+        (
+            "syn-shoulder-pack-engine",
+            include_bytes!("fixtures/packs/syn-shoulder-pack-engine/manifest.sig"),
+        ),
+        (
+            "syn-shoulder-pack-bad-sig",
+            include_bytes!("fixtures/packs/syn-shoulder-pack-bad-sig/manifest.sig"),
+        ),
+    ];
+    for (name, compiled) in packs {
+        let read = fs::read(fixtures().join(name).join("manifest.sig")).expect("pack sig");
+        assert_eq!(read, compiled);
+    }
+    let disable = fs::read(repo_disable_list().with_extension("sig")).expect("disable sig");
+    assert_eq!(
+        disable,
+        include_bytes!("../../../content/packs/syn-disable-list.sig")
+    );
+    let bad = fs::read(
+        fixtures()
+            .join("syn-shoulder-pack-bad-sig")
+            .join("manifest.sig"),
+    )
+    .expect("bad sig");
+    assert_eq!(bad, vec![b'0'; 128]);
+}
+
+#[test]
 fn committed_disable_list_verifies() {
     let json = fs::read(repo_disable_list()).expect("disable list");
     let signature = read_committed_signature(&repo_disable_list().with_extension("sig"));
