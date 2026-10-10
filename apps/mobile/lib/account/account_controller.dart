@@ -165,6 +165,18 @@ class AccountController extends ChangeNotifier {
   bool accountRouteOpen = false;
   PhoneUnlockGate unlockGate = PhoneUnlockGate.ready;
   int get generation => _generation;
+
+  int _advanceGeneration() {
+    _generation += 1;
+    _releaseCopyWorker();
+    return _generation;
+  }
+
+  void _releaseCopyWorker() {
+    _copyWorker?.cancel();
+    store.onOutboxEnqueued = null;
+  }
+
   bool get isSessionPresent => sessionReady();
   bool get rpcCommitted => _rpcCommitted;
   bool get namesSignInRemoval => _previewActor != null && isSessionPresent;
@@ -182,6 +194,7 @@ class AccountController extends ChangeNotifier {
   String? _copyActor;
   String? _copySubject;
   int _copyGeneration = 0;
+  int _copyOperation = 0;
   bool _deleteCancelled = false;
   bool _exportCancelled = false;
   bool _rpcCommitted = false;
@@ -217,35 +230,41 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> presentActor(String actor) {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
+    final String? previousActor = actorId;
     return _serialized(() async {
-      if (generation != _generation) {
-        return;
+      try {
+        if (generation != _generation) {
+          return;
+        }
+        final String? subject = await keys.read(actorItem(actor));
+        if (generation != _generation) {
+          return;
+        }
+        actorId = actor;
+        if (subject == null || subject.isEmpty) {
+          _dropWork();
+          copyPreview = false;
+          copyAccepted = false;
+          copyNotice = null;
+          cloudAccess = false;
+          phase = AccountPhase.signedOut;
+          notifyListeners();
+          return;
+        }
+        if (store.activeSubjectId == subject) {
+          cloudAccess = true;
+          phase = AccountPhase.signedIn;
+          _enterSignedInCopy();
+          notifyListeners();
+          return;
+        }
+        final String? previous = store.activeSubjectId;
+        await _switchToBoundSubject(subject, generation, actor, previous);
+      } on Object {
+        _restoreAcceptedCopy(generation, previousActor, actor);
+        rethrow;
       }
-      final String? subject = await keys.read(actorItem(actor));
-      if (generation != _generation) {
-        return;
-      }
-      actorId = actor;
-      if (subject == null || subject.isEmpty) {
-        _dropWork();
-        copyPreview = false;
-        copyAccepted = false;
-        copyNotice = null;
-        cloudAccess = false;
-        phase = AccountPhase.signedOut;
-        notifyListeners();
-        return;
-      }
-      if (store.activeSubjectId == subject) {
-        cloudAccess = true;
-        phase = AccountPhase.signedIn;
-        _enterSignedInCopy();
-        notifyListeners();
-        return;
-      }
-      final String? previous = store.activeSubjectId;
-      await _switchToBoundSubject(subject, generation, actor, previous);
     });
   }
 
@@ -259,7 +278,7 @@ class AccountController extends ChangeNotifier {
 
   /// Leaves the actor unbound. Nothing is written.
   void cancelBind() {
-    _generation += 1;
+    _advanceGeneration();
     phase = AccountPhase.signedOut;
     notifyListeners();
   }
@@ -301,7 +320,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> keepLocked() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     return _serialized(() async {
       _dropWork();
       copyNotice = null;
@@ -323,7 +342,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> removeLocal() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     final String? actor = actorId;
     final String? subject = store.activeSubjectId;
     return _serialized(() async {
@@ -360,7 +379,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> expire() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     return _serialized(() async {
       if (generation != _generation) {
         return;
@@ -378,7 +397,7 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> removeAccess() {
-    final int generation = ++_generation;
+    final int generation = _advanceGeneration();
     final String? actor = actorId;
     return _serialized(() async {
       if (generation != _generation) {
@@ -437,6 +456,7 @@ class AccountController extends ChangeNotifier {
     if (copyPreview) {
       return;
     }
+    _copyOperation += 1;
     copyPreview = true;
     copyNotice = null;
     _captureCopyContext();
@@ -444,11 +464,16 @@ class AccountController extends ChangeNotifier {
   }
 
   Future<void> bringItOver() async {
+    final int operation = _copyOperation;
     await _serialized(() async {
-      if (!copyPreview || phase != AccountPhase.signedIn) {
+      if (operation != _copyOperation ||
+          !copyPreview ||
+          phase != AccountPhase.signedIn) {
+        await _abandonUnacceptedCopy();
         return;
       }
       if (!_copyContextMatches()) {
+        await _abandonUnacceptedCopy();
         return;
       }
       try {
@@ -456,13 +481,33 @@ class AccountController extends ChangeNotifier {
       } on Object {
         return;
       }
+      if (operation != _copyOperation ||
+          !copyPreview ||
+          !_copyContextMatches()) {
+        await _abandonUnacceptedCopy();
+        return;
+      }
       final String? subject = store.activeSubjectId;
-      if (subject == null || !_copyContextMatches()) {
+      if (subject == null ||
+          operation != _copyOperation ||
+          !_copyContextMatches()) {
+        await _abandonUnacceptedCopy();
         return;
       }
       try {
         await store.markCopyAccepted(subject);
       } on Object {
+        // openCopyPreview does not clear an acceptance already on this device.
+        if (!copyAccepted) {
+          store.clearCopyAccepted(subject);
+        }
+        return;
+      }
+      if (operation != _copyOperation ||
+          !copyPreview ||
+          !_copyContextMatches()) {
+        // openCopyPreview does not clear an acceptance already on this device.
+        await _abandonUnacceptedCopy();
         return;
       }
       copyPreview = false;
@@ -474,6 +519,7 @@ class AccountController extends ChangeNotifier {
   }
 
   void cancelCopy() {
+    _copyOperation += 1;
     copyPreview = false;
     copyNotice = copyCancelNotice;
     notifyListeners();
@@ -579,7 +625,42 @@ class AccountController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _restoreAcceptedCopy(
+    int generation,
+    String? previousActor,
+    String requestedActor,
+  ) {
+    if (generation != _generation ||
+        phase != AccountPhase.signedIn ||
+        previousActor == null ||
+        previousActor != requestedActor ||
+        actorId != previousActor) {
+      return;
+    }
+    final String? subject = store.activeSubjectId;
+    if (subject == null || !store.isCopyAccepted(subject)) {
+      return;
+    }
+    copyPreview = false;
+    copyAccepted = true;
+    _bindCopyWorker();
+    notifyListeners();
+  }
+
+  Future<void> _abandonUnacceptedCopy() async {
+    if (copyAccepted) {
+      return;
+    }
+    final String? subject = _copySubject;
+    if (subject == null || store.activeSubjectId != subject) {
+      return;
+    }
+    store.clearCopyAccepted(subject);
+    await store.dropPendingOutbox(subject);
+  }
+
   void _enterSignedInCopy() {
+    _copyOperation += 1;
     final String? subject = store.activeSubjectId;
     if (subject != null && store.isCopyAccepted(subject)) {
       copyPreview = false;
@@ -646,13 +727,13 @@ class AccountController extends ChangeNotifier {
       if (subject == null) {
         return;
       }
-      final List<SyncOutboxPendingItem> pending = await store.loadPendingOutbox(
-        subject,
-      );
       if (!sessionReady()) {
         if (_postCheck(actor, subject, capturedGeneration)) {
-          copyNotice = pending.isEmpty ? null : copyInterruptedNotice;
-          notifyListeners();
+          final bool pendingRow = await store.hasPendingOutbox(subject);
+          if (_postCheck(actor, subject, capturedGeneration)) {
+            copyNotice = pendingRow ? copyInterruptedNotice : null;
+            notifyListeners();
+          }
         }
         return;
       }
@@ -670,9 +751,11 @@ class AccountController extends ChangeNotifier {
       if (!_postCheck(actor, subject, capturedGeneration)) {
         return;
       }
-      final List<SyncOutboxPendingItem> remaining = await store
-          .loadPendingOutbox(subject);
-      if (remaining.isEmpty) {
+      final bool pendingRow = await store.hasPendingOutbox(subject);
+      if (!_postCheck(actor, subject, capturedGeneration)) {
+        return;
+      }
+      if (!pendingRow) {
         copyNotice = null;
         notifyListeners();
       }
