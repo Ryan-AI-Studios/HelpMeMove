@@ -1,0 +1,6 @@
+# Signed pack bytes are hashed and verified exactly. Keep LF on checkout
+# so core.autocrlf does not turn an Accept into HashMismatch.
+crates/content/tests/fixtures/packs/**/*.json text eol=lf
+crates/content/tests/fixtures/packs/**/*.sig -text
+content/packs/*.json text eol=lf
+content/packs/*.sig -text

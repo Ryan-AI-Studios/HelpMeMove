@@ -102,15 +102,27 @@ void main() {
         ),
       ],
     );
+    ThemeData withFont(ThemeData base) {
+      if (!_captureFontReady) {
+        return base;
+      }
+      return base.copyWith(
+        textTheme: base.textTheme.apply(fontFamily: 'Segoe UI'),
+      );
+    }
+
     await tester.pumpWidget(
       MaterialApp.router(
-        theme: brightness == Brightness.dark
-            ? AppTheme.dark()
-            : AppTheme.light(),
+        theme: withFont(AppTheme.light()),
+        darkTheme: withFont(AppTheme.dark()),
+        themeMode: brightness == Brightness.dark
+            ? ThemeMode.dark
+            : ThemeMode.light,
+        themeAnimationDuration: Duration.zero,
         routerConfig: router,
       ),
     );
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
   }
 
   Future<void> capture(WidgetTester tester, String name) async {
@@ -118,6 +130,8 @@ void main() {
         .renderObject<RenderRepaintBoundary>(
           find.byKey(const Key('home-capture')),
         );
+    boundary.markNeedsPaint();
+    await tester.pump();
     final ui.Image image = await boundary.toImage(pixelRatio: 1);
     final ByteData? data = await tester.runAsync<ByteData?>(
       () => image.toByteData(format: ui.ImageByteFormat.png),
@@ -203,10 +217,45 @@ void main() {
         disableListJson: _recallingList,
       ),
     );
-    await untilText(tester, _recall);
-    expect(find.text(_recall), findsOneWidget);
-    expect(find.text(_stopped), findsOneWidget);
-    await capture(tester, 'home-recall-notice-light-390');
+    Future<void> noticeShot(
+      String name, {
+      Brightness brightness = Brightness.light,
+      Size size = const Size(390, 844),
+      double textScale = 1,
+    }) async {
+      await pumpHome(
+        tester,
+        home: HomeScreen(
+          store: store,
+          recalledDocuments: const <String>[_session],
+          disableListJson: _recallingList,
+        ),
+        brightness: brightness,
+        size: size,
+        textScale: textScale,
+      );
+      await untilText(tester, _recall);
+      expect(find.text(_recall), findsOneWidget);
+      expect(find.text(_stopped), findsOneWidget);
+      expect(
+        Theme.of(tester.element(find.byKey(const Key('home-capture'))))
+            .brightness,
+        brightness,
+        reason: name,
+      );
+      await capture(tester, name);
+    }
+
+    await noticeShot('home-recall-notice-light-390');
+    await noticeShot(
+      'home-recall-notice-dark-390',
+      brightness: Brightness.dark,
+    );
+    await noticeShot(
+      'home-recall-notice-light-840',
+      size: const Size(840, 1200),
+    );
+    await noticeShot('home-recall-notice-light-390-t1.3', textScale: 1.3);
   });
 
   testWidgets('captures remaining viewports when fonts exist', (
